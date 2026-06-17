@@ -1,0 +1,273 @@
+<div class="perfil container mt-4" style="max-width: 600px;">
+  <h3 class="titulo mb-4">👤 Mi Perfil</h3>
+
+  <div *ngIf="mensaje" class="alert alert-success">{{ mensaje }}</div>
+  <div *ngIf="error"   class="alert alert-danger">{{ error }}</div>
+
+  <div *ngIf="perfil" class="card mb-4">
+    <div class="card-body">
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Datos personales</h5>
+        <button class="opcion btn btn-sm"
+                (click)="editando = !editando">
+          {{ editando ? 'Cancelar' : '✏️ Editar' }}
+        </button>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label text-muted">Usuario</label>
+          <p class="fw-bold">{{ perfil.username }}</p>
+        </div>
+        <div class="col-12">
+          <label class="form-label text-muted">Rol</label>
+          <p>
+            <span class="badge" [class.bg-danger]="perfil.rol === 'admin'"
+                                [class.bg-info]="perfil.rol === 'secretaria'"
+                                [class.bg-secondary]="perfil.rol === 'alumno'">
+              {{ perfil.rol }}
+            </span>
+          </p>
+        </div>
+
+        <!-- ── VER MODO ── -->
+        <ng-container *ngIf="!editando">
+          <div class="col-12">
+            <label class="form-label text-muted">Nombre</label>
+            <p>{{ perfil.nombre || '—' }} {{ perfil.apellido1 || '' }} {{ perfil.apellido2 || '' }}</p>
+          </div>
+          <div class="col-12">
+            <label class="form-label text-muted">Correo</label>
+            <p>{{ perfil.correo || '—' }}</p>
+          </div>
+
+          <!-- Datos específicos profesor (vista) -->
+          <ng-container *ngIf="perfil.perfil_profesor as pp">
+            <hr class="col-12">
+            <div class="col-12"><h6 class="text-muted">Datos académicos</h6></div>
+            <div class="col-12">
+              <label class="form-label text-muted">Nombre en sistema académico</label>
+              <p>{{ pp.nombre }} {{ pp.apellido1 }} {{ pp.apellido2 || '' }}</p>
+            </div>
+            <div class="col-12">
+              <label class="form-label text-muted">Tipo / Categoría</label>
+              <p>{{ pp.tipo || '—' }}</p>
+            </div>
+            <div class="col-12">
+              <label class="form-label text-muted">Correo académico</label>
+              <p>{{ pp.correo || '—' }}</p>
+            </div>
+          </ng-container>
+
+          <!-- Datos específicos empleador (vista) -->
+          <ng-container *ngIf="perfil.perfil_empleador as pe">
+            <hr class="col-12">
+            <div class="col-12"><h6 class="text-muted">Datos empresa</h6></div>
+            <div class="col-12">
+              <label class="form-label text-muted">Empresa</label>
+              <p>{{ pe.empresa?.nombre || '—' }}</p>
+            </div>
+            <div class="col-12">
+              <label class="form-label text-muted">Nombre</label>
+              <p>{{ pe.nombres }} {{ pe.apellido1 }} {{ pe.apellido2 || '' }}</p>
+            </div>
+            <div class="col-12">
+              <label class="form-label text-muted">Cargo</label>
+              <p>{{ pe.cargo || '—' }}</p>
+            </div>
+            <div class="col-12">
+              <label class="form-label text-muted">Correo</label>
+              <p>{{ pe.correo || '—' }}</p>
+            </div>
+            <div class="col-12">
+              <label class="form-label text-muted">Teléfono</label>
+              <p>{{ pe.telefono || '—' }}</p>
+            </div>
+          </ng-container>
+        </ng-container>
+
+        <!-- ── EDITAR MODO ── -->
+        <ng-container *ngIf="editando">
+          <div class="col-12">
+            <label class="form-label">Nombre</label>
+            <input type="text" class="form-control form-control-sm" [(ngModel)]="perfil.nombre">
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Apellido Paterno</label>
+            <input type="text" class="form-control form-control-sm" [(ngModel)]="perfil.apellido1">
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Apellido Materno</label>
+            <input type="text" class="form-control form-control-sm" [(ngModel)]="perfil.apellido2">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Correo</label>
+            <input type="email" class="form-control form-control-sm" [(ngModel)]="perfil.correo">
+          </div>
+
+          <!-- Datos específicos profesor (edición) -->
+          <ng-container *ngIf="perfil.perfil_profesor">
+            <hr class="col-12">
+            <div class="col-12"><h6 class="text-muted">Datos académicos</h6></div>
+            <div class="col-12">
+              <label class="form-label">Nombre</label>
+              <input type="text" class="form-control form-control-sm"
+                     [(ngModel)]="perfil.perfil_profesor.nombre">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label">Apellido Paterno</label>
+              <input type="text" class="form-control form-control-sm"
+                     [(ngModel)]="perfil.perfil_profesor.apellido1">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label">Apellido Materno</label>
+              <input type="text" class="form-control form-control-sm"
+                     [(ngModel)]="perfil.perfil_profesor.apellido2">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label">Tipo / Categoría</label>
+              <input type="text" class="form-control form-control-sm"
+                     [(ngModel)]="perfil.perfil_profesor.tipo"
+                     placeholder="Ej: Jornada completa, Part-time…">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label">Correo académico</label>
+              <input type="email" class="form-control form-control-sm"
+                     [(ngModel)]="perfil.perfil_profesor.correo">
+            </div>
+          </ng-container>
+
+          <!-- Datos específicos empleador (edición) -->
+          <ng-container *ngIf="perfil.perfil_empleador">
+            <hr class="col-12">
+            <div class="col-12">
+              <h6 class="text-muted">Datos empresa</h6>
+              <p class="small text-muted mb-0">Empresa: <strong>{{ perfil.perfil_empleador.empresa?.nombre }}</strong></p>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Nombre</label>
+              <input type="text" class="form-control form-control-sm"
+                     [(ngModel)]="perfil.perfil_empleador.nombres">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label">Apellido Paterno</label>
+              <input type="text" class="form-control form-control-sm"
+                     [(ngModel)]="perfil.perfil_empleador.apellido1">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label">Apellido Materno</label>
+              <input type="text" class="form-control form-control-sm"
+                     [(ngModel)]="perfil.perfil_empleador.apellido2">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Cargo</label>
+              <input type="text" class="form-control form-control-sm"
+                     [(ngModel)]="perfil.perfil_empleador.cargo">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label">Correo</label>
+              <input type="email" class="form-control form-control-sm"
+                     [(ngModel)]="perfil.perfil_empleador.correo">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control form-control-sm"
+                     [(ngModel)]="perfil.perfil_empleador.telefono">
+            </div>
+          </ng-container>
+
+          <div class="col-12">
+            <button class="btn btn-success btn-sm" (click)="guardar()">Guardar cambios</button>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cambiar contraseña -->
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">🔑 Cambiar contraseña</h5>
+        <button class="opcion btn btn-sm btn-outline-secondary"
+                (click)="mostrarCambioPass = !mostrarCambioPass">
+          {{ mostrarCambioPass ? 'Cancelar' : 'Cambiar' }}
+        </button>
+      </div>
+
+      <div *ngIf="mostrarCambioPass" class="row g-3">
+        <div class="mb-2">
+          <label class="form-label">Contraseña actual</label>
+          <div class="input-group">
+            <input [type]="verActual ? 'text' : 'password'" 
+                  class="form-control form-control-sm"
+                  [(ngModel)]="passwordActual">
+            <button class="btn btn-outline-secondary btn-sm" 
+                    type="button"
+                    (click)="verConfirmar = !verConfirmar">
+              <i [class]="verConfirmar ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-2">
+          <label class="form-label">Nueva contraseña</label>
+          <div class="input-group">
+            <input [type]="verNueva ? 'text' : 'password'"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="passwordNueva">
+            <button class="btn btn-outline-secondary btn-sm"
+                    type="button"
+                    (click)="verConfirmar = !verConfirmar">
+              <i [class]="verConfirmar ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            </button>
+          </div>
+        <div class="form-text mt-1">
+          <small [class.text-success]="passwordNueva.length >= 8"
+                [class.text-danger]="passwordNueva.length > 0 && passwordNueva.length < 8">
+            ✓ Mínimo 8 caracteres
+          </small><br>
+          <small [class.text-success]="/[A-Z]/.test(passwordNueva)"
+                [class.text-danger]="passwordNueva.length > 0 && !/[A-Z]/.test(passwordNueva)">
+            ✓ Al menos una mayúscula
+          </small><br>
+          <small [class.text-success]="/[a-z]/.test(passwordNueva)"
+                [class.text-danger]="passwordNueva.length > 0 && !/[a-z]/.test(passwordNueva)">
+            ✓ Al menos una minúscula
+          </small><br>
+          <small [class.text-success]="/[0-9]/.test(passwordNueva)"
+                [class.text-danger]="passwordNueva.length > 0 && !/[0-9]/.test(passwordNueva)">
+            ✓ Al menos un número
+          </small>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Confirmar nueva contraseña</label>
+          <div class="input-group">
+            <input [type]="verConfirmar ? 'text' : 'password'"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="passwordConfirmar">
+            <button class="btn btn-outline-secondary btn-sm"
+                    type="button"
+                    (click)="verConfirmar = !verConfirmar">
+              <i [class]="verConfirmar ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            </button>
+          </div>
+          <small *ngIf="passwordConfirmar.length > 0 && passwordNueva !== passwordConfirmar"
+                class="text-danger">⚠️ Las contraseñas no coinciden</small>
+          <small *ngIf="passwordConfirmar.length > 0 && passwordNueva === passwordConfirmar"
+                class="text-success">✅ Las contraseñas coinciden</small>
+        </div>
+
+        <div class="col-12">
+          <button class="btn btn-success btn-sm"
+            [disabled]="passwordNueva !== passwordConfirmar || !passwordActual"
+            (click)="cambiarPassword()">
+            Actualizar contraseña
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

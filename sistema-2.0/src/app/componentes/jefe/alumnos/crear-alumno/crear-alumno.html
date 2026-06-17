@@ -1,0 +1,265 @@
+<div class="alumno">
+  <div class="ca-card">
+
+    <div class="ca-header">
+      <div class="ca-header-left">
+        <div>
+          <h1 class="titulo">Nuevo Alumno</h1>
+          <p class="ca-subtitle">Completa los datos para registrar al estudiante</p>
+        </div>
+      </div>
+    </div>
+    <div class="ca-alert ca-alert-success" *ngIf="exito">
+      Alumno registrado exitosamente. Redirigiendo…
+    </div>
+    <div class="ca-alert ca-alert-error" *ngIf="errorMsg">
+      {{ errorMsg }}
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+      <!-- ════════ SECCIÓN 1: IDENTIDAD ════════ -->
+      <div class="ca-section">
+        <div class="ca-section-header">
+          <span class="ca-section-num">01</span>
+          <h2 class="ca-section-title">Identidad</h2>
+        </div>
+
+        <div class="ca-grid">
+          <!-- RUT -->
+          <div class="ca-field">
+            <label class="ca-label" for="rut">RUT <span class="ca-req">*</span></label>
+            <input id="rut" type="text" formControlName="rut" class="ca-input"
+              [class.ca-input-err]="f['rut'].invalid && f['rut'].touched"
+              placeholder="12.345.678-9"/>
+            <span class="ca-err" *ngIf="f['rut'].invalid && f['rut'].touched">
+              RUT requerido (máx. 15 caracteres).
+            </span>
+          </div>
+
+          <!-- Nombres -->
+          <div class="ca-field ca-col-2">
+            <label class="ca-label" for="nombres">Nombres <span class="ca-req">*</span></label>
+            <input id="nombres" type="text" formControlName="nombres" class="ca-input"
+              [class.ca-input-err]="f['nombres'].invalid && f['nombres'].touched"
+              placeholder="Ej: María Ignacia"/>
+            <span class="ca-err" *ngIf="f['nombres'].invalid && f['nombres'].touched">
+              Nombres requeridos.
+            </span>
+          </div>
+
+          <!-- Apellido 1 -->
+          <div class="ca-field">
+            <label class="ca-label" for="apellido1">Primer Apellido <span class="ca-req">*</span></label>
+            <input id="apellido1" type="text" formControlName="apellido1" class="ca-input"
+              [class.ca-input-err]="f['apellido1'].invalid && f['apellido1'].touched"
+              placeholder="Ej: González"/>
+            <span class="ca-err" *ngIf="f['apellido1'].invalid && f['apellido1'].touched">
+              Primer apellido requerido.
+            </span>
+          </div>
+
+          <!-- Apellido 2 -->
+          <div class="ca-field">
+            <label class="ca-label" for="apellido2">Segundo Apellido</label>
+            <input id="apellido2" type="text" formControlName="apellido2" class="ca-input"
+              placeholder="Ej: Muñoz"/>
+          </div>
+
+          <!-- Sexo — botones de selección -->
+          <div class="ca-field ca-col-full">
+            <label class="ca-label">Sexo</label>
+            <div class="ca-toggle-group">
+              <button type="button"
+                *ngFor="let op of sexoOpciones"
+                class="ca-toggle-btn"
+                [class.ca-toggle-active]="form.get('sexo')?.value === op"
+                (click)="seleccionarSexo(op)">
+                <span *ngIf="op === 'Femenino'">♀</span>
+                <span *ngIf="op === 'Masculino'">♂</span>
+                <span *ngIf="op === 'Otro'">⚬</span>
+                {{ op }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Fecha nacimiento -->
+          <div class="ca-field">
+            <label class="ca-label" for="fecha_nacimiento">Fecha de Nacimiento</label>
+            <input id="fecha_nacimiento" type="date" formControlName="fecha_nacimiento" class="ca-input"/>
+          </div>
+
+          <!-- Nacionalidad -->
+          <div class="ca-field">
+            <label class="ca-label" for="nacionalidad">País de Nacionalidad</label>
+            <select id="nacionalidad" formControlName="nacionalidad" class="ca-input ca-select">
+              <option value="">— Seleccionar —</option>
+              <option *ngFor="let n of nacionalidades" [value]="n">{{ n }}</option>
+            </select>
+          </div>
+
+          <!-- Etnia -->
+          <div class="ca-field">
+            <label class="ca-label" for="etnia">Pueblo Originario / Etnia</label>
+            <select id="etnia" formControlName="etnia" class="ca-input ca-select">
+              <option value="">— Seleccionar —</option>
+              <option *ngFor="let e of etnias" [value]="e">{{ e }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ SECCIÓN 2: CONTACTO ════════ -->
+      <div class="ca-section">
+        <div class="ca-section-header">
+          <span class="ca-section-num">02</span>
+          <h2 class="ca-section-title">Contacto</h2>
+        </div>
+
+        <div class="ca-grid">
+          <!-- Dirección -->
+          <div class="ca-field ca-col-full">
+            <label class="ca-label" for="direccion">Dirección</label>
+            <input id="direccion" type="text" formControlName="direccion" class="ca-input"
+              placeholder="Calle, número, ciudad"/>
+          </div>
+
+          <!-- Teléfono -->
+          <div class="ca-field">
+            <label class="ca-label" for="telefono">Teléfono</label>
+            <input id="telefono" type="tel" formControlName="telefono" class="ca-input"
+              placeholder="9 1234 5678"/>
+          </div>
+
+          <!-- Teléfono emergencia -->
+          <div class="ca-field">
+            <label class="ca-label" for="telefono_emergencia">Teléfono de Emergencia</label>
+            <input id="telefono_emergencia" type="tel" formControlName="telefono_emergencia" class="ca-input"
+              placeholder="9 8765 4321"/>
+          </div>
+
+          <!-- Correo personal -->
+          <div class="ca-field">
+            <label class="ca-label" for="correo_personal">Correo Personal</label>
+            <input id="correo_personal" type="email" formControlName="correo_personal" class="ca-input"
+              [class.ca-input-err]="f['correo_personal'].invalid && f['correo_personal'].touched"
+              placeholder="alumno@gmail.com"/>
+            <span class="ca-err" *ngIf="f['correo_personal'].invalid && f['correo_personal'].touched">
+              Correo inválido.
+            </span>
+          </div>
+
+          <!-- Correo institucional -->
+          <div class="ca-field">
+            <label class="ca-label" for="correo_institucional">Correo Institucional</label>
+            <input id="correo_institucional" type="email" formControlName="correo_institucional" class="ca-input"
+              [class.ca-input-err]="f['correo_institucional'].invalid && f['correo_institucional'].touched"
+              placeholder="alumno@universidad.cl"/>
+            <span class="ca-err" *ngIf="f['correo_institucional'].invalid && f['correo_institucional'].touched">
+              Correo inválido.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ SECCIÓN 3: INFORMACIÓN ACADÉMICA ════════ -->
+      <div class="ca-section">
+        <div class="ca-section-header">
+          <span class="ca-section-num">03</span>
+          <h2 class="ca-section-title">Información Académica</h2>
+        </div>
+
+        <div class="ca-grid">
+          <!-- Plan de estudios -->
+          <div class="ca-field ca-col-2">
+            <label class="ca-label" for="plan">Plan de Estudios</label>
+            <select id="plan" formControlName="plan" class="ca-input ca-select">
+              <option value="">— Sin asignar —</option>
+              <option *ngFor="let p of planes" [value]="p.id">
+                {{ p.anio }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Colegio de origen -->
+          <div class="ca-field ca-col-2">
+            <label class="ca-label" for="colegio">Colegio de Origen</label>
+            <input id="colegio" type="text" formControlName="colegio" class="ca-input"
+              placeholder="Nombre del establecimiento"/>
+          </div>
+
+          <!-- Año ingreso -->
+          <div class="ca-field">
+            <label class="ca-label" for="anio_ingreso">Año de Ingreso</label>
+            <input id="anio_ingreso" type="number" formControlName="anio_ingreso" class="ca-input"
+              placeholder="Ej: 2023" min="2000" max="2100"/>
+          </div>
+
+          <!-- Fecha matrícula -->
+          <div class="ca-field">
+            <label class="ca-label" for="fecha_matricula">Fecha de Matrícula</label>
+            <input id="fecha_matricula" type="datetime-local" formControlName="fecha_matricula" class="ca-input"/>
+          </div>
+
+          <!-- Sistema ingreso -->
+          <div class="ca-field">
+            <label class="ca-label" for="sistema_ingreso">Sistema de Ingreso</label>
+            <select id="sistema_ingreso" formControlName="sistema_ingreso" class="ca-input ca-select">
+              <option value="">— Seleccionar —</option>
+              <option *ngFor="let s of sistemasIngreso" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+
+          <!-- Puntaje ingreso -->
+          <div class="ca-field">
+            <label class="ca-label" for="puntaje_ingreso">Puntaje de Ingreso</label>
+            <input id="puntaje_ingreso" type="number" formControlName="puntaje_ingreso" class="ca-input"
+              [class.ca-input-err]="f['puntaje_ingreso'].invalid && f['puntaje_ingreso'].touched"
+              placeholder="0 – 1000" min="0" max="1000"/>
+            <span class="ca-err" *ngIf="f['puntaje_ingreso'].invalid && f['puntaje_ingreso'].touched">
+              Valor entre 0 y 1000.
+            </span>
+          </div>
+
+          <!-- NEM -->
+          <div class="ca-field">
+            <label class="ca-label" for="nem">NEM</label>
+            <input id="nem" type="number" formControlName="nem" class="ca-input"
+              [class.ca-input-err]="f['nem'].invalid && f['nem'].touched"
+              placeholder="0 – 700" min="0" max="700"/>
+            <span class="ca-err" *ngIf="f['nem'].invalid && f['nem'].touched">
+              Valor entre 0 y 700.
+            </span>
+          </div>
+
+          <!-- Gratuidad -->
+          <div class="ca-field ca-col-2">
+            <label class="ca-label" for="gratuidad">Gratuidad</label>
+            <div class="ca-toggle-group">
+              <button type="button" class="ca-toggle-btn"
+                [class.ca-toggle-active]="form.get('gratuidad')?.value === 'Sí'"
+                (click)="form.patchValue({ gratuidad: 'Sí' })">
+                ✓ Sí
+              </button>
+              <button type="button" class="ca-toggle-btn"
+                [class.ca-toggle-active]="form.get('gratuidad')?.value === 'No'"
+                (click)="form.patchValue({ gratuidad: 'No' })">
+                ✗ No
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ACCIONES ─────────────────────────────────────── -->
+      <div class="ca-actions">
+        <button type="button" class="ca-btn-cancel" (click)="cancelar()">Cancelar</button>
+        <button type="submit" class="ca-btn-submit" [disabled]="enviando">
+          <span class="ca-spinner" *ngIf="enviando"></span>
+          {{ enviando ? 'Guardando…' : 'Registrar Alumno' }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

@@ -1,0 +1,129 @@
+<div class="fondo">
+  <div class="page-container">
+    <div class="page-header">
+      <h1 class="titulo">Generar Certificados</h1>
+      <p>Alumnos con práctica aprobada listos para certificar.</p>
+    </div>
+
+    <!-- Buscador -->
+    <div class="search-box">
+      <input
+        type="text"
+        [(ngModel)]="textoBusqueda"
+        (ngModelChange)="filtrar()"
+        placeholder="Buscar por nombre, RUT o empresa..."
+        class="search-input"
+      />
+      <span class="search-count" *ngIf="!cargandoLista">
+        {{ listaFiltrada.length }} resultado{{ listaFiltrada.length !== 1 ? 's' : '' }}
+      </span>
+    </div>
+
+    <!--Botones filtro por práctica -->
+    <div class="filtro-practica mb-3">
+      <button 
+        class="btn-filtro" 
+        [class.activo]="filtroPractica === 0"
+        (click)="filtrarPorPractica(0)">
+        Todas
+      </button>
+      <button 
+        class="btn-filtro" 
+        [class.activo]="filtroPractica === 1"
+        (click)="filtrarPorPractica(1)">
+        Práctica 1
+      </button>
+      <button 
+        class="btn-filtro" 
+        [class.activo]="filtroPractica === 2"
+        (click)="filtrarPorPractica(2)">
+        Práctica 2
+      </button>
+    </div>
+    <!-- Cargando -->
+    <div class="estado-carga" *ngIf="cargandoLista">
+      <div class="spinner"></div>
+      <span>Cargando alumnos...</span>
+    </div>
+
+    <!-- Error -->
+    <div class="alert-error" *ngIf="errorLista">
+      ⚠ {{ errorLista }}
+    </div>
+
+    <!-- Sin resultados -->
+    <div class="alert-info"
+        *ngIf="!cargandoLista && !errorLista && listaFiltrada.length === 0">
+      No se encontraron alumnos con práctica aprobada.
+    </div>
+
+    <div class="table-wrapper" *ngIf="!cargandoLista && listaFiltrada.length > 0">
+      <table class="table table-bordered table-striped" style="margin-bottom:0">
+        <thead>
+          <tr>
+            <th> </th>
+            <th>Alumno</th>
+            <th>RUT</th>
+            <th>Empresa</th>
+            <th>Período</th>
+            <th>N° Práctica</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of datosPaginados(); let i = index;">
+            <td> {{ (paginaActual - 1) * itemsPorPagina + i + 1 }}</td>
+            <td>
+              <div class="alumno-nombre">{{ item.alumno_nombre }}</div>
+            </td>
+            <td class="rut">{{ item.rut }}</td>
+            <td>{{ item.empresa || '—' }}</td>
+            <td class="fechas">
+              {{ item.fecha_inicio | date:'dd/MM/yyyy' }}
+              <span class="separador">→</span>
+              {{ item.fecha_termino | date:'dd/MM/yyyy' }}
+            </td>
+            <td class="centrado">
+              <span class="badge-practica">P{{ item.practica_num }}</span>
+            </td>
+            <td class="centrado">
+              <button class="btn-download"
+                      (click)="descargar(item)"
+                      [disabled]="generando !== null">
+                <span *ngIf="generando !== item.practica_num">⬇ PDF</span>
+                <span *ngIf="generando === item.practica_num">...</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div *ngIf="listaFiltrada.length > 0" 
+          class="d-flex justify-content-between align-items-center mt-3">
+        <small class="text-muted">
+          Página {{ paginaActual }} de {{ totalPaginas() }} 
+          (Total: {{ listaFiltrada.length }})
+        </small>
+        <nav>
+          <ul class="pagination mb-0">
+            <li class="page-item" [class.disabled]="paginaActual === 1">
+              <button class="page-link" 
+                      (click)="cambiarPagina(paginaActual - 1)"
+                      [disabled]="paginaActual === 1">Anterior</button>
+            </li>
+            <li class="page-item"
+                *ngFor="let p of paginasArray()"
+                [class.active]="p === paginaActual">
+              <button class="page-link" (click)="cambiarPagina(p)">{{ p }}</button>
+            </li>
+            <li class="page-item" [class.disabled]="paginaActual === totalPaginas()">
+              <button class="page-link"
+                      (click)="cambiarPagina(paginaActual + 1)"
+                      [disabled]="paginaActual === totalPaginas()">Siguiente</button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+
+  </div>
+</div>

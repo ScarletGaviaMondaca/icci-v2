@@ -1,0 +1,30 @@
+
+.titulo {
+  color: #054182;
+  font-family: cursive, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 3px;
+  letter-spacing: 0.01em;
+}
+
+.opciones{
+    border: 2px solid;
+    border-color: #054182;
+    border-radius: 5px;
+    margin-top: 20px;
+    background-color: white;
+}.opcion, .sub-opcion{
+     background-color: transparent;
+     border: none;
+    color: #054182;
+    font-size: large;
+}
+.opcion:hover, .sub-opcion:hover{
+    background-color: #054182;
+    color: white;
+}
+.opcion.active{
+    background-color: #054182;
+    color: white;
+}

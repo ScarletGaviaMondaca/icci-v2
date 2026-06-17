@@ -1,0 +1,95 @@
+<div class="fondo"> 
+    <section class="info-carrera" *ngIf="carrera">
+        <h1 class="titulo">{{carrera.nombre}}</h1>
+        <h4 class="titulo2">Información General de la Carrera</h4>
+        <div class="info-carrera-grid">
+            <!-- Código Demre -->
+            <div><strong>Código:</strong> {{ carrera.codigo_demre }}</div>
+            <div><strong>Grado/Título:</strong> {{ carrera.grado_titulo }}</div>
+            <div><strong>Facultad:</strong> {{ carrera.facultad }}</div>
+            <div><strong>Departamento:</strong>{{ carrera.departamento }}</div>
+            <div><strong>Director:</strong>{{ carrera.director }}</div>
+            <div><strong>Duración:</strong>{{ carrera.duracion }}</div>
+            <div><strong>Modalidad:</strong>{{ carrera.modalidad }}</div>
+            <div><strong>Jornada:</strong>{{ carrera.jornada }}</div>
+            <div><strong>Sede:</strong>{{ carrera.sede }}</div>
+            <div><strong>Año de creación:</strong>{{ carrera.anio_creacion }}</div>
+            <div><strong>Última modif. plan:</strong>{{ carrera.ultima_modif_plan }}</div>
+            <!-- PERFIL DE EGRESO -->
+           <div class="info-carrera-desc" style="grid-column: 1/-1;">
+            <strong>Perfil de egreso:</strong><br>
+            <ul>
+                <li *ngFor="let linea of obtenerLineas(carrera.perfil_egreso)">
+                {{ linea }}
+                </li>
+            </ul>
+            </div>
+        </div>
+        <!-- SOLO ADMIN: BOTONES DE ACCIÓN -->
+        <div *ngIf="auth.esAdmin()" style="margin-top:20px;">
+            <button type="button" class="btn" (click)="abrirModalEditar()">Editar</button>
+        </div>
+    </section>
+    <!-- MODAL para editar -->
+    <div class="modal-fondo" *ngIf="mostrarModal">
+        <div class="modal-contenido">
+            <h3>Editar Información General de la Carrera</h3>
+            <form *ngIf="editarCarrera" (ngSubmit)="guardarCambios()">
+                <div class="modal-scroll info-carrera-grid">
+                <div>
+                <strong>Código</strong>
+                <input [(ngModel)]="editarCarrera.codigo_demre" name="codigo_demre" type="text" />
+                </div>
+                <div>
+                <strong>Grado/Título</strong>
+                <input [(ngModel)]="editarCarrera.grado_titulo" name="grado_titulo" type="text" />
+                </div>
+                <div>
+                <strong>Facultad</strong>
+                <input [(ngModel)]="editarCarrera.facultad" name="facultad" type="text" />
+                </div>
+                <div>
+                <strong>Departamento</strong>
+                <input [(ngModel)]="editarCarrera.departamento" name="departamento" type="text" />
+                </div>
+                <div>
+                <strong>Director</strong>
+                <input [(ngModel)]="editarCarrera.director" name="director" type="text" />
+                </div>
+                <div>
+                <strong>Duración</strong>
+                <input [(ngModel)]="editarCarrera.duracion" name="duracion" type="text" />
+                </div>
+                <div>
+                <strong>Modalidad</strong>
+                <input [(ngModel)]="editarCarrera.modalidad" name="modalidad" type="text" />
+                </div>
+                <div>
+                <strong>Jornada</strong>
+                <input [(ngModel)]="editarCarrera.jornada" name="jornada" type="text" />
+                </div>
+                <div>
+                <strong>Sede</strong>
+                <input [(ngModel)]="editarCarrera.sede" name="sede" type="text" />
+                </div>
+                <div>
+                <strong>Año de creación</strong>
+                <input [(ngModel)]="editarCarrera.anio_creacion" name="anio_creacion" type="text" />
+                </div>
+                <div>
+                <strong>Última modif. plan</strong>
+                <input [(ngModel)]="editarCarrera.ultima_modif_plan" name="ultima_modif_plan" type="text" />
+                </div>
+                <div id="seccion-perfil" style="grid-column: 1/-1;">
+                <strong>Perfil de egreso</strong><br>
+                <textarea [(ngModel)]="editarCarrera.perfil_egreso" name="perfil_egreso" rows="4"></textarea>
+                </div>
+            </div>
+            <div style="margin-top:18px; text-align:right;">
+                <button type="submit" class="btn">Guardar</button>
+                <button type="button" class="cancelar" (click)="cerrarModal()">Cancelar</button>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>

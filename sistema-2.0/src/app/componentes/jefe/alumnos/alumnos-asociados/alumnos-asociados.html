@@ -1,0 +1,74 @@
+<div class="alumnos-asociados">
+  <h1 *ngIf="alumnos.length > 0" class="titulo">Alumnos asociados al plan {{ alumnos[0]?.plan }}</h1>
+
+  <div *ngIf="cargando" class="alert alert-info">Cargando alumnos...</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <div *ngIf="!cargando && !error && alumnos.length === 0" class="alert alert-warning">
+    No hay alumnos asociados a este plan.
+  </div>
+
+  <div *ngIf="alumnos.length > 0" class="table-striped table-bordered">
+    <div class="mb-2">
+      <div class="topbar-left ">
+          <button class="btn" onclick="window.history.back();"> ← Volver</button>
+      </div>
+      <span class="titulo2">
+        Mostrando {{ alumnosPaginados().length }} de {{ filtrarDatos().length }} de {{ alumnos.length }} alumnos
+      </span>
+    </div>
+    <div class="table-wrapper">
+      <table class="table table-sm table-striped align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>RUT
+              <input type="text" class="form-control form-control-sm"
+                [(ngModel)]="filtroRut" (ngModelChange)="paginaActual=1">
+            </th>
+            <th>Nombre
+              <input type="text" class="form-control form-control-sm"
+                  [(ngModel)]="filtroNombre" (ngModelChange)="paginaActual=1">
+            </th>
+            <th>Apellidos
+              <input type="text" class="form-control form-control-sm"
+                  [(ngModel)]="filtroApellidos" (ngModelChange)="paginaActual=1">
+            </th>
+            <th>Año ingreso
+              <input type="text" class="form-control form-control-sm"
+                  [(ngModel)]="filtroAnio" (ngModelChange)="paginaActual=1">
+            </th>
+            <th style="width: 120px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let a of alumnosPaginados(); let i = index">
+            <td>{{  (paginaActual - 1) * elementosPorPagina + i + 1 }}</td>
+            <td>{{ a.rut }}</td>
+            <td>{{ a.nombres }}</td>
+            <td>{{a.apellido1}} {{ a.apellido2 || '' }}</td>
+            <td>{{ a.anio_ingreso || '-' }}</td>
+            <td>
+              <button class="accion btn btn-sm btn-primary" (click)="verAlumno(a)">
+              👁️ Ver
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination mt-2" *ngIf="filtrarDatos().length > elementosPorPagina">
+      <button class="btn btn-sm btn-secondary me-1"
+              [disabled]="paginaActual === 1"
+              (click)="paginaActual = paginaActual - 1">
+        &laquo; Anterior
+      </button>
+      <span>Página {{ paginaActual }} / {{ totalPaginas() }}</span>
+      <button class="btn btn-sm btn-secondary ms-1"
+              [disabled]="paginaActual === totalPaginas()"
+              (click)="paginaActual = paginaActual + 1">
+        Siguiente &raquo;
+      </button>
+    </div>
+  </div>
+</div>

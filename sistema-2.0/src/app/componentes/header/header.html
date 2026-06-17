@@ -1,0 +1,180 @@
+<div class="top-gradient-bar">
+  <a href="https://portal.uta.cl" target="_blank" rel="noopener noreferrer" class="intranet-link">
+    Intranet UTA
+  </a>
+</div>
+<header class="main-header">
+  <div class="top-nav">
+    <div class="logo">
+      <img src="https://sgc.aici.uta.cl/themes/mitema/logo-sistema.png" alt="Logo">
+    </div>
+
+    <!-- El botón ahora tiene una clase para darle color oscuro -->
+    <button class="menu-toggle" (click)="toggleMenu()">
+      ☰
+    </button>
+    
+    
+    <nav class="nav-links" [class.show]="menuAbierto">
+      <!-- Campanita — solo secretaria -->
+      <div class="notif-wrapper" *ngIf="auth.esSecretaria()">
+        <button class="notif-btn" (click)="abrirNotificaciones()">
+          🔔
+          <span *ngIf="noLeidas > 0" class="notif-badge">{{ noLeidas }}</span>
+        </button>
+
+        <!-- Panel notificaciones -->
+        <div class="notif-panel" *ngIf="mostrarNotificaciones">
+          <div class="notif-header">
+            <span>Notificaciones</span>
+            <button *ngIf="noLeidas > 0"
+                    class="btn btn-sm btn-outline-secondary"
+                    (click)="marcarTodasLeidas()">
+              ✓ Marcar todas como leídas
+            </button>
+          </div>
+
+          <div *ngIf="notificaciones.length === 0" class="notif-vacia">
+            Sin notificaciones pendientes
+          </div>
+
+          <div *ngFor="let n of notificaciones"
+              class="notif-item"
+              [class.notif-no-leida]="n.leida == 0"
+              (click)="irASeguimiento(n)">
+            <div class="notif-texto">
+              <strong>{{ n.nombres }} {{ n.apellido1 }}</strong> venció su fecha límite
+              del hito <strong>{{ n.hito_label }}</strong>
+            </div>
+            <small class="text-muted">
+              📅 {{ n.fecha_vencimiento | date:'dd/MM/yyyy' }} · RUT: {{ n.rut }}
+            </small>
+          </div>
+        </div>
+      </div>
+      <!-- Campanita — solo alumno -->
+      <div class="notif-wrapper" *ngIf="auth.esAlumno()">
+        <button class="notif-btn" (click)="abrirNotifAlumno()">
+          🔔
+          <span *ngIf="noLeidasAlumno > 0" class="notif-badge">{{ noLeidasAlumno }}</span>
+        </button>
+
+        <div class="notif-panel" *ngIf="mostrarNotifAlumno">
+          <div class="notif-header">
+            <span>Mis Notificaciones</span>
+            <button *ngIf="noLeidasAlumno > 0"
+                    class="btn btn-sm btn-outline-secondary"
+                    (click)="marcarTodasLeidasAlumno()">
+              ✓ Marcar todas como leídas
+            </button>
+          </div>
+
+          <div *ngIf="notifAlumno.length === 0" class="notif-vacia">
+            Sin notificaciones pendientes
+          </div>
+
+          <div *ngFor="let n of notifAlumno"
+              class="notif-item"
+              [class.notif-no-leida]="n.leida == 0"
+              (click)="notifAlumnoSvc.marcarLeida(n.id).subscribe(); n.leida = 1; noLeidasAlumno = noLeidasAlumno - 1">
+            <div class="notif-texto">
+              <strong>{{ n.titulo }}</strong>
+            </div>
+            <p class="small mb-0">{{ n.mensaje }}</p>
+            <small class="text-muted">📅 {{ n.created_at | date:'dd/MM/yyyy HH:mm' }}</small>
+          </div>
+        </div>
+      </div>
+      <!-- Evaluaciones — solo empleador -->
+      <div class="notif-wrapper" *ngIf="auth.esEmpleador()">
+        <button class="notif-btn" (click)="abrirEvalEmpleador()" title="Evaluaciones de práctica">
+          📋
+          <span *ngIf="evalPendientes > 0" class="notif-badge">{{ evalPendientes }}</span>
+        </button>
+
+        <div class="notif-panel" *ngIf="mostrarEvalEmpleador" style="min-width:320px">
+          <div class="notif-header">
+            <span>📋 Evaluaciones de práctica</span>
+          </div>
+
+          <div *ngIf="evaluacionesEmpleador.length === 0" class="notif-vacia">
+            No hay prácticas en proceso
+          </div>
+
+          <div *ngFor="let e of evaluacionesEmpleador" class="notif-item" style="cursor:default">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <strong>{{ e.nombres }} {{ e.apellido1 }}</strong>
+                <small class="text-muted ms-1">· RUT {{ e.rut }}</small>
+                <div class="small text-muted">Práctica {{ e.practica_num }}</div>
+              </div>
+              <span [class]="estadoEvalClass(e.eval_empresa_estado)" style="font-size:0.72rem;white-space:nowrap">
+                {{ estadoEvalLabel(e.eval_empresa_estado) }}
+              </span>
+            </div>
+            <div *ngIf="e.eval_empresa_estado === 1" class="mt-1">
+              <button class="btn btn-sm btn-warning py-0 px-2" (click)="irEvaluarDesdeHeader(e)">
+                Evaluar alumno
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <a routerLink="/nosotros" (click)="menuAbierto = false">Sobre nosotros</a>
+      <a routerLink="/contacto" (click)="menuAbierto = false">Contactos</a>    
+      <div class="dropdown">
+        <button class="dropbtn" (click)="toggleDropdown()">Mi Perfil ▼</button>
+        <div class="dropdown-content" [class.show]="dropdownAbierto">
+          <!--- Alumno -->
+          <a *ngIf="auth.esAlumno()" routerLink="/alumno/perfil">Mi Cuenta</a>
+          <!--- Todos excepto alumno -->
+          <a *ngIf="!auth.esAlumno()" routerLink="/mi-perfil">Mi Perfil</a>
+          <!--- Admin -->
+          <a *ngIf="auth.esAdmin()" routerLink="/subir-certificado">Subir certificado</a>
+          <a *ngIf="auth.esAdmin()" routerLink="/profesores">Profesores</a>
+          <a *ngIf="auth.esAdmin()" routerLink="/usuarios">Gestión Usuarios</a>
+          <hr>
+          <a (click)="logout()" class="logout-link" style="cursor:pointer">Cerrar Sesión</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Menú de la pagina, una vez abierta la sesion-->
+  <nav class="navbar navbar-expand-lg bg-body-tertiary">
+  <div class="container-fluid">
+    <!-- Vista para todos -->
+    <a class="navbar-brand" routerLink="/noticias">Inicio</a>
+    <a class="navbar-brand" routerLink="/organizacion">Organización</a> 
+    <!-- Vista para Secretaria y Admin -->
+    <a class="navbar-brand" *ngIf="auth.esSecretaria() || auth.esAdmin() || auth.esJefeCarrera()" routerLink="/jefe">Jefe Carrera</a>
+    <a class="navbar-brand" *ngIf="auth.esAdmin()" routerLink="/certificados">Certificados</a>
+    <a class="navbar-brand" *ngIf="auth.esSecretaria() || auth.esAdmin()" routerLink="/seguimiento">Seguimiento</a>
+    <a class="navbar-brand" *ngIf="auth.esSecretaria() || auth.esAdmin()" routerLink="/exalumnos">Exalumnos</a> 
+    <a class="navbar-brand" *ngIf="auth.esSecretaria() || auth.esAdmin()" routerLink="/acreditacion">Acreditación</a>
+    <!-- Vista para Alumnos-->
+    <a class="navbar-brand" *ngIf="auth.esAlumno()" routerLink="jefe/carrera">Carrera</a>
+    <a class="navbar-brand" *ngIf="auth.esAlumno() || auth.esAdmin()" routerLink="/alumno">Alumno</a>  
+    <a class="navbar-brand" *ngIf="auth.esAlumno()" routerLink="/miseguimiento">Mi Seguimiento</a>
+    <a class="navbar-brand" *ngIf="auth.esAlumno()" routerLink="/miscertificados">Mis Certificados</a>
+    <!-- Vista para Empleador y admin -->
+    <a class="navbar-brand" *ngIf="auth.esEmpleador() || auth.esAdmin()" routerLink="/empleador">Empleadores</a>
+  </div>
+</nav>
+<!-- SUBMENÚ DINÁMICO -->
+<nav class="sub-navbar" *ngIf="subMenu && subMenu.length">
+  <a 
+    *ngFor="let item of subMenu"
+    [routerLink]="item.ruta"
+    routerLinkActive="activo"
+    class="sub-link"
+  >
+    {{ item.nombre }}
+  </a>
+</nav>
+</header>
+
+
+
+

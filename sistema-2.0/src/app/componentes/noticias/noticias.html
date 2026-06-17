@@ -1,0 +1,332 @@
+
+<div class="fondo">
+  <div class="container">
+    <div class="row justify-content-center">
+
+      <!-- Vista para alumnos — ofertas de práctica -->
+      <ng-container *ngIf="auth.esAlumno() && esCandidato">
+        <div class="oferta col-12 mb-4">
+          <h2 class="titulo">🎓 Ofertas de Práctica Disponibles</h2>
+          <p class="subtitulo">Postula a la práctica que mejor se adapte a tu perfil</p>
+        </div>
+
+        <div *ngIf="mensaje" class="col-12">
+          <div class="alert alert-success">{{ mensaje }}</div>
+        </div>
+        <div *ngIf="error" class="col-12">
+          <div class="alert alert-danger">{{ error }}</div>
+        </div>
+
+        <div *ngIf="cargando" class="col-12 text-center text-white py-4">
+          <div class="spinner-border text-light"></div>
+          <p class="mt-2">Cargando ofertas...</p>
+        </div>
+
+        <div *ngIf="!cargando && ofertas.length === 0" class="col-12">
+          <div class="alert alert-info">No hay ofertas disponibles por el momento.</div>
+        </div>
+
+        <!-- Tarjetas de ofertas -->
+        <div class="col-md-6 col-lg-4 mb-4" *ngFor="let o of ofertas">
+          <div class="card h-100 shadow-sm oferta-card">
+            <div class="card-body">
+
+              <!-- Header empresa -->
+              <div class="oferta-empresa mb-2">
+                <span class="badge bg-primary me-2">{{ o.modalidad }}</span>
+              </div>
+              <h5 class="card-title">{{ o.empresa_nombre }}</h5>
+              <p class="text-muted small mb-1">busca alumno para práctica</p>
+              <h6 class="fw-bold text-primary mb-3">{{ o.titulo }}</h6>
+
+              <!-- Descripción -->
+              <p *ngIf="o.descripcion" class="small text-muted mb-3">
+                {{ o.descripcion }}
+              </p>
+
+              <!-- Conocimientos requeridos -->
+              <div *ngIf="o.conocimientos" class="mb-3">
+                <p class="fw-bold small mb-1">Conocimientos requeridos:</p>
+                <ul class="list-unstyled mb-0">
+                  <li *ngFor="let req of parsearConocimientos(o.conocimientos)"
+                      class="small">
+                    • {{ req }}
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Datos -->
+              <div class="oferta-datos small text-muted">
+                <div *ngIf="o.horas_semanales">
+                  ⏱ {{ o.horas_semanales }} hrs/semana
+                </div>
+                <div *ngIf="o.fecha_inicio">
+                  📅 Inicio: {{ o.fecha_inicio | date:'dd/MM/yyyy' }}
+                </div>
+                <div *ngIf="o.nombre_supervisor">
+                  👤 Supervisor: {{ o.nombre_supervisor }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Botón postular -->
+            <div class="card-footer bg-transparent border-0 pb-3">
+              <button class="btn btn-primary w-100"
+                [disabled]="postulando !== null"
+                (click)="abrirModalPostular(o)">
+                {{ postulando === o.id ? '⏳ Postulando...' : '📩 Postular' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Vista para jefe de carrera — postulaciones pendientes -->
+      <ng-container *ngIf="auth.esJefeCarrera() || auth.esAdmin()">
+        <div class="oferta col-12 mb-4">
+          <h2 class="titulo">📋 Postulaciones Pendientes</h2>
+          <p class="subtitulo">Revisa y aprueba las solicitudes de práctica</p>
+        </div>
+
+        <div *ngIf="mensaje" class="col-12">
+          <div class="alert alert-success">{{ mensaje }}</div>
+        </div>
+        <div *ngIf="error" class="col-12">
+          <div class="alert alert-danger">{{ error }}</div>
+        </div>
+
+        <div *ngIf="cargandoPostulaciones" class="col-12 text-center text-white py-4">
+          <div class="spinner-border text-light"></div>
+        </div>
+
+        <div *ngIf="!cargandoPostulaciones && postulaciones.length === 0" class="col-12">
+          <div class="alert alert-info">No hay postulaciones pendientes.</div>
+        </div>
+
+        <!-- Tarjetas de postulaciones -->
+        <div class="col-md-6 col-lg-4 mb-4" *ngFor="let p of postulaciones">
+          <div class="card h-100 shadow-sm oferta-card">
+            <div class="card-body">
+
+              <!-- Badge estado -->
+              <div class="mb-2">
+                <span class="badge bg-warning text-dark">⏳ Pendiente</span>
+                <span class="badge bg-secondary ms-1">P{{ p.practica_num }}</span>
+              </div>
+
+              <!-- Alumno -->
+              <h5 class="card-title">
+                {{ p.nombres }} {{ p.apellido1 }} {{ p.apellido2 }}
+              </h5>
+              <p class="text-muted small mb-1">RUT: {{ p.rut }}</p>
+              <p class="small mb-3">
+                solicita realizar práctica con 
+                <strong>{{ p.empresa_nombre }}</strong>
+              </p>
+
+              <!-- Cargo -->
+              <h6 class="fw-bold text-primary mb-2">{{ p.titulo }}</h6>
+
+              <!-- Conocimientos -->
+              <div *ngIf="p.conocimientos" class="mb-3">
+                <p class="fw-bold small mb-1">Requisitos de la empresa:</p>
+                <ul class="list-unstyled mb-0">
+                  <li *ngFor="let req of parsearConocimientos(p.conocimientos)"
+                      class="small">
+                    • {{ req }}
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Datos -->
+              <div class="oferta-datos small text-muted">
+                <div *ngIf="p.horas_semanales">⏱ {{ p.horas_semanales }} hrs/semana</div>
+                <div *ngIf="p.fecha_inicio">📅 Inicio: {{ p.fecha_inicio | date:'dd/MM/yyyy' }}</div>
+                <div *ngIf="p.nombre_supervisor">👤 Supervisor: {{ p.nombre_supervisor }}</div>
+                <div>📅 Postulado: {{ p.created_at | date:'dd/MM/yyyy' }}</div>
+              </div>
+            </div>
+
+            <!-- Botones aceptar/rechazar -->
+            <div class="card-footer bg-transparent border-0 pb-3 d-flex gap-2">
+              <button class="btn btn-success flex-grow-1"
+                      [disabled]="resolviendoId !== null"
+                      (click)="aceptar(p)">
+                {{ resolviendoId === p.id ? '⏳...' : '✅ Aceptar' }}
+              </button>
+              <button class="btn btn-danger flex-grow-1"
+                      [disabled]="resolviendoId !== null"
+                      (click)="abrirModalRechazo(p)">
+                ❌ Rechazar
+              </button>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Modal rechazo -->
+      <div class="modal-overlay" *ngIf="mostrarModalRechazo"
+          (click)="mostrarModalRechazo = false">
+        <div class="modal-notif" style="max-width:450px"
+            (click)="$event.stopPropagation()">
+          <div class="modal-notif-header">
+            <h5>❌ Rechazar postulación</h5>
+            <button class="btn-cerrar" (click)="mostrarModalRechazo = false">✕</button>
+          </div>
+          <div class="modal-notif-body p-3">
+            <p class="text-muted small mb-3">
+              ¿Estás seguro de rechazar la postulación de 
+              <strong>{{ postulacionSeleccionada?.nombres }} {{ postulacionSeleccionada?.apellido1 }}</strong>?
+            </p>
+            <div class="mb-3">
+              <label class="form-label">Motivo del rechazo (opcional)</label>
+              <textarea class="form-control form-control-sm" rows="3"
+                        [(ngModel)]="motivoRechazo"
+                        placeholder="Indica el motivo..."></textarea>
+            </div>
+          </div>
+          <div class="modal-notif-footer">
+            <button class="btn btn-sm btn-outline-secondary"
+                    (click)="mostrarModalRechazo = false">Cancelar</button>
+            <button class="btn btn-sm btn-danger"
+                    (click)="rechazar()">
+              ❌ Confirmar rechazo
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista para profesor — informes asignados para revisión -->
+      <ng-container *ngIf="auth.esProfesor()">
+        <div class="oferta col-12 mb-4">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h2 class="titulo">📄 Informes Asignados para Revisión</h2>
+              <p class="subtitulo">Alumnos cuyos informes debes revisar</p>
+            </div>
+            <button *ngIf="notifProfesor.some(n => !n.leida)"
+                    class="btn btn-sm btn-outline-light"
+                    (click)="marcarTodasLeidasProfesor()">
+              ✓ Marcar todas leídas
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="cargandoNotifProfesor" class="col-12 text-center text-white py-4">
+          <div class="spinner-border text-light"></div>
+        </div>
+
+        <div *ngIf="!cargandoNotifProfesor && notifProfesor.length === 0" class="col-12">
+          <div class="alert alert-info">No tienes informes asignados.</div>
+        </div>
+
+        <div class="col-md-6 col-lg-4 mb-4" *ngFor="let n of notifProfesor">
+          <div class="card h-100 shadow-sm oferta-card"
+               [class.border-warning]="!n.leida">
+            <div class="card-body">
+              <div class="mb-2">
+                <span class="badge bg-primary">Práctica {{ n.practica_num }}</span>
+                <span *ngIf="!n.leida" class="badge bg-warning text-dark ms-1">Nueva</span>
+              </div>
+              <h5 class="card-title">{{ n.nombres }} {{ n.apellido1 }} {{ n.apellido2 }}</h5>
+              <p class="text-muted small mb-1">RUT: {{ n.rut }}</p>
+              <p class="small text-muted mb-3">{{ n.mensaje }}</p>
+              <p class="small text-muted mb-0">
+                📅 {{ n.created_at | date:'dd/MM/yyyy HH:mm' }}
+              </p>
+            </div>
+            <div class="card-footer bg-transparent border-0 pb-3">
+              <button class="btn btn-primary w-100" (click)="abrirModalRevision(n)">
+                🔍 Ver detalles e informe
+              </button>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Modal revisión de informe (profesor) -->
+      <div class="modal-overlay" *ngIf="mostrarModalRevision"
+           (click)="mostrarModalRevision = false">
+        <div class="modal-notif" style="max-width:520px"
+             (click)="$event.stopPropagation()">
+          <div class="modal-notif-header">
+            <h5>📄 Detalle del alumno</h5>
+            <button class="btn-cerrar" (click)="mostrarModalRevision = false">✕</button>
+          </div>
+          <div class="modal-notif-body p-3" *ngIf="notifSeleccionada">
+            <h6 class="mb-3">Datos del alumno</h6>
+            <table class="table table-sm table-borderless mb-3">
+              <tbody>
+                <tr>
+                  <th class="text-muted" style="width:35%">Nombres</th>
+                  <td>{{ notifSeleccionada.nombres }} {{ notifSeleccionada.apellido1 }} {{ notifSeleccionada.apellido2 }}</td>
+                </tr>
+                <tr>
+                  <th class="text-muted">RUT</th>
+                  <td>{{ notifSeleccionada.rut }}</td>
+                </tr>
+                <tr>
+                  <th class="text-muted">Práctica</th>
+                  <td>Práctica {{ notifSeleccionada.practica_num }}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Informe -->
+            <div *ngIf="notifSeleccionada.informe_final" class="mb-3">
+              <small class="text-muted d-block mb-1">Informe del alumno</small>
+              <a [href]="'http://localhost/' + notifSeleccionada.informe_final"
+                 target="_blank"
+                 class="btn btn-sm btn-outline-success w-100">
+                📄 Ver / Descargar informe
+              </a>
+            </div>
+            <div *ngIf="!notifSeleccionada.informe_final" class="alert alert-warning small mb-3">
+              ⚠️ El alumno aún no ha subido su informe.
+            </div>
+          </div>
+          <div class="modal-notif-footer">
+            <button class="btn btn-sm btn-outline-secondary"
+                    (click)="mostrarModalRevision = false">Cerrar</button>
+            <button class="btn btn-sm btn-primary"
+                    (click)="abrirEvaluacion()">
+              📝 Evaluar alumno
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal confirmar postulación -->
+      <div class="modal-overlay" *ngIf="mostrarModalPostular"
+          (click)="mostrarModalPostular = false">
+        <div class="modal-notif" style="max-width:400px"
+            (click)="$event.stopPropagation()">
+          <div class="modal-notif-header">
+            <h5>📩 Confirmar postulación</h5>
+            <button class="btn-cerrar" (click)="mostrarModalPostular = false">✕</button>
+          </div>
+          <div class="modal-notif-body p-3">
+            <p class="mb-2">
+              <strong>{{ ofertaSeleccionada?.empresa_nombre }}</strong><br>
+              <span class="text-muted small">{{ ofertaSeleccionada?.titulo }}</span>
+            </p>
+            <div class="alert alert-info mb-0">
+              📋 Postularás para <strong>Práctica {{ practicaNumAlumno }}</strong>
+              — determinado según tu avance académico.
+            </div>
+          </div>
+          <div class="modal-notif-footer">
+            <button class="btn btn-sm btn-outline-secondary"
+                    (click)="mostrarModalPostular = false">Cancelar</button>
+            <button class="btn btn-sm btn-primary"
+                    [disabled]="postulando !== null"
+                    (click)="confirmarPostulacion()">
+              {{ postulando ? '⏳...' : '📩 Confirmar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

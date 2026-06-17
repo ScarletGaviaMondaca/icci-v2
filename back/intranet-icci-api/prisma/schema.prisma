@@ -1,0 +1,555 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model actividades_certificado {
+  id     Int           @id @default(autoincrement())
+  nombre String        @db.VarChar(255)
+  tipo   TipoActividad
+}
+
+model alumnos {
+  id                    Int                     @id @default(autoincrement())
+  rut                   String                  @unique(map: "rut") @db.VarChar(15)
+  nombres               String                  @db.VarChar(50)
+  apellido1             String                  @db.VarChar(50)
+  apellido2             String?                 @db.VarChar(50)
+  /// NULL = alumno especial (sin plan asignado)
+  plan                  Int?
+  clave                 String?                 @db.VarChar(255)
+  sexo                  String?                 @db.VarChar(10)
+  fecha_nacimiento      DateTime?               @db.Date
+  nacionalidad          String?                 @db.VarChar(50)
+  etnia                 String?                 @db.VarChar(50)
+  direccion             String?                 @db.VarChar(255)
+  telefono              String?                 @db.VarChar(20)
+  telefono_emergencia   String?                 @db.VarChar(20)
+  correo_personal       String?                 @db.VarChar(100)
+  correo_institucional  String?                 @db.VarChar(100)
+  colegio               String?                 @db.VarChar(255)
+  anio_ingreso          Int?                    @db.Year
+  fecha_matricula       DateTime?               @db.DateTime(0)
+  sistema_ingreso       String?                 @db.VarChar(50)
+  puntaje_ingreso       Int?
+  nem                   Int?
+  avance                Int?
+  gratuidad             String?                 @db.VarChar(255)
+  tipo                  TipoAlumno?             @default(regular)
+  anio_reingreso        Int?
+  plan_texto            String?                 @db.VarChar(50)
+  notificaciones        notificaciones[]
+  notificaciones_alumno notificaciones_alumno[]
+  postulaciones         postulaciones[]
+  seguimiento           seguimiento_practica[]
+  usuario               usuarios[]
+
+  @@index([plan], map: "idx_alumnos_plan")
+}
+
+model campus_buildings {
+  id          String  @id @db.VarChar(10)
+  label       String  @db.VarChar(10)
+  type        String  @db.VarChar(20)
+  nombre      String  @db.VarChar(200)
+  descripcion String? @db.Text
+  telefono    String? @db.VarChar(50)
+  correo      String? @db.VarChar(100)
+  web         String? @db.VarChar(200)
+  direccion   String? @db.VarChar(300)
+  horario     String? @db.VarChar(100)
+  x           Float   @default(0) @db.Float
+  y           Float   @default(0) @db.Float
+}
+
+model certificados {
+  id             Int      @id @default(autoincrement())
+  nombre         String   @db.VarChar(255)
+  alumno_rut     String   @db.VarChar(15)
+  practica_num   Int      @db.TinyInt
+  creado_por     String   @db.VarChar(100)
+  fecha_creacion DateTime @default(now()) @db.DateTime(0)
+  ruta_archivo   String   @db.VarChar(500)
+}
+
+model certificados_externos {
+  id            Int      @id @default(autoincrement())
+  nombre        String   @db.VarChar(255)
+  asignatura    String?  @db.VarChar(255)
+  actividad     String?  @db.VarChar(255)
+  alumno_id     Int
+  alumno_rut    String   @db.VarChar(15)
+  fecha_emision DateTime @db.Date
+  subido_por    String   @db.VarChar(100)
+  fecha_subida  DateTime @default(now()) @db.DateTime(0)
+  ruta_original String   @db.VarChar(500)
+  ruta_final    String   @db.VarChar(500)
+  codigo        String   @db.VarChar(9)
+
+  @@index([alumno_id], map: "alumno_id")
+}
+
+model documentos {
+  id         Int      @id @default(autoincrement())
+  nombre     String   @db.VarChar(255)
+  categoria  String   @db.VarChar(100)
+  archivo    String   @db.VarChar(255)
+  activo     Int?     @default(1) @db.TinyInt
+  created_at DateTime @default(now()) @db.Timestamp(0)
+}
+
+model empleadores {
+  id         Int                @id @default(autoincrement())
+  empresa_id Int
+  nombres    String             @db.VarChar(100)
+  apellido1  String             @db.VarChar(100)
+  apellido2  String?            @db.VarChar(100)
+  cargo      String?            @db.VarChar(100)
+  correo     String             @unique(map: "correo") @db.VarChar(150)
+  telefono   String?            @db.VarChar(20)
+  created_at DateTime           @default(now()) @db.Timestamp(0)
+  tokens     empleador_tokens[]
+  empresa    empresas           @relation(fields: [empresa_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "empleadores_ibfk_1")
+  ofertas    ofertas_practica[]
+  usuario    usuarios[]
+
+  @@index([empresa_id], map: "empresa_id")
+}
+
+model empleador_tokens {
+  id           Int          @id @default(autoincrement())
+  token        String       @unique(map: "token") @db.VarChar(64)
+  correo       String       @db.VarChar(150)
+  empleador_id Int?
+  usado        Int?         @default(0) @db.TinyInt
+  created_at   DateTime     @default(now()) @db.Timestamp(0)
+  empleador    empleadores? @relation(fields: [empleador_id], references: [id], onUpdate: Restrict, map: "empleador_tokens_ibfk_1")
+
+  @@index([empleador_id], map: "empleador_id")
+}
+
+model empresas {
+  id              Int                    @id @default(autoincrement())
+  nombre          String                 @unique(map: "nombre") @db.VarChar(150)
+  activo          Int?                   @default(1) @db.TinyInt
+  created_at      DateTime               @default(now()) @db.Timestamp(0)
+  sector          SectorEmpresa?         @default(Privado)
+  region          String?                @db.VarChar(100)
+  comuna          String?                @db.VarChar(100)
+  direccion       String?                @db.VarChar(255)
+  tipo_convenio   TipoConvenio?          @default(Sin_especificar)
+  estado_convenio EstadoConvenio?        @default(Sin_convenio)
+  fecha_convenio  DateTime?              @db.Date
+  empleadores     empleadores[]
+  seguimientos    seguimiento_practica[]
+}
+
+model exalumnos {
+  id              Int                  @id @default(autoincrement())
+  rut             String               @unique(map: "rut") @db.VarChar(20)
+  paterno         String?              @db.VarChar(100)
+  materno         String?              @db.VarChar(100)
+  nombres         String?              @db.VarChar(150)
+  anio_ingreso    Int?
+  anio_titulacion Int?
+  nombre_carrera  String?              @db.VarChar(255)
+  facultad        String?              @db.VarChar(255)
+  nombre_titulo   String?              @db.VarChar(255)
+  created_at      DateTime             @default(now()) @db.Timestamp(0)
+  emails          exalumno_emails[]
+  telefonos       exalumno_telefonos[]
+  trabajos        exalumno_trabajos[]
+}
+
+model exalumno_emails {
+  id          Int        @id @default(autoincrement())
+  exalumno_id Int?
+  email       String?    @db.VarChar(255)
+  exalumno    exalumnos? @relation(fields: [exalumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "exalumno_emails_ibfk_1")
+
+  @@index([exalumno_id], map: "exalumno_id")
+}
+
+model exalumno_telefonos {
+  id          Int        @id @default(autoincrement())
+  exalumno_id Int?
+  telefono    String?    @db.VarChar(50)
+  exalumno    exalumnos? @relation(fields: [exalumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "exalumno_telefonos_ibfk_1")
+
+  @@index([exalumno_id], map: "exalumno_id")
+}
+
+model exalumno_trabajos {
+  id                Int        @id @default(autoincrement())
+  exalumno_id       Int?
+  empresa           String?    @db.VarChar(255)
+  cargo             String?    @db.VarChar(255)
+  sueldo_aproximado Int?
+  actual            Boolean?   @default(false)
+  exalumno          exalumnos? @relation(fields: [exalumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "exalumno_trabajos_ibfk_1")
+
+  @@index([exalumno_id], map: "exalumno_id")
+}
+
+model hito_duraciones {
+  id             Int  @id @default(autoincrement())
+  hito_num       Int
+  practica_num   Int
+  duracion_dias  Int?
+  duracion_horas Int?
+
+  @@unique([hito_num, practica_num], map: "uk_hito")
+}
+
+model info_carrera {
+  id                Int     @id @default(autoincrement())
+  nombre            String  @db.VarChar(255)
+  codigo_demre      String? @db.VarChar(50)
+  grado_titulo      String? @db.VarChar(255)
+  facultad          String? @db.VarChar(120)
+  departamento      String? @db.VarChar(120)
+  director          String? @db.VarChar(120)
+  duracion          String? @db.VarChar(30)
+  modalidad         String? @db.VarChar(50)
+  jornada           String? @db.VarChar(30)
+  sede              String? @db.VarChar(50)
+  anio_creacion     String? @db.VarChar(10)
+  ultima_modif_plan String? @db.VarChar(15)
+  perfil_egreso     String? @db.Text
+}
+
+model malla {
+  id       Int     @id @default(autoincrement())
+  plan_id  Int?
+  nro      String? @db.VarChar(10)
+  nombre   String? @db.VarChar(255)
+  tipo     String? @db.VarChar(50)
+  pm       Int?
+  creditos Int?
+  hc       Int?
+  ht       Int?
+  hl       Int?
+  codigo   String? @db.VarChar(20)
+  plan     plan?   @relation(fields: [plan_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_malla_plan")
+
+  @@unique([plan_id, codigo], map: "uq_malla_plan_codigo")
+  @@index([codigo], map: "idx_malla_codigo")
+  @@index([plan_id], map: "idx_malla_plan")
+}
+
+model malla_restriccion {
+  id          Int                  @id @default(autoincrement())
+  plan_id     Int
+  ramo_codigo String               @db.VarChar(20)
+  req_codigo  String               @db.VarChar(20)
+  tipo        TipoRestriccionMalla @default(PRE)
+  created_at  DateTime             @default(now()) @db.Timestamp(0)
+  plan        plan                 @relation(fields: [plan_id], references: [id], onDelete: Cascade, map: "fk_mr_plan")
+
+  @@unique([plan_id, ramo_codigo, req_codigo, tipo], map: "uq_mr")
+  @@unique([plan_id, ramo_codigo, req_codigo], map: "uq_plan_ramo_req")
+  @@index([plan_id], map: "idx_mr_plan")
+  @@index([plan_id, ramo_codigo], map: "idx_mr_ramo")
+  @@index([plan_id, req_codigo], map: "idx_mr_req")
+  @@index([plan_id, ramo_codigo], map: "idx_plan_ramo")
+  @@index([plan_id, req_codigo], map: "idx_plan_req")
+}
+
+model notificaciones {
+  id                Int                   @id @default(autoincrement())
+  seguimiento_id    Int?
+  alumno_id         Int
+  hito              String                @db.VarChar(50)
+  hito_label        String                @db.VarChar(100)
+  fecha_vencimiento DateTime              @db.Date
+  leida             Int?                  @default(0) @db.TinyInt
+  created_at        DateTime              @default(now()) @db.Timestamp(0)
+  seguimiento       seguimiento_practica? @relation(fields: [seguimiento_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "notificaciones_ibfk_1")
+  alumno            alumnos               @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "notificaciones_ibfk_2")
+
+  @@index([alumno_id], map: "alumno_id")
+  @@index([seguimiento_id], map: "seguimiento_id")
+}
+
+model notificaciones_alumno {
+  id         Int                    @id @default(autoincrement())
+  alumno_id  Int
+  tipo       TipoNotificacionAlumno
+  titulo     String                 @db.VarChar(150)
+  mensaje    String?                @db.Text
+  leida      Int?                   @default(0) @db.TinyInt
+  created_at DateTime               @default(now()) @db.Timestamp(0)
+  alumno     alumnos                @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "notificaciones_alumno_ibfk_1")
+
+  @@index([alumno_id], map: "alumno_id")
+}
+
+model ofertas_practica {
+  id                Int              @id @default(autoincrement())
+  empleador_id      Int
+  titulo            String           @db.VarChar(150)
+  descripcion       String?          @db.Text
+  conocimientos     String?          @db.Text
+  tareas            String?          @db.Text
+  modalidad         ModalidadOferta? @default(Presencial)
+  horas_semanales   Int?
+  horas_totales     Int?
+  fecha_inicio      DateTime?        @db.Date
+  fecha_termino     DateTime?        @db.Date
+  nombre_supervisor String?          @db.VarChar(150)
+  practica_num      Int?             @default(1) @db.TinyInt
+  activo            Int?             @default(1) @db.TinyInt
+  created_at        DateTime         @default(now()) @db.Timestamp(0)
+  empleador         empleadores      @relation(fields: [empleador_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "ofertas_practica_ibfk_1")
+  postulaciones     postulaciones[]
+
+  @@index([empleador_id], map: "empleador_id")
+}
+
+model postulaciones {
+  id             Int                @id @default(autoincrement())
+  oferta_id      Int
+  alumno_id      Int
+  estado         EstadoPostulacion? @default(pendiente)
+  motivo_rechazo String?            @db.Text
+  carta_ruta     String?            @db.VarChar(255)
+  created_at     DateTime           @default(now()) @db.Timestamp(0)
+  practica_num   Int?               @default(1) @db.TinyInt
+  oferta         ofertas_practica   @relation(fields: [oferta_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "postulaciones_ibfk_1")
+  alumno         alumnos            @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "postulaciones_ibfk_2")
+
+  @@index([alumno_id], map: "alumno_id")
+  @@index([oferta_id], map: "oferta_id")
+}
+
+model practica {
+  id      Int    @id @default(autoincrement())
+  plan_id Int
+  codigo  String @db.VarChar(20)
+  nombre  String @db.VarChar(100)
+  orden   Int
+  plan    plan   @relation(fields: [plan_id], references: [id], onUpdate: Restrict, map: "practica_ibfk_1")
+
+  @@unique([plan_id, codigo], map: "uq_practica_plan_codigo")
+}
+
+model plan {
+  id                   Int                 @id @default(autoincrement())
+  titulo               String?             @db.VarChar(150)
+  anio                 Int?
+  version              String?             @db.VarChar(20)
+  duracion             Int?
+  fecha_oficializacion DateTime?           @db.Date
+  fecha_inicio         DateTime?           @db.Date
+  fecha_cierre         DateTime?           @db.Date
+  enfoque              String?             @db.Text
+  perfil_egreso        String?             @db.Text
+  proposito_formativo  String?             @db.Text
+  malla                malla[]
+  malla_restriccion    malla_restriccion[]
+  practicas            practica[]
+}
+
+model profesores {
+  id           Int                    @id @default(autoincrement())
+  nombre       String                 @db.VarChar(100)
+  apellido1    String                 @db.VarChar(100)
+  apellido2    String?                @db.VarChar(100)
+  correo       String?                @db.VarChar(150)
+  tipo         String?                @db.VarChar(100)
+  foto         String?                @db.VarChar(255)
+  activo       Int?                   @default(1) @db.TinyInt
+  created_at   DateTime               @default(now()) @db.Timestamp(0)
+  seguimientos seguimiento_practica[]
+  usuario      usuarios[]
+}
+
+model seguimiento_observaciones {
+  id                  Int                  @id @default(autoincrement())
+  seguimiento_id      Int
+  hito                String               @db.VarChar(50)
+  texto               String?              @db.Text
+  archivo             String?              @db.VarChar(255)
+  fecha_recepcion     DateTime?            @db.Date
+  fecha_registro      DateTime             @default(now()) @db.Timestamp(0)
+  updated_at          DateTime             @default(now()) @updatedAt @db.Timestamp(0)
+  fecha_fin_recepcion DateTime?            @db.Date
+  seguimiento         seguimiento_practica @relation(fields: [seguimiento_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_observaciones_seguimiento")
+
+  @@index([seguimiento_id], map: "fk_observaciones_seguimiento")
+}
+
+model seguimiento_practica {
+  id                              Int                         @id @default(autoincrement())
+  alumno_id                       Int
+  plan                            String                      @db.VarChar(20)
+  practica_num                    Int                         @default(1) @db.TinyInt
+  practica1_estado                Int                         @default(0) @db.TinyInt
+  informe_elab_estado             Int                         @default(0) @db.TinyInt
+  informe_rev_estado              Int                         @default(0) @db.TinyInt
+  eval_empresa_estado             Int                         @default(0) @db.TinyInt
+  comite_carrera_estado           Int                         @default(0) @db.TinyInt
+  envioreg_estado                 Int                         @default(0) @db.TinyInt
+  updated_at                      DateTime                    @default(now()) @updatedAt @db.Timestamp(0)
+  practica1_fecha_inicio          DateTime?                   @db.Date
+  practica1_fecha_termino         DateTime?                   @db.Date
+  practica1_empresa               String?                     @db.VarChar(100)
+  practica1_horas_sem             Int?
+  practica1_horas_tot             Int?
+  practica1_supervisor            String?                     @db.VarChar(255)
+  informe_elab_fecha_inicio       DateTime?                   @db.Date
+  informe_elab_fecha_termino      DateTime?                   @db.Date
+  informe_rev_fecha_inicio        DateTime?                   @db.Date
+  informe_rev_fecha_termino       DateTime?                   @db.Date
+  eval_empresa_fecha_inicio       DateTime?                   @db.Date
+  eval_empresa_fecha_termino      DateTime?                   @db.Date
+  comite_carrera_fecha_inicio     DateTime?                   @db.Date
+  comite_carrera_fecha_termino    DateTime?                   @db.Date
+  envioreg_fecha_inicio           DateTime?                   @db.Date
+  envioreg_fecha_termino          DateTime?                   @db.Date
+  numero_carta                    String?                     @db.VarChar(100)
+  estado_final_practica           Int?                        @default(0) @db.TinyInt
+  informe_final                   String?                     @db.VarChar(255)
+  eval_empresa_archivo            String?                     @db.VarChar(255)
+  herramientas                    String?                     @db.Text
+  informe_rev_profesor_id         Int?
+  informe_rev_carta_peticion      String?                     @db.VarChar(100)
+  informe_rev_carta_asignacion    String?                     @db.VarChar(100)
+  informe_fecha_subida            DateTime?                   @db.DateTime(0)
+  empresa_id                      Int?
+  practica1_jefe                  String?                     @db.VarChar(150)
+  practica1_correo                String?                     @db.VarChar(150)
+  practica1_telefono              String?                     @db.VarChar(20)
+  envioreg_fecha_envio            DateTime?                   @db.Date
+  practica_anio_aprobacion        Int?
+  practica_semestre_aprobacion    String?                     @db.VarChar(20)
+  acta_firmada                    String?                     @db.VarChar(255)
+  practica1_fecha_entrega         DateTime?                   @db.Date
+  informe_elab_fecha_entrega      DateTime?                   @db.Date
+  informe_rev_fecha_entrega       DateTime?                   @db.Date
+  eval_empresa_fecha_entrega      DateTime?                   @db.Date
+  comite_carrera_fecha_entrega    DateTime?                   @db.Date
+  envioreg_fecha_entrega          DateTime?                   @db.Date
+  carta_solicitud                 String?                     @db.VarChar(255)
+  practica1_fecha_aprobacion      DateTime?                   @db.Date
+  informe_elab_fecha_aprobacion   DateTime?                   @db.Date
+  informe_rev_fecha_aprobacion    DateTime?                   @db.Date
+  eval_empresa_fecha_aprobacion   DateTime?                   @db.Date
+  comite_carrera_fecha_aprobacion DateTime?                   @db.Date
+  envioreg_fecha_aprobacion       DateTime?                   @db.Date
+  notificaciones                  notificaciones[]
+  observaciones                   seguimiento_observaciones[]
+  alumno                          alumnos                     @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_seguimiento_alumno")
+  empresa                         empresas?                   @relation(fields: [empresa_id], references: [id], onUpdate: Restrict, map: "fk_seguimiento_empresa")
+  profesor_revisor                profesores?                 @relation(fields: [informe_rev_profesor_id], references: [id], onUpdate: Restrict, map: "fk_seguimiento_profesor")
+
+  @@unique([alumno_id, practica_num], map: "alumno_id")
+  @@unique([alumno_id, plan, practica_num], map: "uq_alumno_plan_practica")
+  @@index([empresa_id], map: "fk_seguimiento_empresa")
+  @@index([informe_rev_profesor_id], map: "fk_seguimiento_profesor")
+  @@index([alumno_id], map: "idx_alumno")
+  @@index([plan], map: "idx_plan")
+}
+
+model usuarios {
+  id           Int          @id @default(autoincrement())
+  username     String       @unique(map: "username") @db.VarChar(100)
+  password     String       @db.VarChar(255)
+  rol          RolUsuario?
+  alumno_id    Int?
+  profesor_id  Int?
+  activo       Int?         @default(1) @db.TinyInt
+  created_at   DateTime     @default(now()) @db.Timestamp(0)
+  nombre       String?      @db.VarChar(100)
+  apellido1    String?      @db.VarChar(100)
+  apellido2    String?      @db.VarChar(100)
+  correo       String?      @db.VarChar(150)
+  empleador_id Int?
+  alumno       alumnos?     @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_usuarios_alumno")
+  empleador    empleadores? @relation(fields: [empleador_id], references: [id], onUpdate: Restrict, map: "fk_usuarios_empleador")
+  profesor     profesores?  @relation(fields: [profesor_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_usuarios_profesores")
+
+  @@index([alumno_id], map: "fk_usuarios_alumno")
+  @@index([empleador_id], map: "fk_usuarios_empleador")
+  @@index([profesor_id], map: "fk_usuarios_profesores")
+}
+
+model organigrama {
+  id         Int     @id @default(autoincrement())
+  nombre     String  @db.VarChar(100)
+  correo     String? @db.VarChar(100)
+  rol        String  @db.VarChar(50)
+  lugar      String? @db.VarChar(100)
+  ruta_foto  String? @default("uploads/default.jpg") @db.VarChar(100)
+  dpto       String  @default("") @db.VarChar(100)
+  telefono   String? @db.VarChar(20)
+  perfil_url String? @db.VarChar(500)
+}
+
+enum TipoAlumno {
+  regular
+  especial
+}
+
+enum RolUsuario {
+  admin
+  secretaria
+  alumno
+  empleador
+  jefe_carrera
+  profesor
+}
+
+enum TipoActividad {
+  asignatura
+  actividad
+}
+
+enum SectorEmpresa {
+  Privado
+  Publico @map("Público")
+}
+
+enum TipoConvenio {
+  Sin_especificar       @map("Sin especificar")
+  Convenio_marco        @map("Convenio marco")
+  Convenio_especifico   @map("Convenio específico de práctica")
+  Convenio_colaboracion @map("Convenio de colaboración")
+  Convenio_individual   @map("Convenio individual de práctica")
+  Otro
+}
+
+enum EstadoConvenio {
+  Sin_convenio @map("Sin convenio")
+  Vigente
+  No_vigente   @map("No vigente")
+  En_tramite   @map("En trámite")
+}
+
+enum ModalidadOferta {
+  Presencial
+  Remota
+  Hibrida    @map("Híbrida")
+}
+
+enum EstadoPostulacion {
+  pendiente
+  aceptada
+  rechazada
+}
+
+enum TipoNotificacionAlumno {
+  postulacion_pendiente
+  postulacion_aceptada
+  postulacion_rechazada
+  hito_aprobado
+  hito_excedido
+}
+
+enum TipoRestriccionMalla {
+  PRE
+  CO
+}

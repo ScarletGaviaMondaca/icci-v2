@@ -1,0 +1,173 @@
+:root {
+  --perfil-azul: #054182;
+  --perfil-bg-card: #fff;
+  --perfil-sombra: 0 10px 32px #05418213, 0 1px 4px #b2c2e32e;
+  --perfil-verde: #22a95c;
+  --perfil-rojo: #db4747;
+  --perfil-borde: #bed1ea;
+}
+
+/* ========== CONTENEDOR ========== */
+.perfil {
+  background: white;
+  border-radius: 16px;
+  box-shadow: var(--perfil-sombra);
+  padding: 25px 28px 16px 28px;
+  max-width: 600px;
+  margin: 40px auto 28px auto;
+}
+
+/* ========== TÍTULO ========== */
+.titulo {
+  color: #054182;
+  font-family: cursive, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 3px;
+  letter-spacing: 0.01em;
+}
+
+h5 {
+  color: var(--perfil-azul);
+  font-weight: 500;
+  font-size: 1.15rem;
+}
+
+.card {
+  background: var(--perfil-bg-card);
+  border-radius: 13px;
+  box-shadow: 0 5px 16px #95bff720;
+  margin-bottom: 20px;
+  border: 1.3px solid var(--perfil-borde);
+}
+
+.card-body {
+  padding: 20px 17px 0 17px;
+}
+
+.opcion, .btn-success, .btn-outline-secondary {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background .14s, color .14s, border-color .13s;
+  box-shadow: 0 1.5px 8px #b2c2e316;
+  border: 1.2px solid var(--perfil-azul);
+  background: var(--perfil-azul);
+  color: #fff !important;
+}
+.opcion:hover, .btn-success:hover {
+  background: #fff;
+  color: var(--perfil-azul) !important;
+}
+.btn-outline-secondary {
+  background: #f6f9fd;
+  color: #054182 !important;
+  border: 1.18px solid #bed1ea;
+}
+.btn-outline-secondary:hover {
+  background: #d5e6f7 !important;
+  color: #073064 !important;
+}
+
+.btn-sm { font-size: 0.96rem; padding: 5px 16px; }
+.btn-success { background: #22a95c !important; border-color: #22a95c;}
+.btn-success:hover { background: #edfff4!important; color:#19944d!important;}
+.btn:disabled, .btn[disabled] {opacity:.55; pointer-events:none;}
+
+.alert {
+  font-size: .99rem;
+  padding: 9px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  margin-bottom: 15px;
+}
+.alert-success {color: #246f36;background: #eafbe7;border: 1.5px solid #9ae2b0;}
+.alert-danger  {color: #be2828;background: #fff4f2;border: 1.2px solid #ffbcb3;}
+
+/* ==== badge roles ==== */
+.badge {
+  padding: 5px 13px;
+  border-radius: 15px;
+  font-size: 1.01em;
+  font-weight: 470;
+  letter-spacing: .015em;
+  text-transform: capitalize;
+  margin-right: 2px;
+}
+.bg-danger {background: #ffedea!important;color: #d43825;}
+.bg-info {background: #dbf3fb!important; color:#27578c;}
+.bg-secondary {background: #ece7ff!important;color: #525380;}
+
+/* ========== FORMULARIO DE DATOS USUARIO ========== */
+.form-label {
+  color: #4f6581;
+  font-weight: 490;
+  margin-bottom: 2px;
+  font-size: .99rem;
+}
+.form-control {
+  font-size: 1.03rem;
+  border-radius: 7px;
+  border: 1.1px solid #bdd7ee;
+  background: #f6f9fd;
+  color: #054182;
+  padding: 7px 9px;
+  transition: border-color .12s, box-shadow .12s;
+}
+.form-control:focus {
+  border-color: #054182;
+  background: #eaf2fd;
+  box-shadow: 0 0 0 2px #05418211;
+}
+.form-control-sm { font-size: .93rem; padding: 4px 7px;}
+.fw-bold {font-weight: 560;}
+.text-muted { color: #7b8da4 !important;}
+
+input[type="email"].form-control:invalid {border-color: #e65336;}
+/* Error y success para inputs */
+.text-danger {color: #db4747 !important;}
+.text-success {color: #1c8c48 !important;}
+.form-text small { font-size: 0.93rem; }
+
+/* ========== CONTENEDORES BOOTSTRAP ========== */
+.row.g-3 { row-gap: 10px; }
+.col-12, .col-sm-6 { margin-bottom: 6px; }
+@media (max-width: 600px){
+  .perfil.container { padding: 12px 4px 8px 4px; }
+  .titulo { font-size: 1.08rem;}
+  .card-body { padding:10px 0 0 0;}
+}
+
+.input-group {display: flex;align-items: stretch;}
+.input-group input {border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important;}
+.input-group button {border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important;}
+
+input[type="password"].form-control, input[type="text"].form-control {font-size: .97rem;}
+/* Ojo del input-group */
+.bi-eye, .bi-eye-slash {font-size:1.18em; opacity:0.82;}
+
+input:disabled, .form-control:disabled {background: #f3f6fa !important;}
+
+/* Animación botones */
+.btn, .opcion, .btn-sm { transition: background .14s, color .14s, border-color .13s; cursor:pointer;}
+
+input.ng-invalid.ng-touched { border-color: #e65336; background: #fff4f1; color: #df3030; }
+
+input[type="email"]:invalid.ng-touched { border-color: #e65336;}
+
+input[type="password"].form-control, input[type="text"].form-control {
+  transition: border-color .14s, color .14s;
+}
+
+label.form-label.text-muted,
+label.form-label {
+  margin-bottom: 1.7px;
+  font-size: .97em;
+}
+
+input[type="email"].form-control-sm:invalid {border-color: #e65336 !important;}
+
+/* ========== ADICIONALES PARA RESPONSIVE ========== */
+@media (max-width: 420px){
+  .card {padding-left: 0; padding-right: 0;}
+  .col-12, .col-sm-6 {margin-bottom: 3px;}
+}

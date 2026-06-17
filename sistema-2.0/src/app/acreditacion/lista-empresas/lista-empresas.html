@@ -1,0 +1,94 @@
+<div class="empresas container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="titulo">🏢 Lista de Empresas</h3>
+      <small class="text-muted">Empresas donde alumnos realizaron su práctica</small>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-success" (click)="exportarExcel()">
+        📊 Excel
+      </button>
+      <button class="btn btn-sm btn-danger" (click)="exportarPDF()">
+        📄 PDF
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+  <div *ngIf="cargando" class="text-center py-4">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div *ngIf="!cargando" class="card">
+    <div class="table-wrapper">
+      <table class="table table-hover mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>#</th>
+            <th>
+              Empresa
+              <input type="text" class="form-control form-control-sm mt-1"
+                     [(ngModel)]="filtroEmpresa"
+                     (ngModelChange)="paginaActual=1"
+                     placeholder="Filtrar...">
+            </th>
+            <th>Alumno
+              <input type="text" class="form-control form-control-sm mt-1"
+                     [(ngModel)]="filtroAlumno"
+                     (ngModelChange)="paginaActual=1"
+                     placeholder="Filtrar...">
+            </th>
+            <th>Jefe</th>
+            <th>Supervisor</th>
+            <th>Correo</th>
+            <th>Teléfono</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let d of paginados(); let i = index; trackBy: trackBy">
+            <td>{{ (paginaActual - 1) * itemsPorPagina + i + 1 }}</td>
+            <td><strong>{{ d.empresa }}</strong></td>
+            <td>{{ d.nombres }} {{ d.apellido1 }} {{ d.apellido2 }}</td>
+            <td>{{ d.jefe || '—' }}</td>
+            <td>{{ d.supervisor || '—' }}</td>
+            <td>{{ d.correo || '—' }}</td>
+            <td>{{ d.telefono || '—' }}</td>
+          </tr>
+          <tr *ngIf="filtrados().length === 0">
+            <td colspan="10" class="text-center text-muted py-3">
+              Sin registros
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  <div *ngIf="filtrados().length > 0"
+       class="d-flex justify-content-between align-items-center mt-3">
+    <small class="text-muted">
+      Página {{ paginaActual }} de {{ totalPaginas() }}
+      (Total: {{ filtrados().length }})
+    </small>
+    <nav>
+      <ul class="pagination mb-0">
+        <li class="page-item" [class.disabled]="paginaActual === 1">
+          <button class="page-link"
+                  (click)="cambiarPagina(paginaActual - 1)"
+                  [disabled]="paginaActual === 1">Anterior</button>
+        </li>
+        <li class="page-item"
+            *ngFor="let p of paginasArray()"
+            [class.active]="p === paginaActual">
+          <button class="page-link" (click)="cambiarPagina(p)">{{ p }}</button>
+        </li>
+        <li class="page-item" [class.disabled]="paginaActual === totalPaginas()">
+          <button class="page-link"
+                  (click)="cambiarPagina(paginaActual + 1)"
+                  [disabled]="paginaActual === totalPaginas()">Siguiente</button>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>

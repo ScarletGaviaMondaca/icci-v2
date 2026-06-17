@@ -1,0 +1,66 @@
+/* Reemplaza tu CSS actual de tabla por esto */
+.fondo {
+  background-color: white;
+  border-radius: 10px;
+  padding: 25px;
+}
+
+.titulo {
+  color: #054182;
+  font-family: cursive, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 3px;
+  letter-spacing: 0.01em;
+}
+.agregar{
+  background-color: white;
+  color: #054182;
+  border: 1px solid #054182;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.agregar:hover {
+  background-color: #054182;
+  color: white;
+  border: 1px solid #054182;
+}
+
+/* Wrapper que da las esquinas redondeadas de verdad */
+.table-wrapper {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+}
+
+/* Ya no necesita border-radius aquí */
+table {
+  border-radius: 0;
+  overflow: visible;
+  margin-bottom: 0 !important; /* evita espacio extra abajo */
+}
+
+h3 {
+  color: #054182;
+  font-weight: bold;
+}
+
+/* Header azul más suave */
+.table-dark {
+  /*--bs-table-bg: #120d5e !important;*/
+  --bs-table-bg: #054182 !important; 
+  --bs-table-border-color: #2f5a99 !important;
+}
+
+/* Inputs dentro del thead */
+thead input[type="text"].form-control {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+thead input[type="text"].form-control::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}

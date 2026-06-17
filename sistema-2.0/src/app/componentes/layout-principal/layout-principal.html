@@ -1,0 +1,63 @@
+
+<app-header></app-header> <!--  menú superior fijo -->
+<!-- Modal notificaciones al login -->
+<div class="modal-overlay" *ngIf="mostrarModalNotif" (click)="mostrarModalNotif = false">
+  <div class="modal-notif" (click)="$event.stopPropagation()">
+    <div class="modal-notif-header">
+      <h5>🔔 Tienes {{ notificacionesPendientes.length }} notificación(es) pendiente(s)</h5>
+      <button class="btn-cerrar" (click)="mostrarModalNotif = false">✕</button>
+    </div>
+    <div class="modal-notif-body">
+      <div *ngFor="let n of notificacionesPendientes" class="notif-item-modal">
+        <strong>{{ n.nombres }} {{ n.apellido1 }}</strong> venció su fecha límite
+        del hito <strong>{{ n.hito_label }}</strong>
+        <br>
+        <small class="text-muted">📅 {{ n.fecha_vencimiento | date:'dd/MM/yyyy' }} · RUT: {{ n.rut }}</small>
+      </div>
+    </div>
+    <div class="modal-notif-footer">
+      <button class="btn btn-sm btn-outline-secondary"
+              (click)="notifSvc.marcarTodasLeidas().subscribe(); mostrarModalNotif = false">
+        ✓ Marcar todas como leídas
+      </button>
+      <button class="btn btn-sm btn-primary"
+              (click)="mostrarModalNotif = false">
+        Ver después
+      </button>
+    </div>
+  </div>
+</div>
+<main style="padding: 20px;">
+  <router-outlet></router-outlet> 
+</main>
+
+  <footer class="final py-4 mt-auto text-center">
+    <div> <p class="titulo">Conoce más sobre nosotros</p> </div>
+    <div  class="footer-container">
+      <a href="https://www.uta.cl/" target="_blank" title="Universidad de Tarapacá">
+        <img class="logo" src="https://www.uta.cl/wp-content/uploads/2018/11/logo_web_uta.png" alt="Logo UTA">
+      </a>
+      <a href="https://facultad-ingenieria.uta.cl/" target="_blank" title="Facultad de Ingeniería">
+        <img class="logo" src="https://dici.uta.cl/wp-content/uploads/2024/07/cropped-acultad-ingenieria.uta_.cl_.png" alt="Logo Facultad Ingeniería">
+      </a>
+      <a href="https://dici.uta.cl/" target="_blank" title="ICCI">
+        <img class="logo" src="https://dici.uta.cl/wp-content/uploads/2022/12/Logo-Informatica-BLANCA-removebg-preview-e1670958304616-300x89.png" alt="Logo ICCI">
+      </a>
+    </div>
+
+    <div class="footer-social">
+      <span>Síguenos:</span>
+      <a href="https://www.facebook.com/universidadtarapaca" target="_blank" title="Facebook UTA">
+        <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/facebook.svg" alt="Facebook" class="social-icon">
+      </a>
+      <a href="https://www.instagram.com/universidadtarapaca/" target="_blank" title="Instagram UTA">
+        <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/instagram.svg" alt="Instagram" class="social-icon">
+      </a>
+      <a href="https://www.linkedin.com/school/universidad-de-tarapaca/" target="_blank" title="LinkedIn UTA">
+        <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/linkedin.svg" alt="LinkedIn" class="social-icon">
+      </a>
+    </div>
+     <br>
+     <span>© 2026 Sistema de Gestion - Universidad de Tarapacá</span>
+      <br>
+  </footer>

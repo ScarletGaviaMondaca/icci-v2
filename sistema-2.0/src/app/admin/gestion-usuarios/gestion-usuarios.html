@@ -1,0 +1,519 @@
+<div class="gestion container mt-4">
+  <h1 class="titulo mb-4">👥 Gestión de Usuarios</h1>
+
+  <!-- Mensajes -->
+  <div *ngIf="mensaje" class="alert alert-success">{{ mensaje }}</div>
+  <div *ngIf="error"   class="alert alert-danger">{{ error }}</div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECCIÓN 1: Usuarios del sistema
+       ═══════════════════════════════════════════════ -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h4 class="mb-0" style="color:#054182;">Usuarios del Sistema</h4>
+    <button class="nuevo btn btn-sm" (click)="toggleFormulario()">
+      + Nuevo Usuario
+    </button>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Creado</th>
+            <th>Acciones</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let u of usuariosStaff">
+            <td>{{ u.username }}</td>
+            <td>
+              <span class="badge"
+                    [class.bg-danger]="u.rol === 'admin'"
+                    [class.bg-info]="u.rol === 'secretaria'"
+                    [class.bg-secondary]="u.rol === 'jefe_carrera'">
+                {{ u.rol === 'jefe_carrera' ? 'Jefe Carrera' : u.rol }}
+              </span>
+            </td>
+            <td>
+              <span class="badge"
+                    [class.bg-success]="u.activo == 1"
+                    [class.bg-secondary]="u.activo == 0">
+                {{ u.activo == 1 ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td><small>{{ u.created_at | date:'dd/MM/yyyy' }}</small></td>
+            <td>
+              <button class="btn btn-sm me-1"
+                      [class.btn-warning]="u.activo == 1"
+                      [class.btn-success]="u.activo == 0"
+                      (click)="toggleActivo(u)">
+                {{ u.activo == 1 ? 'Desactivar' : 'Activar' }}
+              </button>
+              <button class="nuevo btn btn-sm btn-outline-primary me-1" (click)="abrirEditar(u)">
+                ✏️ Editar
+              </button>
+              <button class="btn btn-sm btn-outline-danger" (click)="eliminar(u.id)">
+                🗑️
+              </button>
+            </td>
+            <td>
+              <button class="btn btn-sm btn-outline-secondary"
+                      (click)="usuarioCambiandoPass = u.id; nuevaPassword = ''">
+                🔑 Cambiar clave
+              </button>
+              <div *ngIf="usuarioCambiandoPass === u.id" class="mt-2 d-flex gap-2">
+                <input type="password" class="form-control form-control-sm"
+                       style="max-width:180px" placeholder="Nueva contraseña"
+                       [(ngModel)]="nuevaPassword">
+                <button class="btn btn-sm btn-success" (click)="cambiarPassword(u.id)">Guardar</button>
+                <button class="btn btn-sm btn-outline-danger" (click)="usuarioCambiandoPass = null">Cancelar</button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="usuariosStaff.length === 0">
+            <td colspan="6" class="text-center text-muted py-3">Sin usuarios registrados</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECCIÓN 2: Profesores
+       ═══════════════════════════════════════════════ -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h4 class="mb-0" style="color:#054182;">Profesores</h4>
+    <button class="usuarios btn btn-sm" (click)="toggleFormProfesor()">
+      👨‍🏫 Crear cuenta profesor
+    </button>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nombre</th>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let u of usuariosProfesores">
+            <td>{{ nombreCompleto(u) }}</td>
+            <td><small class="text-muted">{{ u.username }}</small></td>
+            <td>
+              <span class="badge"
+                    [class.bg-warning]="u.rol === 'jefe_carrera'"
+                    [class.bg-primary]="u.rol === 'profesor'">
+                {{ u.rol === 'jefe_carrera' ? 'Jefe Carrera' : 'Profesor' }}
+              </span>
+            </td>
+            <td>
+              <span class="badge"
+                    [class.bg-success]="u.activo == 1"
+                    [class.bg-secondary]="u.activo == 0">
+                {{ u.activo == 1 ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-sm me-1"
+                      [class.btn-warning]="u.activo == 1"
+                      [class.btn-success]="u.activo == 0"
+                      (click)="toggleActivo(u)">
+                {{ u.activo == 1 ? 'Desactivar' : 'Activar' }}
+              </button>
+              <!-- Toggle Jefe Carrera -->
+              <button class="btn btn-sm me-1"
+                      [class.btn-outline-warning]="u.rol !== 'jefe_carrera'"
+                      [class.btn-outline-secondary]="u.rol === 'jefe_carrera'"
+                      [disabled]="togglingJefeCarrera === u.id"
+                      (click)="toggleJefeCarrera(u)"
+                      title="{{ u.rol === 'jefe_carrera' ? 'Quitar como Jefe de Carrera' : 'Asignar como Jefe de Carrera' }}">
+                {{ togglingJefeCarrera === u.id ? '...' : (u.rol === 'jefe_carrera' ? '↩ Quitar JC' : '⭐ Jefe Carrera') }}
+              </button>
+            </td>
+            <td>
+              <button class="btn btn-sm btn-outline-secondary"
+                      (click)="usuarioCambiandoPass = u.id; nuevaPassword = ''">
+                🔑 Clave
+              </button>
+              <div *ngIf="usuarioCambiandoPass === u.id" class="mt-2 d-flex gap-2">
+                <input type="password" class="form-control form-control-sm"
+                       style="max-width:160px" placeholder="Nueva contraseña"
+                       [(ngModel)]="nuevaPassword">
+                <button class="btn btn-sm btn-success" (click)="cambiarPassword(u.id)">Guardar</button>
+                <button class="btn btn-sm btn-outline-danger" (click)="usuarioCambiandoPass = null">✕</button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="usuariosProfesores.length === 0">
+            <td colspan="6" class="text-center text-muted py-3">
+              Sin profesores con cuenta — usa "Crear cuenta profesor" para agregar
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECCIÓN 3: Empleadores
+       ═══════════════════════════════════════════════ -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h4 class="mb-0" style="color:#054182;">Empleadores con Cuenta</h4>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-outline-secondary" (click)="abrirModalCompromiso()">
+        📄 Documento de compromiso
+      </button>
+      <button class="nuevo btn btn-sm" (click)="mostrarModalToken = true">
+        🔗 Generar link de registro
+      </button>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Usuario</th>
+            <th>Nombre</th>
+            <th>Correo</th>
+            <th>Estado</th>
+            <th>Creado</th>
+            <th>Acciones</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let u of usuariosEmpleadores">
+            <td>{{ u.username }}</td>
+            <td>{{ u.nombre || '—' }} {{ u.apellido1 || '' }}</td>
+            <td><small>{{ u.correo || '—' }}</small></td>
+            <td>
+              <span class="badge"
+                    [class.bg-success]="u.activo == 1"
+                    [class.bg-secondary]="u.activo == 0">
+                {{ u.activo == 1 ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td><small>{{ u.created_at | date:'dd/MM/yyyy' }}</small></td>
+            <td>
+              <button class="btn btn-sm me-1"
+                      [class.btn-warning]="u.activo == 1"
+                      [class.btn-success]="u.activo == 0"
+                      (click)="toggleActivo(u)">
+                {{ u.activo == 1 ? 'Desactivar' : 'Activar' }}
+              </button>
+              <button class="nuevo btn btn-sm btn-outline-primary me-1" (click)="abrirEditar(u)">
+                ✏️ Editar
+              </button>
+              <button class="btn btn-sm btn-outline-danger" (click)="eliminar(u.id)">
+                🗑️
+              </button>
+            </td>
+            <td>
+              <button class="btn btn-sm btn-outline-secondary"
+                      (click)="usuarioCambiandoPass = u.id; nuevaPassword = ''">
+                🔑 Cambiar clave
+              </button>
+              <div *ngIf="usuarioCambiandoPass === u.id" class="mt-2 d-flex gap-2">
+                <input type="password" class="form-control form-control-sm"
+                       style="max-width:180px" placeholder="Nueva contraseña"
+                       [(ngModel)]="nuevaPassword">
+                <button class="btn btn-sm btn-success" (click)="cambiarPassword(u.id)">Guardar</button>
+                <button class="btn btn-sm btn-outline-danger" (click)="usuarioCambiandoPass = null">Cancelar</button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="usuariosEmpleadores.length === 0">
+            <td colspan="7" class="text-center text-muted py-3">
+              Sin empleadores con cuenta — usa el botón "Generar link de registro" para invitarlos
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECCIÓN 3: Alumnos
+       ═══════════════════════════════════════════════ -->
+  <h4 class="mb-2" style="color:#054182;">Alumnos</h4>
+  <div class="card mb-4">
+    <div class="card-body d-flex gap-3 flex-wrap">
+      <button class="nuevo btn btn-sm" (click)="mostrarModalPasswordAlumno = true">
+        🔑 Cambiar contraseña alumno
+      </button>
+      <button class="usuarios btn btn-sm"
+              [disabled]="creandoAlumnos"
+              (click)="crearUsuariosAlumnos()">
+        {{ creandoAlumnos ? 'Creando...' : '🎓 Crear usuarios alumnos' }}
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       MODALES
+       ═══════════════════════════════════════════════ -->
+
+  <!-- Modal: Nuevo usuario staff -->
+  <div *ngIf="mostrarForm" class="modal-edicion-overlay">
+    <div class="modal-edicion">
+      <div class="text-end">
+        <button class="btn btn-sm btn-danger" (click)="toggleFormulario()">✕</button>
+      </div>
+      <h5 class="titulo card-title mb-3">Nuevo Usuario</h5>
+      <div class="row g-2">
+        <div class="col-sm-4">
+          <label class="form-label">Username</label>
+          <input type="text" class="form-control form-control-sm"
+                 [(ngModel)]="nuevoUsuario.username" placeholder="Ej: jperez">
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label">Contraseña</label>
+          <input type="password" class="form-control form-control-sm"
+                 [(ngModel)]="nuevoUsuario.password" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label">Rol</label>
+          <select class="form-select form-select-sm" [(ngModel)]="nuevoUsuario.rol">
+            <option value="secretaria">Secretaria</option>
+            <option value="admin">Administrador</option>
+            <option value="jefe_carrera">Jefe de Carrera</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-success btn-sm mt-3" [disabled]="creando" (click)="crear()">
+        {{ creando ? 'Creando...' : 'Crear Usuario' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal: Crear cuenta para profesor -->
+  <div *ngIf="mostrarFormProfesor" class="modal-edicion-overlay">
+    <div class="modal-edicion">
+      <div class="text-end">
+        <button class="btn btn-sm btn-danger" (click)="toggleFormProfesor()">✕</button>
+      </div>
+      <h5 class="titulo card-title mb-3">👨‍🏫 Crear cuenta para Profesor</h5>
+      <div *ngIf="profesoresSinUsuario.length === 0" class="alert alert-info">
+        Todos los profesores activos ya tienen cuenta.
+      </div>
+      <div *ngIf="profesoresSinUsuario.length > 0" class="row g-2">
+        <div class="col-sm-5">
+          <label class="form-label">Profesor</label>
+          <select class="form-select form-select-sm"
+                  [(ngModel)]="formProfesor.profesor_id"
+                  (ngModelChange)="onProfesorSeleccionado($event)">
+            <option [value]="0" disabled>— Selecciona —</option>
+            <option *ngFor="let p of profesoresSinUsuario" [value]="p.id">
+              {{ nombreProfesor(p) }}
+            </option>
+          </select>
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label">Rol</label>
+          <select class="form-select form-select-sm" [(ngModel)]="formProfesor.rol">
+            <option value="profesor">Profesor</option>
+            <option value="secretaria">Secretaria</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label">Usuario</label>
+          <input type="text" class="form-control form-control-sm"
+                 [(ngModel)]="formProfesor.username" placeholder="Ej: jperez">
+          <small class="text-muted">Se genera automáticamente.</small>
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label">Contraseña inicial</label>
+          <input type="text" class="form-control form-control-sm"
+                 [(ngModel)]="formProfesor.password" placeholder="Mínimo 8 caracteres">
+          <small class="text-muted">El profesor debe cambiarla al ingresar.</small>
+        </div>
+      </div>
+      <button *ngIf="profesoresSinUsuario.length > 0"
+              class="usuarios btn btn-sm mt-3"
+              [disabled]="creandoProfesor" (click)="crearUsuarioProfesor()">
+        {{ creandoProfesor ? 'Creando...' : 'Crear cuenta' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal: Editar usuario -->
+  <div *ngIf="mostrarEditar" class="modal-edicion-overlay">
+    <div class="modal-edicion">
+      <div class="text-end">
+        <button class="btn btn-sm btn-danger" (click)="cerrarEditar()">✕</button>
+      </div>
+      <h5 class="titulo card-title mb-3">Editar Usuario</h5>
+      <div class="row g-2">
+        <div class="col-sm-4">
+          <label class="form-label">Username</label>
+          <input type="text" class="form-control form-control-sm" [(ngModel)]="editForm.username">
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label">Rol</label>
+          <select class="form-select form-select-sm" [(ngModel)]="editForm.rol">
+            <option value="secretaria">Secretaria</option>
+            <option value="admin">Administrador</option>
+            <option value="jefe_carrera">Jefe de Carrera</option>
+            <option value="profesor">Profesor</option>
+            <option value="empleador">Empleador</option>
+          </select>
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label">Correo</label>
+          <input type="email" class="form-control form-control-sm"
+                 [(ngModel)]="editForm.correo" placeholder="correo@ejemplo.com">
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label">Nombre</label>
+          <input type="text" class="form-control form-control-sm" [(ngModel)]="editForm.nombre">
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label">Apellido Paterno</label>
+          <input type="text" class="form-control form-control-sm" [(ngModel)]="editForm.apellido1">
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label">Apellido Materno</label>
+          <input type="text" class="form-control form-control-sm" [(ngModel)]="editForm.apellido2">
+        </div>
+      </div>
+      <button class="usuarios btn btn-sm mt-3" [disabled]="editando" (click)="guardarEdicion()">
+        {{ editando ? 'Guardando...' : 'Guardar cambios' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal: Cambiar contraseña alumno -->
+  <div class="modal-overlay" *ngIf="mostrarModalPasswordAlumno"
+       (click)="mostrarModalPasswordAlumno = false">
+    <div class="modal-notif" style="max-width:450px" (click)="$event.stopPropagation()">
+      <div class="modal-notif-header">
+        <h5>🔑 Cambiar contraseña alumno</h5>
+        <button class="btn-cerrar" (click)="mostrarModalPasswordAlumno = false">✕</button>
+      </div>
+      <div class="modal-notif-body p-3">
+        <div class="d-flex gap-2 mb-3">
+          <input type="text" class="form-control form-control-sm"
+                 [(ngModel)]="busquedaRut" placeholder="Ej: 12345678-9"
+                 (keyup.enter)="buscarAlumnoPorRut()">
+          <button class="btn btn-sm btn-primary" [disabled]="buscandoAlumno"
+                  (click)="buscarAlumnoPorRut()">
+            {{ buscandoAlumno ? '...' : '🔍 Buscar' }}
+          </button>
+        </div>
+        <div *ngIf="alumnoEncontrado" class="border rounded p-3">
+          <p class="mb-1"><strong>{{ alumnoEncontrado.nombres }} {{ alumnoEncontrado.apellido1 }}</strong></p>
+          <p class="text-muted small mb-2">{{ alumnoEncontrado.rut }}</p>
+          <div class="d-flex gap-2">
+            <input type="password" class="form-control form-control-sm"
+                   [(ngModel)]="nuevaPasswordAlumno"
+                   placeholder="Nueva contraseña (mín. 6 caracteres)">
+            <button class="btn btn-sm btn-success"
+                    [disabled]="cambiandoPasswordAlumno || !nuevaPasswordAlumno"
+                    (click)="cambiarPasswordAlumno()">
+              {{ cambiandoPasswordAlumno ? '...' : '💾 Guardar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-notif-footer">
+        <button class="btn btn-sm btn-outline-secondary"
+                (click)="mostrarModalPasswordAlumno = false">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Documento de compromiso -->
+  <div class="modal-overlay" *ngIf="mostrarModalCompromiso" (click)="mostrarModalCompromiso = false">
+    <div class="modal-notif" style="max-width:520px" (click)="$event.stopPropagation()">
+      <div class="modal-notif-header">
+        <h5>📄 Documento de Compromiso</h5>
+        <button class="btn-cerrar" (click)="mostrarModalCompromiso = false">✕</button>
+      </div>
+      <div class="modal-notif-body p-3">
+        <p class="text-muted small mb-3">
+          Este documento se mostrará a los empleadores durante el registro y deberán aceptarlo antes de crear su cuenta.
+        </p>
+
+        <!-- Vista previa si ya hay documento -->
+        <div *ngIf="compromisoInfo?.existe" class="mb-3">
+          <p class="mb-1 fw-semibold text-success">✅ Hay un documento cargado.</p>
+          <a [href]="compromisoInfo?.url" target="_blank" class="btn btn-sm btn-outline-primary mb-2">
+            📄 Ver documento actual
+          </a>
+        </div>
+        <div *ngIf="!compromisoInfo?.existe" class="alert alert-warning py-2 mb-3">
+          ⚠️ No hay documento cargado aún. Los empleadores no verán ningún documento al registrarse.
+        </div>
+
+        <!-- Subir nuevo -->
+        <label class="form-label fw-semibold">
+          {{ compromisoInfo?.existe ? 'Reemplazar documento (PDF):' : 'Subir documento (PDF):' }}
+        </label>
+        <input type="file" class="form-control form-control-sm mb-3"
+               accept="application/pdf"
+               (change)="onArchivoCompromiso($event)">
+        <button class="btn btn-sm btn-success"
+                [disabled]="!compromisoArchivo || subiendoCompromiso"
+                (click)="subirCompromiso()">
+          {{ subiendoCompromiso ? 'Subiendo...' : '⬆️ Subir documento' }}
+        </button>
+      </div>
+      <div class="modal-notif-footer">
+        <button class="btn btn-sm btn-outline-secondary"
+                (click)="mostrarModalCompromiso = false">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Generar link empleador -->
+  <div class="modal-overlay" *ngIf="mostrarModalToken" (click)="mostrarModalToken = false">
+    <div class="modal-notif" style="max-width:500px" (click)="$event.stopPropagation()">
+      <div class="modal-notif-header">
+        <h5>🔗 Generar link de registro</h5>
+        <button class="btn-cerrar" (click)="mostrarModalToken = false">✕</button>
+      </div>
+      <div class="modal-notif-body p-3">
+        <div class="mb-3">
+          <label class="form-label">Correo del empleador</label>
+          <input type="email" class="form-control form-control-sm"
+                 [(ngModel)]="correoToken" placeholder="supervisor@empresa.cl">
+        </div>
+        <button class="usuarios btn btn-sm"
+                [disabled]="generandoToken || !correoToken"
+                (click)="generarTokenEmpleador()">
+          {{ generandoToken ? 'Generando...' : '🔗 Generar link' }}
+        </button>
+        <div *ngIf="tokenGenerado" class="mt-3">
+          <label class="form-label fw-bold">Link de registro:</label>
+          <div class="input-group">
+            <input type="text" class="form-control form-control-sm" [value]="tokenGenerado" readonly>
+            <button class="btn btn-sm btn-outline-secondary" (click)="copiarToken()">📋 Copiar</button>
+          </div>
+          <small class="text-muted">Envía este link al empleador — tiene un solo uso.</small>
+        </div>
+      </div>
+      <div class="modal-notif-footer">
+        <button class="btn btn-sm btn-outline-secondary"
+                (click)="mostrarModalToken = false; tokenGenerado = ''; correoToken = ''">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

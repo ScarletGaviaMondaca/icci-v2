@@ -1,0 +1,164 @@
+
+<div class="panel-contenido"> 
+  <h1 class="titulo">Plan de estudio {{ plan?.anio }} </h1>
+  <div class="container mt-3">
+    <!-- FILA DE BOTONES -->
+    <div class="row mb-3 align-items-center">
+      <!-- Botón izquierda -->
+      <div class="col d-flex gap-2">
+        <button class="btn btn-primary" *ngIf="auth.esAdmin()" (click)="irEditar(plan.id)">
+          Actualizar
+        </button>
+        <button class="btn" (click)="irMalla(plan.id)">
+          Ver malla
+        </button>
+        <button class="btn" *ngIf = auth.esAdmin() || auth.esSecretaria() (click)="irAlumnos(plan.id)">
+          Alumnos asociados
+        </button>
+      </div>
+      <!-- Botones derecha -->
+      <div class="col text-end">
+        <button class="btn btn-primary" *ngIf="auth.esAdmin()" (click)="irAdminPlanes()">
+          Lista de planes
+        </button>
+      </div>
+    </div>
+    <ng-template #cargando>
+      <p>Cargando plan de estudio...</p>
+    </ng-template>
+    <!-- TABLA con datos del plan  -->
+    <div class="table-wrapper md-4" *ngIf="plan">
+      <table class="table table-bordered text-center">
+        
+        <!-- FILA 1: TITULO -->
+        <tr>
+          <th colspan="6" class="table-secondary">
+            {{plan.titulo }}
+          </th>
+        </tr>
+
+        <!-- FILA 2: 6 COLUMNAS -->
+        <tr>
+          <th>Año</th>
+          <td>{{ plan.anio }}</td>
+          <th>Versión</th>
+          <td>{{ plan.version }}</td>
+          <th>Duración</th>
+          <td>{{ plan.duracion }} semestres</td>
+        </tr>
+        <tr>
+          <th>Fecha oficialización</th>
+          <td>{{ plan.fecha_oficializacion | date:'dd/MM/yyyy' }}</td>
+          <th>Fecha inicio</th>
+          <td>{{ plan.fecha_inicio | date:'dd/MM/yyyy' }}</td>
+          <th>Fecha cierre</th>
+          <td>{{ plan.fecha_cierre | date:'dd/MM/yyyy' }}</td>
+        </tr>
+        <!-- FILA 3: 2 COLUMNAS -->
+        <tr>
+          <th colspan="3">Enfoque</th>
+          <td colspan="3" class="p-0">
+            <ul class="texto-justificado mb-0 px-3 py-2">
+              <li *ngFor="let linea of obtenerLineas(plan.enfoque)">
+                {{ linea }}
+              </li>
+            </ul>
+          </td>
+        </tr>
+        <!-- FILA 4: 2 COLUMNAS -->
+        <tr>
+          <th colspan="3">Perfil de egreso</th>
+          <td colspan="3" class="p-0">
+            <ul class="texto-justificado mb-0 px-3 py-2">
+              <li *ngFor="let linea of obtenerLineas(plan.perfil_egreso)">
+                {{ linea }}
+              </li>
+            </ul>
+          </td>
+        </tr>
+        <!-- FILA 5: 2 COLUMNAS -->
+        <tr>
+          <th colspan="3">Propósito formativo</th>
+          <td colspan="3" class="p-0">
+            <ul class="texto-justificado mb-0 px-3 py-2">
+              <li *ngFor="let linea of obtenerLineas(plan.proposito_formativo)">
+                {{ linea }}
+              </li>
+            </ul>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!--Tabla de malla correspondiente al plan -->
+    <div class="mt-4">
+    <h4 class="titulo">Malla Curricular</h4>
+    <div *ngIf="malla.length === 0" class="alert alert-info">
+      No hay malla cargada para este plan.
+    </div>
+
+    <div *ngIf="auth.esAdmin()" class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+      <input
+        #csvInput
+        type="file"
+        (change)="onFileSelected($event)"
+        accept=".csv"
+        class="form-control"
+        style="max-width: 300px"
+      />
+      <button
+        class="btn btn-primary"
+        (click)="subirCSV()"
+        [disabled]="!archivoCSV"
+      >
+        Subir CSV
+      </button>
+      <small *ngIf="!archivoCSV" class="text-muted">Selecciona un archivo .csv</small>
+    </div>
+
+    <!-- 📊 TABLA -->
+     <div class="table-wrapper">
+      <table class="table table-bordered text-center" *ngIf="malla.length > 0">
+        <tr class="table-dark">
+          <th>#</th>
+          <th>Nro</th>
+          <th>Nombre</th>
+          <th>Tipo</th>
+          <th>PM</th>
+          <th>Créditos</th>
+          <th>HC</th>
+          <th>HT</th>
+          <th>HL</th>
+          <th>Código</th>
+        </tr>
+
+        <tr *ngFor="let ramo of mallaView; let i = index">
+          <td>{{ ((page - 1) * pageSize) + i + 1 }}</td>
+          <td>{{ ramo.nro }}</td>
+          <td>{{ ramo.nombre }}</td>
+          <td>{{ ramo.tipo }}</td>
+          <td>{{ ramo.pm }}</td>
+          <td>{{ ramo.creditos }}</td>
+          <td>{{ ramo.hc }}</td>
+          <td>{{ ramo.ht }}</td>
+          <td>{{ ramo.hl }}</td>
+          <td>{{ ramo.codigo }}</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Controles paginación -->
+    <div class="d-flex justify-content-between align-items-center mt-2" *ngIf="malla.length > 0">
+      <button class="btn btn-outline-primary" (click)="prevPage()" [disabled]="page === 1">
+        Anterior
+      </button>
+
+      <div>Página {{ page }} / {{ totalPages }}</div>
+
+      <button class="btn btn-outline-primary" (click)="nextPage()" [disabled]="page === totalPages">
+        Siguiente
+      </button>
+    </div>
+  </div>
+</div>
+</div>

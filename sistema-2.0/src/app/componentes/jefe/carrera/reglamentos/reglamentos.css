@@ -1,0 +1,85 @@
+.opcion{
+    color: #054182;
+    font-size: large;
+}
+.opcion:hover{
+    background-color: #054182;
+    color: white;
+}
+.opcion.active{
+    background-color: #054182;
+    color: white;
+}
+.titulo, .titulo2 {
+  color: #054182;
+  font-family: cursive, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 3px;
+  letter-spacing: 0.01em;
+}
+.reglamento{
+    background-color: white;
+    border-radius: 15px;
+    padding: 35px;
+}
+table th {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+table input {
+  font-size: 12px;
+}
+.btn{
+    background-color: #054182;
+    color: white;
+}
+.btn:hover{
+    background-color: white;
+    color:  #054182;
+    border: 2px solid #054182;
+}
+.btn-cancelar{
+    background-color: red;
+    color: white;
+    border: 2px solid red;
+    border-radius: 5px;
+}
+.btn-cancelar:hover{
+    background-color: white;
+    color: red;
+    border: 2px solid red;
+}
+/* Modal Overlay: Fondo oscuro, ocupa todo, arriba de todo (z-index alto) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(34, 34, 34, 0.5); /* Fondo semi-oscuro */
+  z-index: 1050;  /* Por encima de todo, mayor que navbar y otros */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(1.5px); /* Opcional: para suavizar el fondo */
+}
+
+/* Modal Box: Ventana en el centro */
+.modal-box {
+  background: #fff;
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 4px 28px rgba(0,0,0,.18), 0 1.5px 3px rgba(0,0,0,.10);
+  animation: modal-in 0.18s cubic-bezier(0.25, 1.2, 0.5, 1) 1;
+  position: relative;
+}
+
+/* Animación de entrada */
+@keyframes modal-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to   { transform: scale(1);     opacity: 1; }
+}

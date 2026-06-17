@@ -1,0 +1,32 @@
+
+<div class="row">
+    <!-- MENÚ LATERAL -->
+  <div class="col-md-3 col-lg-2">
+    <div class="opciones nav nav-pills flex-column">
+      <!-- PLANES DESPLEGABLE -->
+      <div class="nav-item"><!--Boton para mostrar planes -->
+        <button class="opcion nav-link"
+                (click)="togglePlanes()">
+          Planes
+          <span class="float-end">
+            {{ mostrarPlanes ? '▲' : '▼' }}
+          </span>
+        </button>
+        <!-- Lista desplegable -->
+        <div *ngIf="mostrarPlanes" class="ms-3">
+          <button *ngFor="let plan of planes"
+                  class="sub-opcion nav-link"
+                  [routerLink]="['/jefe/carrera',plan.id]">
+            {{ plan.anio }}
+          </button>
+        </div>
+      </div>       
+      <button class="opcion nav-link" [routerLink]="['/jefe/carrera/reglamentos']"> Reglamentos </button>
+    <!--  <button class="opcion nav-link" [routerLink]="['/jefe/carrera/indicadores']" > Indicadores </button>-->
+    </div>
+  </div>
+    <!-- CONTENIDO PRINCIPAL -->
+  <div class="col-md-9 col-lg-10">  
+    <router-outlet></router-outlet>
+  </div>
+</div>

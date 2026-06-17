@@ -1,0 +1,133 @@
+<div class="reglamento">
+<div class="row">
+  <div class="col-md-9 col-lg-10">
+    <h1 class="titulo">Documentos</h1>
+
+    <!-- BARRA SUPERIOR -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div class="d-flex gap-2">
+        <!-- Filtro nombre -->
+        <input type="text" class="form-control form-control-sm"
+          placeholder="Buscar por nombre..."
+          [(ngModel)]="filtroNombre"
+          style="width: 220px;">
+        <!-- Filtro categoría -->
+        <select class="form-select form-select-sm" [(ngModel)]="filtroCategoria" style="width: 200px;">
+          <option value="">Todas las categorías</option>
+          <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+        </select>
+      </div>
+      <!-- Botón agregar -->
+      <button *ngIf = auth.esAdmin() || auth.esSecretaria() class="btn btn-primary btn-sm" (click)="abrirModal()">
+        ➕ Nuevo documento
+      </button>
+    </div>
+
+    <!-- DOCUMENTOS AGRUPADOS POR CATEGORÍA -->
+    <div *ngFor="let cat of categoriasFiltradas()" class="mb-5">
+      <h2 class="titulo2 mb-3">{{ cat }}</h2>
+
+      <table class="table table-bordered align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Archivo</th>
+            <th style="width:100px;">Enlace</th>
+            <th style="width:80px;">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let doc of documentosPorCategoria(cat)">
+            <td>{{ doc.nombre }}</td>
+            <td class="text-center">
+              <a class="fw-semibold" style="cursor:pointer;"
+                (click)="descargar(doc.id)">
+                Descargar
+              </a>
+            </td>
+            <td class="text-center">
+              <button class="btn btn-sm"
+                (click)="confirmarEliminar(doc.id, doc.nombre)">
+                🗑️
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mensaje vacío -->
+    <div *ngIf="categoriasFiltradas().length === 0" class="text-muted text-center mt-5">
+      No hay documentos que coincidan con el filtro.
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL SUBIR ===================== -->
+<div class="modal-overlay" *ngIf="mostrarModal">
+  <div class="modal-box" >
+    <h3 class="mb-3">Nuevo Documento</h3>
+
+    <!-- Nombre -->
+    <div class="mb-3">
+      <label class="form-label">Nombre del documento <span class="text-danger">*</span></label>
+      <input type="text" class="form-control" [(ngModel)]="nuevoNombre" placeholder="Ej: Reglamento de Titulación">
+    </div>
+
+    <!-- Categoría existente -->
+    <div class="mb-2">
+      <label class="form-label">Categoría <span class="text-danger">*</span></label>
+      <select class="form-select" [(ngModel)]="nuevaCategoria">
+        <option value="">-- Selecciona una existente --</option>
+        <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+      </select>
+    </div>
+
+    <!-- O categoría nueva -->
+    <div class="mb-3">
+      <input type="text" class="form-control" [(ngModel)]="nuevaCategoriaManual"
+        placeholder="O escribe una categoría nueva...">
+      <small class="text-muted">Si escribes aquí, se usará esta categoría.</small>
+    </div>
+
+    <!-- Archivo -->
+    <div class="mb-3">
+      <label class="form-label">Archivo <span class="text-danger">*</span></label>
+      <label class="btn btn-outline-secondary btn-sm mb-0">
+        Seleccionar archivo
+        <input type="file" hidden accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+          (change)="seleccionarArchivo($event)">
+      </label>
+      <span *ngIf="nombreArchivo" class="badge bg-success ms-2">{{ nombreArchivo }}</span>
+      <div><small class="text-muted">PDF, Word, Excel, PowerPoint</small></div>
+    </div>
+
+    <!-- Mensaje estado -->
+    <div *ngIf="mensajeSubida" class="mb-3 small"
+      [class.text-success]="mensajeSubida.includes('✅')"
+      [class.text-danger]="mensajeSubida.includes('❌')">
+      {{ mensajeSubida }}
+    </div>
+
+    <!-- Botones -->
+    <div class="d-flex justify-content-end gap-2">
+      <button class="btn btn-secondary" (click)="cerrarModal()" [disabled]="subiendo">Cancelar</button>
+      <button class="btn btn-primary" (click)="subirDocumento()" [disabled]="subiendo">
+        {{ subiendo ? 'Subiendo...' : 'Subir' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL ELIMINAR ===================== -->
+<div class="eliminar modal-overlay" *ngIf="mostrarConfirmacion">
+  <div class="modal-box">
+    <h3>¿Eliminar documento?</h3>
+    <p>Estás a punto de eliminar <strong>{{ docAEliminar?.nombre }}</strong>.<br>
+      Esta acción no se puede deshacer.</p>
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button class="btn-cancelar" (click)="cancelarEliminar()">Cancelar</button>
+      <button class="btn btn-eliminar" (click)="ejecutarEliminar()">Eliminar</button>
+    </div>
+  </div>
+</div>
+</div>

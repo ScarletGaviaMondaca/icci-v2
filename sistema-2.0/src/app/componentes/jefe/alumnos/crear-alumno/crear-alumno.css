@@ -1,0 +1,263 @@
+:root {
+  --ca-azul-oscuro: #054182;
+  --ca-azul-medio: #3865a4;
+  --ca-azul-claro: #e5ecf4;
+  --ca-bg-form: #f9fbfd;
+  --ca-sombra: 0 10px 36px #05418218, 0 1px 4px #b2c2e32e;
+  --ca-verde: #37aa59;
+  --ca-rojo: #da5b4a;
+  --ca-borde: #bed1ea;
+  --ca-borde-claro: #dbe7fa;
+}
+.titulo {
+  color: #054182;
+  font-family: cursive, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 3px;
+  letter-spacing: 0.01em;
+}
+.alumno {
+  min-height: 100vh;
+  background: white;
+  border-radius: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 38px 0;
+}
+/* CARD CONTENEDOR */
+.ca-card {
+  background: #fff;
+  border-radius: 17px;
+  box-shadow: var(--ca-sombra);
+  padding: 35px 32px 30px 32px;
+  width: 97vw;
+  max-width: 760px;
+  border: 1.4px solid var(--ca-borde-claro);
+}
+@media (max-width: 650px){
+  .ca-card { padding: 17px 0 18px 0;}
+}
+/* HEADER */
+.ca-header { display: flex; align-items: flex-end; margin-bottom: 18px;}
+.ca-title {
+  color: var(--ca-azul-oscuro);
+  font-family: cursive, system-ui, sans-serif;
+  font-size: 1.65rem;
+  font-weight: 650;
+  margin: 0;
+  margin-bottom: 2px;
+  letter-spacing: .025em;
+}
+.ca-subtitle { color: #4d5c7b; margin-top: 0; font-size: 1.05rem; opacity: .88;}
+
+
+/* ALERTAS */
+.ca-alert {
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 1rem;
+  padding: 10px 14px;
+  box-shadow: 0 2px 13px #73acfa13;
+  opacity: 0.96;
+  margin-bottom: 15px;
+}
+
+.ca-alert-success {
+  color: #207239;
+  background: #eafbe7;
+  border: 1.5px solid #9ae2b0;
+}
+.ca-alert-error {
+  color: #da5b4a;
+  background: #fff7f6;
+  border: 1.5px solid #ffd7d1;
+}
+
+/* ≡≡≡ SECCIÓN ≡≡≡ */
+.ca-section {
+  background: var(--ca-bg-form);
+  border-radius: 11px;
+  margin-bottom: 27px;
+  padding: 20px 16px 12px 16px;
+  box-shadow: 0 3px 12px #b2c2e325;
+  border: 1.15px solid #e0eaf5;
+}
+.ca-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+.ca-section-num {
+  display: inline-block;
+  font-size: 1rem;
+  font-weight: 550;
+  color: #3865a4;
+  background: #dbeaff;
+  border-radius: 8px;
+  padding: 3px 10px 2px 8px;
+  letter-spacing: .01em;
+}
+.ca-section-title {
+  color: #204d7d;
+  font-size: 1.16rem;
+  font-weight: 600;
+  margin-bottom: 0;
+  letter-spacing: .01em;
+}
+
+/* ≡≡≡ GRID ≡≡≡ */
+.ca-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 23px;
+  margin-bottom: 2px;
+}
+@media (max-width: 800px){
+  .ca-grid { grid-template-columns: 1fr;}
+}
+
+/* CAMPOS Y LABELS */
+.ca-field { display: flex; flex-direction: column; gap: 4px; }
+.ca-col-2 { grid-column: span 2; }
+.ca-col-full { grid-column: 1 / -1;}
+.ca-label {
+  font-weight: 500;
+  color: #144379;
+  margin-bottom: 2px;
+  font-size: 1.01rem;
+}
+.ca-req { color: #e65336; margin-left: 2px; font-size: 0.97em; }
+
+.ca-input, .ca-select {
+  border: 1.2px solid var(--ca-borde);
+  border-radius: 7px;
+  background: #f6f9fd;
+  font-size: 1.08rem;
+  color: #054182;
+  padding: 8px 10px;
+  transition: box-shadow .13s, border-color .12s;
+  outline: none;
+}
+.ca-input:focus, .ca-select:focus {
+  border-color: var(--ca-azul-medio);
+  background: #e9f0fa;
+  box-shadow: 0 0 0 2px #05418213;
+}
+.ca-input-err {
+  border-color: #eb4d4b !important;
+  background: #fff4f1 !important;
+  color: #a93129;
+}
+.ca-err {
+  color: #e65336;
+  font-size: .93rem;
+  margin-left: 4px;
+  margin-top: -1px;
+  font-weight: 480;
+}
+
+/* ≡≡≡ TOGGLE GROUP (SEX, GRATUIDAD) ≡≡≡ */
+.ca-toggle-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 2px;
+}
+.ca-toggle-btn {
+  flex: none;
+  border-radius: 6px;
+  padding: 6.5px 18px;
+  font-size: 0.98rem;
+  background: #eaf1fc;
+  color: #205185;
+  font-weight: 480;
+  border: 1.2px solid #bdd7ee;
+  cursor: pointer;
+  transition: background .13s, border-color .13s, color .13s, box-shadow .12s;
+  outline: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: .01em;
+  box-shadow: 0 1px 5px #bacefd0f;
+}
+.ca-toggle-btn:hover {
+  background: #d7eafd;
+  color: #073064;
+}
+.ca-toggle-active, .ca-toggle-btn.ca-toggle-active {
+  background: #3865a4 !important;
+  color: #fff !important;
+  border-color: #25436a;
+  font-weight: 550;
+  box-shadow: 0 2px 5px #A8C2ED25;
+}
+
+.ca-select { min-width: 120px; }
+
+/* ≡≡≡ ACCIONES ≡≡≡ */
+.ca-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 23px;
+  justify-content: flex-end;
+}
+.ca-btn-cancel, .ca-btn-submit {
+  font-size: 1.09rem;
+  font-weight: 540;
+  border-radius: 7px;
+  padding: 9px 23px;
+  background: #054182;
+  color: #fff;
+  border: 1.4px solid #054182;
+  cursor: pointer;
+  transition: background 0.15s, color 0.16s, box-shadow .13s;
+  box-shadow: 0 2px 6px #aac3fd18;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 130px;
+}
+.ca-btn-cancel {
+  background: #f7f9fb;
+  color: #204d7d;
+  border: 1.4px solid var(--ca-borde);
+}
+.ca-btn-cancel:hover {
+  background: #ebf2fa;
+  color: #06306d;
+}
+.ca-btn-submit:disabled, .ca-btn-submit[disabled] {
+  opacity: .58;
+  pointer-events: none;
+}
+.ca-btn-submit:hover:not(:disabled) {
+  background: #fff;
+  color: #054182;
+  border: 1.4px solid #054182;
+}
+
+/* SPINNER */
+.ca-spinner {
+  border: 2.5px solid #e4e4e4;
+  border-top: 2.5px solid #3865a4;
+  border-radius: 50%;
+  width: 17px;
+  height: 17px;
+  display: inline-block;
+  animation: ca-spinner-rot 0.8s linear infinite;
+  margin-right: 4px;
+}
+@keyframes ca-spinner-rot { to { transform: rotate(360deg);} }
+
+@media (max-width: 640px){
+  .ca-card { padding: 10px 0 11px 0; }
+  .ca-title { font-size: 1.09rem;}
+  .ca-section-title { font-size: .98rem; }
+  .ca-label { font-size: .97rem; }
+  .ca-actions { flex-direction: column; gap: 10px; align-items: stretch;}
+  .ca-grid { grid-template-columns: 1fr;}
+  .ca-col-2, .ca-col-full { grid-column: unset; }
+}

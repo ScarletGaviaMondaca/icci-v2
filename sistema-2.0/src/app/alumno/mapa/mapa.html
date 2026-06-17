@@ -1,0 +1,310 @@
+<div class="mapa" >
+    <h1 class="titulo"> Mapa UTA</h1>
+      <!-- Botón modo agregar edificio -->
+    <div *ngIf="isAdmin" class="admin-toolbar">
+      <button
+        class="btn-agregar-pin"
+        [class.btn-agregar-pin--activo]="modoAgregar"
+        (click)="toggleModoAgregar()"
+      >
+        {{ modoAgregar ? '🔴 Cancelar — haz clic en el mapa' : '📍 Agregar edificio' }}
+      </button>
+    </div>
+    <section class="campus-map-wrapper">
+    <!-- ── Contenedor del mapa ────────────────────────────────────── -->
+    <div class="map-container"
+      (click)="modoAgregar ? onMapClick($event) : closePanel()"
+      [class.map-container--agregar]="modoAgregar">
+
+      <!-- Copia mapa_campus.jpg a src/assets/images/mapa_campus.jpg -->
+      <img
+        src="images/mapa_campus.jpg"
+        alt="Mapa del Campus Saucache, Universidad de Tarapacá"
+        class="map-image"
+        draggable="false"
+      />
+
+
+      <!-- ── Pins ───────────────────────────────────────────────── -->
+      <button
+        *ngFor="let b of buildings"
+        class="pin"
+        [class.pin--active]="selectedBuilding?.id === b.id"
+        [style.left.%]="b.x"
+        [style.top.%]="b.y"
+        [style.--pin-color]="getTypeColor(b.type)"
+        [attr.aria-label]="b.name"
+        (click)="onPinClick(b, $event)"
+      >
+        <span class="pin__dot">{{ b.label }}</span>
+        <span class="pin__tooltip">{{ b.name }}</span>
+      </button>
+
+    </div>
+
+      <!-- ── Lista agrupada ─────────────────────────────────────────── -->
+    <div class="building-list">
+  
+      <div
+        *ngFor="let group of groupedBuildings"
+        class="building-group"
+      >
+        <!-- Encabezado del grupo -->
+        <div class="group-header">
+          <span class="group-dot" [style.background]="group.color"></span>
+          <span class="group-title">{{ group.label }}</span>
+        </div>
+  
+        <!-- Items del grupo -->
+        <div class="group-items">
+          <button
+            *ngFor="let b of group.buildings"
+            class="list-item"
+            (click)="onListClick(b)"
+            [class.list-item--active]="selectedBuilding?.name === b.name"
+          >
+            <span class="list-item__badge" [style.background]="group.color">
+              {{ b.label }}
+            </span>
+            <span class="list-item__name">{{ b.name }}</span>
+            <span class="list-item__arrow">›</span>
+          </button>
+        </div> 
+      </div>
+    </div>
+  </section>
+  <!-- ── Overlay ────────────────────────────────────────────────────── -->
+  <div
+    class="panel-overlay"
+    [class.panel-overlay--visible]="panelVisible"
+    (click)="closePanel()"
+    aria-hidden="true"
+  ></div>
+  
+  <!-- ── Panel de información (overlay) ────────────────────────────── -->
+  <div
+    class="panel-overlay"
+    [class.panel-overlay--visible]="panelVisible"
+    (click)="closePanel()"
+    aria-hidden="true"
+  ></div>
+
+  <aside
+    class="info-panel"
+    [class.info-panel--visible]="panelVisible"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="selectedBuilding?.name"
+  >
+    <ng-container *ngIf="selectedBuilding">
+
+      <div class="info-panel__header">
+        <span
+          class="info-panel__badge"
+          [style.background]="getTypeColor(selectedBuilding.type) + '22'"
+          [style.color]="getTypeColor(selectedBuilding.type)"
+        >
+          {{ getTypeLabel(selectedBuilding.type) }}
+        </span>
+        <button class="info-panel__close" (click)="closePanel()" aria-label="Cerrar panel">
+          &#x2715;
+        </button>
+      </div>
+
+      <p class="info-panel__number">Nº {{ selectedBuilding.id }}</p>
+      <h3 class="info-panel__title">{{ selectedBuilding.name }}</h3>
+      <p class="info-panel__desc">{{ selectedBuilding.desc }}</p>
+
+      <div class="info-panel__contact">
+        <p *ngIf="selectedBuilding.contact.address">
+          <span class="contact-icon">📍</span> {{ selectedBuilding.contact.address }}
+        </p>
+        <p *ngIf="selectedBuilding.contact.phone">
+          <span class="contact-icon">📞</span>
+          <a [href]="'tel:' + selectedBuilding.contact.phone">
+            {{ selectedBuilding.contact.phone }}
+          </a>
+        </p>
+        <p *ngIf="selectedBuilding.contact.email">
+          <span class="contact-icon">✉️</span>
+          <a [href]="'mailto:' + selectedBuilding.contact.email">
+            {{ selectedBuilding.contact.email }}
+          </a>
+        </p>
+        <p *ngIf="selectedBuilding.contact.web">
+          <span class="contact-icon">🌐</span>
+          <a [href]="'https://' + selectedBuilding.contact.web" target="_blank" rel="noopener">
+            {{ selectedBuilding.contact.web }}
+          </a>
+        </p>
+        <p *ngIf="selectedBuilding.contact.hours">
+          <span class="contact-icon">🕐</span> {{ selectedBuilding.contact.hours }}
+        </p>
+      </div>
+      <button *ngIf="isAdmin && selectedBuilding" class="opcion btn-actualizar-contacto" (click)="abrirModalActualizar()">
+        Actualizar contacto
+      </button>
+    </ng-container>
+  </aside>
+
+  <!-- MODAL DE ACTUALIZACIÓN -->
+  <div *ngIf="modalActualizacionAbierto" class="modal-backdrop">
+    <div class="modal-update">
+      <ng-container *ngIf="selectedBuilding">
+
+        <div class="modal-update__header">
+          <span
+            class="info-panel__badge"
+            [style.background]="getTypeColor(selectedBuilding.type) + '22'"
+            [style.color]="getTypeColor(selectedBuilding.type)"
+          >
+            {{ getTypeLabel(selectedBuilding.type) }}
+          </span>
+          <button class="info-panel__close" (click)="cerrarModalActualizar()" aria-label="Cerrar">
+            &#x2715;
+          </button>
+        </div>
+
+        <h3 class="modal-update__title">Editar: {{ selectedBuilding.name }}</h3>
+
+        <form (ngSubmit)="guardarActualizacion()">
+
+          <div class="modal-field">
+            <label>Nombre del edificio</label>
+            <input [(ngModel)]="selectedBuilding.name" name="modal_name" />
+          </div>
+          <div class="modal-field">
+            <label>Tipo</label>
+            <select [(ngModel)]="selectedBuilding.type" name="modal_type">
+              <option value="principal">Edificio principal</option>
+              <option value="facultad">Facultad / Departamento</option>
+              <option value="admin">Administración</option>
+              <option value="servicio">Servicio estudiantil</option>
+              <option value="aula">Salas de clases</option>
+              <option value="auditorio">Auditorio</option>
+              <option value="otro">Organización</option>
+            </select>
+          </div>
+
+          <div class="modal-field">
+            <label>Descripción</label>
+            <textarea [(ngModel)]="selectedBuilding.desc" name="modal_desc" rows="3"></textarea>
+          </div>
+
+          <div class="modal-field">
+            <label>Teléfono</label>
+            <input [(ngModel)]="selectedBuilding.contact.phone" name="modal_phone" placeholder="+56 58 2205100" />
+          </div>
+
+          <div class="modal-field">
+            <label>Correo electrónico</label>
+            <input [(ngModel)]="selectedBuilding.contact.email" name="modal_email" placeholder="contacto@uta.cl" />
+          </div>
+
+          <div class="modal-field">
+            <label>Sitio web</label>
+            <input [(ngModel)]="selectedBuilding.contact.web" name="modal_web" placeholder="www.uta.cl" />
+          </div>
+
+          <div class="modal-field">
+            <label>Dirección</label>
+            <input [(ngModel)]="selectedBuilding.contact.address" name="modal_address" placeholder="Av. 18 de Septiembre 2222, Arica" />
+          </div>
+
+          <div class="modal-field">
+            <label>Horario</label>
+            <input [(ngModel)]="selectedBuilding.contact.hours" name="modal_hours" placeholder="Lun–Vie 8:00–21:00" />
+          </div>
+
+          <div class="modal-update__actions">
+            <button type="submit" class="btn-guardar">Guardar cambios</button>
+            <button type="button" class="cancelar" (click)="cerrarModalActualizar()">Cancelar</button>
+          </div>
+
+        </form>
+      </ng-container>
+    </div>
+  </div>
+  <!-- MODAL NUEVO EDIFICIO -->
+  <div *ngIf="modalNuevoEdificio" class="modal-backdrop">
+    <div class="modal-update">
+
+      <div class="modal-update__header">
+        <h3 class="modal-update__title">Nuevo edificio</h3>
+        <button class="info-panel__close" (click)="cerrarModalNuevo()">&#x2715;</button>
+      </div>
+
+      <p class="modal-coords">
+        📍 Posición: x={{ nuevoEdificio.x }}% — y={{ nuevoEdificio.y }}%
+      </p>
+
+      <form (ngSubmit)="guardarNuevoEdificio()">
+
+        <div class="modal-field">
+          <label>ID <span class="required">*</span></label>
+          <input [(ngModel)]="nuevoEdificio.id" name="new_id" placeholder="Ej: 30, 3c, I..." />
+        </div>
+
+        <div class="modal-field">
+          <label>Label (número/letra visible en el mapa) <span class="required">*</span></label>
+          <input [(ngModel)]="nuevoEdificio.label" name="new_label" placeholder="Ej: 30" />
+        </div>
+
+        <div class="modal-field">
+          <label>Nombre <span class="required">*</span></label>
+          <input [(ngModel)]="nuevoEdificio.name" name="new_name" placeholder="Nombre del edificio" />
+        </div>
+
+        <div class="modal-field">
+          <label>Tipo</label>
+          <select [(ngModel)]="nuevoEdificio.type" name="new_type">
+            <option value="principal">Edificio principal</option>
+            <option value="facultad">Facultad / Departamento</option>
+            <option value="admin">Administración</option>
+            <option value="servicio">Servicio estudiantil</option>
+            <option value="aula">Salas de clases</option>
+            <option value="auditorio">Auditorio</option>
+            <option value="otro">Organización</option>
+          </select>
+        </div>
+
+        <div class="modal-field">
+          <label>Descripción</label>
+          <textarea [(ngModel)]="nuevoEdificio.desc" name="new_desc" rows="3"></textarea>
+        </div>
+
+        <div class="modal-field">
+          <label>Teléfono</label>
+          <input [(ngModel)]="nuevoEdificio.contact!.phone" name="new_phone" />
+        </div>
+
+        <div class="modal-field">
+          <label>Correo</label>
+          <input [(ngModel)]="nuevoEdificio.contact!.email" name="new_email" />
+        </div>
+
+        <div class="modal-field">
+          <label>Web</label>
+          <input [(ngModel)]="nuevoEdificio.contact!.web" name="new_web" />
+        </div>
+
+        <div class="modal-field">
+          <label>Dirección</label>
+          <input [(ngModel)]="nuevoEdificio.contact!.address" name="new_address" />
+        </div>
+
+        <div class="modal-field">
+          <label>Horario</label>
+          <input [(ngModel)]="nuevoEdificio.contact!.hours" name="new_hours" />
+        </div>
+
+        <div class="modal-update__actions">
+          <button type="submit" class="btn-guardar">Guardar edificio</button>
+          <button type="button" class="cancelar" (click)="cerrarModalNuevo()">Cancelar</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>

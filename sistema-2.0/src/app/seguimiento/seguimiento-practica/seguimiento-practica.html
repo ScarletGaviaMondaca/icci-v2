@@ -1,0 +1,585 @@
+
+<div class="avance">
+    <div class="botones"><button onclick="window.history.back();">Volver</button> </div>  
+
+ <div *ngIf="alumno" class="container avance-alumno">
+  <h1 class="titulo algin-center ">Seguimiento del alumno</h1>
+        <h4 class="titulo2 mb-3">
+                {{ alumno.nombres }} {{ alumno.apellido1 }} {{ alumno.apellido2 }}<br>
+                <small>RUT: {{ alumno.rut }}</small>
+                <!-- Solo visualización -->
+                <div class="mt-2">
+                        <a *ngIf="alumno.informe_final"
+                        [href]="'http://localhost/' + alumno.informe_final" 
+                        target="_blank" 
+                        class="btn btn-sm btn-outline-success">
+                        📄 Ver / Descargar Informe Final
+                        </a>
+                        <small *ngIf="!alumno.informe_final" class="text-muted">
+                        Sin informe subido aún
+                        </small>
+                        <!-- Evaluación empresa -->
+                        <a *ngIf="alumno.eval_empresa_archivo"
+                        [href]="'http://localhost/' + alumno.eval_empresa_archivo"
+                        target="_blank"
+                        class="btn btn-sm btn-outline-primary ms-2">
+                        📄 Ver Evaluación Empresa
+                        </a>
+                        <small *ngIf="!alumno.eval_empresa_archivo" class="text-muted ms-3">
+                        Sin evaluación subida aún
+                        </small>
+                </div>
+
+        </h4>
+    <div class="row">
+        <div *ngIf="mensajeGlobal" class="alerta alert alert-info" >
+                {{ mensajeGlobal }}
+        </div>
+    <div class="col-12 mb-3" *ngFor="let hito of hitos; let i = index">
+        <div class="card" [class.disabled]="!puedeEditarHito(i)">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <!-- Izquierda: círculo + nombre -->
+            <div class="d-flex align-items-center gap-2">
+              <span class="estado-dot-hito"
+                    [ngClass]="{
+                      'estado-no-iniciado': tempDatos[i].estado == 0,
+                      'estado-pendiente':   tempDatos[i].estado == 1,
+                      'estado-aprobado':    tempDatos[i].estado == 2,
+                      'estado-reprobado':   tempDatos[i].estado == 3
+                    }">
+              </span>
+              <h5 class="card-title mb-0">{{ hito.label }}</h5>
+              <small *ngIf="tempDatos[i]?.estado === 2 && alumno" class="text-success d-block mt-1">
+                ✅ Aprobado el {{ alumno[hitosCamposAprobacion[i]] | date:'dd/MM/yyyy' }}
+              </small>
+            </div>
+            <!-- Derecha: duración + botones -->
+            <div class="d-flex align-items-center gap-2">
+              <span *ngIf="i !== 0" class="badge bg-secondary fs-6">
+                Duración: {{ hitoDuraciones[i] }}
+              </span>
+              <!-- Modificar — solo si está pendiente o excedido -->
+              <button *ngIf="(auth.esSecretaria() || auth.esAdmin()) && 
+                            !hitosDesbloqueados.includes(i) &&
+                            (tempDatos[i]?.estado === 0 || tempDatos[i]?.estado === 1 || tempDatos[i]?.estado === 3)"
+                      class="btn btn-sm btn-outline-warning"
+                      (click)="toggleDesbloqueo(i)">
+                ✏️ Modificar
+              </button>
+              <!-- Bloquear — cuando está desbloqueado -->
+              <button *ngIf="hitosDesbloqueados.includes(i)"
+                      class="btn btn-sm btn-warning"
+                      (click)="toggleDesbloqueo(i)">
+                🔒 Bloquear
+              </button>
+              <!-- Marcar completado — solo si está pendiente -->
+              <button *ngIf="(auth.esSecretaria() || auth.esAdmin()) &&
+                            hitoEstaPendiente(i) &&
+                            !hitosDesbloqueados.includes(i)"
+                      class="btn btn-sm btn-success btn-completar"
+                      (click)="confirmarCompletar(i); $event.stopPropagation()">
+                ✅ Marcar Completado
+              </button>
+              <!-- Desbloquear — para hitos aprobados -->
+              <button *ngIf="(auth.esSecretaria() || auth.esAdmin()) && 
+                            tempDatos[i]?.estado === 2 &&
+                            !hitosDesbloqueados.includes(i)"
+                      class="btn btn-sm btn-outline-secondary btn-desbloquear"
+                      (click)="toggleDesbloqueo(i)">
+                🔓 Desbloquear
+              </button>
+            </div>
+          </div>
+          <div *ngIf="hitoExpandido(i)">
+          <!-- Fechas -->
+          <div class="row g-2 mb-2">
+            <div class="col-4">
+
+              <label class="form-label">Inicio:</label>
+              <input type="date"
+                    class="form-control form-control-sm"
+                    [disabled]="!puedeEditarHito(i)"
+                    [(ngModel)]="tempDatos[i].fechaInicio"
+                    (change)="calcularFechaTermino(i)">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Término:</label>
+              <input type="date"
+                    class="form-control form-control-sm"
+                    [disabled]="!puedeEditarHito(i)"
+                    [min]="tempDatos[i].fechaInicio"
+                    [(ngModel)]="tempDatos[i].fechaTermino"
+                    (change)="calcularFechaTermino(i)">
+              <!-- Mensaje horas hábiles solo hito 1 -->
+              <small *ngIf="i === 0 && horasCalculadas" 
+                    class="text-primary mt-1 d-block">
+                ⏱ {{ horasCalculadas }}
+              </small>
+            </div>
+
+          </div>
+          <!-- Fecha entrega real — solo si está aprobado o excedido y tiene fecha -->
+          <div *ngIf="i > 0 && alumno['fechaEntregaCampos_' + i]" class="mt-1">
+          </div>
+          <div *ngIf="i > 0 && alumno && alumno[fechaEntregaClaves[i]]" class="mt-2">
+            <small class="badge bg-warning text-dark">
+              📅 Entregado el: {{ alumno[fechaEntregaClaves[i]] }}
+            </small>
+          </div>
+            <!-- Campos específicos SOLO para el primer hito -->
+            <div *ngIf="i === 0">
+              <div class="row g-2 mb-2">
+                <div class="col-4">
+                  <label>Horas/Semana:</label>
+                  <input type="number" min="0"
+                          class="form-control form-control-sm mb-2"
+                          [(ngModel)]="tempDatos[0].horasSem"
+                          (change)="horasCalculadas = null; calcularFechaTermino(0);">
+                </div>
+                <div class="col-4">
+                  <label>Horas/Total:</label>
+                  <input type="number" min="0"
+                          class="form-control form-control-sm mb-2"
+                          [(ngModel)]="tempDatos[0].horasTot"
+                          [readonly]="true"
+                          [class.bg-danger]="horasTotalesInsuficientes()"
+                          [class.text-white]="horasTotalesInsuficientes()">
+                  <small *ngIf="horasTotalesInsuficientes()" class="text-danger fw-bold">
+                    ⚠️ No cumple con las horas mínimas 
+                    ({{ practicaNum === 1 ? 180 : 320 }} hrs requeridas)
+                  </small>
+                </div>
+                <div *ngIf="i === 0">
+                  <label >Número carta:</label>
+                  <input type="text"
+                          class="form-control form-control-sm mb-2"
+                          [(ngModel)]="tempDatos[0].numero_carta">
+                </div>
+              </div>  
+                  <!-- Empresa con selector + opción agregar nueva -->
+                  <label class="form-label">Empresa:</label>
+                  <div class="d-flex  gap-2 col-6">
+                    <select class="form-select form-select-sm"
+                            style="height: 32px; padding-top: 4px; padding-bottom: 4px;"
+                            [disabled]="!puedeEditarHito(i)"
+                            [(ngModel)]="tempDatos[0].empresa_id">
+                      <option value="">-- Seleccionar empresa --</option>
+                      <option *ngFor="let e of empresas" [ngValue]="e.id">{{ e.nombre }}</option>
+                    </select>
+                    <button class="btn btn-sm"
+                            style="white-space: nowrap;"
+                            [disabled]="!puedeEditarHito(i)"
+                            (click)="agregandoEmpresa = !agregandoEmpresa">
+                      + Nueva
+                    </button>
+                  </div>
+
+                  <!-- Agregar nueva empresa inline -->
+                  <div *ngIf="agregandoEmpresa" class="d-flex gap-2 mb-2">
+                    <input type="text" class="form-control form-control-sm"
+                          placeholder="Nombre de la empresa"
+                          [(ngModel)]="nuevaEmpresa">
+                    <button class="btn btn-sm btn-success"
+                            (click)="agregarEmpresa()">
+                      Guardar
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger"
+                            (click)="agregandoEmpresa = false; nuevaEmpresa = ''">
+                      Cancelar
+                    </button>
+                  </div>
+
+                  <!-- Jefe -->
+                  <label class="form-label">Jefe:</label>
+                  <input type="text" class="form-control form-control-sm mb-2"
+                        [disabled]="!puedeEditarHito(i)"
+                        [(ngModel)]="tempDatos[0].jefe">
+
+                  <!-- Supervisor -->
+                  <label class="form-label">Supervisor:</label>
+                  <input type="text" class="form-control form-control-sm mb-2"
+                        [disabled]="!puedeEditarHito(i)"
+                        [(ngModel)]="tempDatos[0].supervisor">
+
+                  <!-- Correo -->
+                  <label class="form-label">Correo:</label>
+                  <input type="email" class="form-control form-control-sm mb-2"
+                        [disabled]="!puedeEditarHito(i)"
+                        [(ngModel)]="tempDatos[0].correo"
+                        pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
+                        #correoInput="ngModel">
+                  <small *ngIf="correoInput.invalid && correoInput.dirty" class="text-danger d-block mb-2">
+                    Formato inválido. Ej: nombre@empresa.cl
+                  </small>
+
+                  <!-- Teléfono -->
+                  <label class="form-label">Teléfono:</label>
+                  <input type="text" class="form-control form-control-sm mb-2"
+                        [disabled]="!puedeEditarHito(i)"
+                        [(ngModel)]="tempDatos[0].telefono"
+                        pattern="9[0-9]{8}"
+                        maxlength="9"
+                        placeholder="9XXXXXXXX"
+                        #telefonoInput="ngModel">
+                  <small *ngIf="telefonoInput.invalid && telefonoInput.dirty" class="text-danger d-block mb-2">
+                     Formato inválido.
+                    Debe comenzar en 9 y tener 9 dígitos. Ej: 987654321
+                  </small>    
+                  <!-- Herramientas -->
+                  <label class="form-label">Conocimiento Requerido:</label>
+                  <textarea class="form-control form-control-sm mb-2"
+                            rows="3"
+                            [disabled]="!puedeEditarHito(i)"
+                            [(ngModel)]="tempDatos[0].herramientas"
+                            placeholder="Ej: Python&#10;Visual Studio Code&#10;Git">
+                  </textarea>
+                  <small class="text-muted">Ingresa un conocimiento por línea</small>    
+
+              </div>
+              <!-- Carta de solicitud — hito 1 -->
+              <div *ngIf="i === 0" class="mt-3 border-top pt-3">
+                <h6 class="mb-2">📄 Carta de Solicitud de Práctica</h6>
+                
+                <!-- Si ya existe -->
+                <div *ngIf="cartaSolicitudUrl" class="d-flex gap-2 align-items-center mb-2">
+                  <a [href]="cartaSolicitudUrl" target="_blank" 
+                    class="btn btn-sm btn-outline-success">
+                    📄 Ver carta generada
+                  </a>
+                  <button class="btn btn-sm btn-outline-secondary"
+                          [disabled]="generandoCarta"
+                          (click)="generarCarta()">
+                    🔄 Regenerar
+                  </button>
+                </div>
+
+                <!-- Si no existe -->
+                <div *ngIf="!cartaSolicitudUrl">
+                  <button class="btn btn-sm btn-primary"
+                          [disabled]="generandoCarta"
+                          (click)="generarCarta()">
+                    {{ generandoCarta ? '⏳ Generando...' : '📄 Generar carta de solicitud' }}
+                  </button>
+                </div>
+              </div>
+                <!-- ===== HITO 3: Revisión del Informe ===== -->
+                <!-- Profesor revisor y cartas -->
+              <div *ngIf="i === 2" class="mt-3 border-top pt-3">
+                  <h6 class="mb-3">👤 Profesor Revisor</h6>
+                  <div class="row g-2 mb-2">
+                    <select class="form-control" [(ngModel)]="tempDatos[2].informe_rev_profesor_id">
+                      <option *ngFor="let prof of profesores" [ngValue]="prof.id">{{ prof.nombre }} {{ prof.apellido1 || '' }} {{ prof.apellido2 || '' }}</option>
+                    </select>
+                    <div class="col-sm-6">
+                      <label class="form-label">Carta Petición:</label>
+                      <input type="text" class="form-control" [(ngModel)]="tempDatos[2].informe_rev_carta_peticion">
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label">Carta Asignación:</label>
+                      <input type="text" class="form-control" [(ngModel)]="tempDatos[2].informe_rev_carta_asignacion">
+                    </div>
+                  </div>
+                </div>
+                <!-- Observaciones -->
+                <div *ngIf="i === 2" class="mt-3 border-top pt-3">
+                  <h6 class="mb-3">📋 Observaciones</h6>
+                  <!-- Hay fecha abierta sin cerrar → solo mostrar campo fecha fin -->
+                  <div *ngIf="obsAbierta" class="alert alert-warning p-2 mb-2">
+                    <small class="fw-bold">⚠️ Recepción abierta desde: {{ obsAbierta.fecha_recepcion | date:'dd/MM/yyyy' }}</small>
+                    <div class="d-flex align-items-end gap-2 mt-2">
+                      <div class="flex-grow-1">
+                        <label class="form-label form-label-sm mb-1">Fecha Fin Recepción:</label>
+                        <input type="date" class="form-control form-control-sm"
+                              [min]="obsAbierta.fecha_recepcion"
+                              [(ngModel)]="fechaFinPendiente">
+                      </div>
+                      <button class="btn btn-sm btn-success"
+                              [disabled]="!fechaFinPendiente"
+                              (click)="cerrarFechaObs()">
+                        Cerrar
+                      </button>
+                    </div>
+                  </div>
+                  <!-- No hay fecha abierta → formulario nueva fecha recepción -->
+                  <div *ngIf="!obsAbierta" class="row g-2 mb-2">
+                    <div class="col-sm-6">
+                      <label class="form-label">Fecha Recepción:</label>
+                      <input type="date" class="form-control form-control-sm"
+                            [(ngModel)]="nuevaFechaObservacion.fecha_recepcion">
+                    </div>
+                    <div class="col-12">
+                      <button class="btn btn-outline-primary btn-sm"
+                              [disabled]="guardandoObs || !nuevaFechaObservacion.fecha_recepcion"
+                              (click)="agregarFechaObs()">
+                        + Agregar Fecha Recepción
+                      </button>
+                    </div>
+                  </div>
+                  <div *ngIf="fechasObservacion.length > 0">
+                    <div *ngFor="let obs of fechasObservacion"
+                        class="d-flex justify-content-between align-items-center px-2 py-1 mb-1 rounded"
+                        [class.bg-warning-subtle]="!obs.fecha_fin_recepcion"
+                        [class.bg-light]="obs.fecha_fin_recepcion">
+                      <small>📅 <b>Inicio:</b> {{ obs.fecha_recepcion | date:'dd/MM/yyyy' }}</small>
+                      <small [class.text-danger]="!obs.fecha_fin_recepcion"
+                            [class.text-muted]="obs.fecha_fin_recepcion">
+                        📅 <b>Fin:</b> {{ obs.fecha_fin_recepcion ? (obs.fecha_fin_recepcion | date:'dd/MM/yyyy') : '⏳ Pendiente' }}
+                      </small>
+                    </div>
+                  </div>
+                  <small *ngIf="fechasObservacion.length === 0" class="text-muted">
+                    Sin fechas registradas.
+                  </small>
+                  <div *ngIf="observaciones.length === 0">
+                    <small class="text-muted">Sin observaciones registradas.</small>
+                  </div>
+                </div>
+                <!-- Subir Informe Final -->
+                <div *ngIf="i === 2" class="mt-3 border-top pt-3">
+                  <label class="form-label fw-bold">📎 Subir Informe Final (PDF):</label>
+                  <div class="d-flex align-items-center gap-2">
+                    <input #fileInput type="file" accept=".pdf"
+                          class="form-control form-control-sm"
+                          (change)="onArchivoSeleccionado($event)">
+                    <button class="btn btn-sm btn-primary"
+                            [disabled]="!archivoSeleccionado || subiendoInforme"
+                            (click)="subirInforme()">
+                      {{ subiendoInforme ? 'Subiendo...' : 'Subir' }}
+                    </button>
+                  </div>
+                  <!-- Estado informe y fecha de subida -->
+                  <div *ngIf="alumno.informe_final" class="mt-1">
+                    <small class="text-success d-block">✅ Ya tiene informe subido</small>
+                    <small *ngIf="alumno.informe_fecha_subida" class="text-muted d-block">
+                      🕐 Subido el: {{ alumno.informe_fecha_subida | date:'dd/MM/yyyy HH:mm' }}
+                    </small>
+                  </div>
+                </div>          
+                <!-- Generar formulario de revisión -->
+                <div *ngIf="i === 2" class="mt-3 border-top pt-3">
+                  <h6 class="mb-2">📄 Formulario de Revisión</h6>
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button class="btn btn-sm btn-outline-primary"
+                            [disabled]="generandoFormulario"
+                            (click)="generarFormularioRevision()">
+                      {{ generandoFormulario ? '⏳ Generando...' : '⬇️ Generar formulario' }}
+                    </button>
+                    <a *ngIf="alumno.informe_rev_formulario"
+                       [href]="'http://localhost/' + alumno.informe_rev_formulario"
+                       target="_blank"
+                       class="btn btn-sm btn-outline-success">
+                      📄 Ver formulario guardado
+                    </a>
+                  </div>
+                  <small *ngIf="alumno.informe_rev_formulario" class="text-success mt-1 d-block">
+                    ✅ Formulario guardado en el servidor
+                  </small>
+                </div>
+                <!-- Informe Confidencial (descarga) — hito 4 -->
+                <div *ngIf="i === 3" class="mt-3 border-top pt-3">
+                  <h6 class="mb-2">📄 Informe Confidencial</h6>
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button class="btn btn-sm btn-outline-primary"
+                            [disabled]="generandoInformeConf"
+                            (click)="generarInformeConfidencial()">
+                      {{ generandoInformeConf ? '⏳ Generando...' : '⬇️ Generar informe confidencial' }}
+                    </button>
+                    <a *ngIf="alumno.eval_empresa_archivo"
+                       [href]="'http://localhost/' + alumno.eval_empresa_archivo"
+                       target="_blank"
+                       class="btn btn-sm btn-outline-success">
+                      📄 Ver informe guardado
+                    </a>
+                  </div>
+                  <small *ngIf="alumno.eval_empresa_archivo" class="text-success mt-1 d-block">
+                    ✅ Informe guardado en el servidor
+                  </small>
+                </div>
+                <!-- Subir Evaluación Empresa -->
+                <div *ngIf="i === 3" class="mt-3 border-top pt-3">
+                  <label class="form-label fw-bold">📎 Subir Evaluación Empresa (PDF) manual:</label>
+                  <div class="d-flex align-items-center gap-2">
+                      <input type="file" accept=".pdf"
+                            class="form-control form-control-sm"
+                            (change)="onArchivoEvalEmpresa($event)">
+                        <button class="btn btn-sm btn-primary"
+                                [disabled]="!archivoEvalEmpresa || subiendoEvalEmpresa"
+                                (click)="subirEvalEmpresa()">
+                         {{ subiendoEvalEmpresa ? 'Subiendo...' : 'Subir' }}
+                        </button>
+                  </div>
+                </div>
+                <!--  HITO 5: Comité de Carrera  -->
+                <div *ngIf="i === 4" class="mt-3 border-top pt-3">
+                  <h6 class="mb-3">📄 Acta de Calificación Final</h6>
+                  <div class="row g-2 mb-2">
+                    <div class="col-sm-6">
+                      <label class="form-label">Calificación</label>
+                      <select class="form-select form-select-sm" [(ngModel)]="calificacion">
+                        <option value="APROBADO">APROBADO</option>
+                        <option value="REPROBADO">REPROBADO</option>
+                      </select>
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label">Semestre Académico</label>
+                      <select class="form-select form-select-sm" [(ngModel)]="semestre">
+                      <option value="">-- Selecciona semestre --</option>
+                      <option *ngFor="let a of aniosDisponibles" 
+                              [value]="'I SEM/' + a">I SEM/{{ a }}</option>
+                      <option *ngFor="let a of aniosDisponibles" 
+                              [value]="'II SEM/' + a">II SEM/{{ a }}</option>
+                    </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Registradora</label>
+                      <input type="text" class="form-control form-control-sm"
+                            [(ngModel)]="registradora">
+                    </div>
+                  </div>
+
+                  <button class="btn btn-sm btn-outline-primary"
+                          [disabled]="!semestre"
+                          (click)="generarActa()">
+                    ⬇️ Descargar Acta
+                  </button>
+                </div>
+                <!-- HITO 6: Subir Acta Firmada -->
+                <div *ngIf="i === 5" class="mt-3 border-top pt-3">
+                  <label class="form-label fw-bold">📎 Subir Acta Firmada (PDF):</label>
+                  <div class="d-flex align-items-center gap-2">
+                    <input type="file" accept=".pdf"
+                          class="form-control form-control-sm"
+                          (change)="onArchivoActaFirmada($event)">
+                    <button class="btn btn-sm btn-primary"
+                            [disabled]="!archivoActaFirmada || subiendoActaFirmada"
+                            (click)="subirActaFirmada()">
+                      {{ subiendoActaFirmada ? 'Subiendo...' : 'Subir' }}
+                    </button>
+                  </div>
+                  <div *ngIf="alumno.acta_firmada" class="mt-2">
+                    <small class="text-success d-block">✅ Acta firmada subida</small>
+                    <a [href]="'http://localhost/' + alumno.acta_firmada"
+                      target="_blank"
+                      class="btn btn-sm btn-outline-success mt-1">
+                      📄 Ver Acta Firmada
+                    </a>
+                  </div>
+                </div>
+
+          <!-- Guardar — solo cuando está desbloqueado -->
+          <button class="btn btn-primary btn-sm mt-2"
+                  *ngIf="hitosDesbloqueados.includes(i)"
+                  (click)="guardarHito(i)">
+            💾 Guardar
+          </button>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Modal fecha entrega — hitos excedidos -->
+<div class="modal-overlay" *ngIf="mostrarModalFechaEntrega"
+     (click)="mostrarModalFechaEntrega = false">
+  <div class="modal-notif" style="max-width:400px"
+       (click)="$event.stopPropagation()">
+    <div class="modal-notif-header">
+      <h5>📅 Fecha de Entrega Real</h5>
+      <button class="btn-cerrar" (click)="mostrarModalFechaEntrega = false">✕</button>
+    </div>
+    <div class="modal-notif-body p-3">
+      <p class="text-muted small mb-3">
+        El hito <strong>{{ hitos[hitoEntrega!]?.label }}</strong> está excedido.
+        Ingresa la fecha real de entrega.
+      </p>
+      <div class="mb-3">
+        <label class="form-label">Fecha de entrega</label>
+        <input type="date" class="form-control form-control-sm"
+               [(ngModel)]="fechaEntregaInput">
+      </div>
+    </div>
+    <div class="modal-notif-footer">
+      <button class="btn btn-sm btn-outline-secondary"
+              (click)="mostrarModalFechaEntrega = false">Cancelar</button>
+      <button class="btn btn-sm btn-success"
+              [disabled]="!fechaEntregaInput"
+              (click)="completarConFechaEntrega()">
+        ✅ Confirmar entrega
+      </button>
+    </div>
+  </div>
+</div>
+</div>
+
+<div *ngIf="!alumno">
+  <p>No se encontró información del alumno solicitado.</p>
+</div>
+<!-- Modal confirmar completar -->
+<div class="modal-overlay" *ngIf="mostrarModalCompletar"
+     (click)="mostrarModalCompletar = false">
+  <div class="modal-notif" style="max-width:400px"
+       (click)="$event.stopPropagation()">
+    <div class="modal-notif-header">
+      <h5>✅ Confirmar</h5>
+      <button class="btn-cerrar" (click)="mostrarModalCompletar = false">✕</button>
+    </div>
+    <div class="modal-notif-body p-3">
+      <p>¿Confirmas que el hito <strong>{{ hitos[hitoACompletar!]?.label }}</strong> ha sido completado?</p>
+      <p class="text-muted small">El estado cambiará a <strong>Aprobado</strong> y se habilitará el siguiente hito.</p>
+    </div>
+    <div class="modal-notif-footer">
+      <button class="btn btn-sm btn-outline-secondary"
+              (click)="mostrarModalCompletar = false">Cancelar</button>
+      <button class="btn btn-sm btn-success"
+              (click)="marcarCompletado()">✅ Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal hito 6 -->
+<div class="modal-overlay" *ngIf="mostrarModalHito6"
+     (click)="mostrarModalHito6 = false">
+  <div class="modal-notif" style="max-width:450px"
+       (click)="$event.stopPropagation()">
+    <div class="modal-notif-header">
+      <h5>🎓 Completar Práctica</h5>
+      <button class="btn-cerrar" (click)="mostrarModalHito6 = false">✕</button>
+    </div>
+    <div class="modal-notif-body p-3">
+      <p class="text-muted small mb-3">Ingresa los datos finales para cerrar la práctica.</p>
+      <div class="mb-3">
+        <label class="form-label">Fecha de envío a Registraduría</label>
+        <input type="date" class="form-control form-control-sm"
+               [(ngModel)]="envioreg_fecha_envio">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Año de aprobación</label>
+        <select class="form-select form-select-sm"
+                [(ngModel)]="practica_anio_aprobacion">
+          <option value="">-- Selecciona --</option>
+          <option *ngFor="let a of aniosDisponibles" [ngValue]="a">{{ a }}</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Semestre de aprobación</label>
+        <select class="form-select form-select-sm"
+                [(ngModel)]="practica_semestre_aprobacion">
+          <option value="">-- Selecciona --</option>
+          <option *ngFor="let s of semestresDisponibles" [value]="s">{{ s }}</option>
+        </select>
+        <small class="text-muted" *ngIf="semestre">
+          Valor del acta: {{ semestre }}
+        </small>
+      </div>
+    </div>
+    <div class="modal-notif-footer">
+      <button class="btn btn-sm btn-outline-secondary"
+              (click)="mostrarModalHito6 = false">Cancelar</button>
+      <button class="btn btn-sm btn-success"
+              [disabled]="!envioreg_fecha_envio || !practica_anio_aprobacion || !practica_semestre_aprobacion"
+              (click)="completarHito6()">
+        🎓 Completar Práctica
+      </button>
+    </div>
+  </div>
+</div>

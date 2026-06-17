@@ -1,0 +1,55 @@
+.profesores{
+  background-color: white;
+  border-radius: 15px;
+  padding: 20px;
+}
+.titulo {
+  color: #054182;
+  font-family: cursive, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 3px;
+  letter-spacing: 0.01em;
+}
+.nuevo {
+    background-color: white ;
+    color: #054182 ;
+    border: 2px solid #054182 ;
+}
+.nuevo:hover {
+    background-color: #054182;
+    color: white;
+    border: 2px solid #054182 ;
+}
+.editar:hover {
+    background-color: white ;
+    color: #054182 ;
+    border: 2px solid #054182 ;
+}
+.editar {
+    background-color: #054182;
+    color: white;
+    border: 2px solid #054182 ;
+}
+.modal-edicion-overlay {
+  position: fixed;
+  inset: 0; /* reemplaza top/left/width/height */
+  background-color: rgba(0, 0, 0, 0.774);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 14px;           /* importante para móviles */
+  z-index: 1050;
+}
+
+.modal-edicion {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+
+  width: min(520px, 100%); /* responsive */
+  max-height: calc(100vh - 28px);
+  overflow: auto;
+
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}

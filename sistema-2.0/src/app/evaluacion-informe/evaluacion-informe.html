@@ -1,0 +1,175 @@
+<div class="container mt-4 mb-5" style="max-width:760px">
+  <div class="eval"> 
+  <!-- Cargando -->
+  <div *ngIf="cargando" class="text-center py-5">
+    <div class="spinner-border text-primary"></div>
+    <p class="mt-2 text-muted">Cargando datos del alumno...</p>
+  </div>
+
+  <!-- Error de carga -->
+  <div *ngIf="error && !seguimiento" class="alert alert-danger">{{ error }}</div>
+
+  <ng-container *ngIf="seguimiento && !cargando">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h3 class="fw-bold mb-0">📝 Evaluación de Informe de Práctica</h3>
+        <small class="text-muted">Revisión del informe académico</small>
+      </div>
+      <button class="btn btn-outline-secondary btn-sm" (click)="volver()">← Volver</button>
+    </div>
+
+    <!-- Datos del alumno -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h6 class="card-title text-muted mb-3">Datos del alumno</h6>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <small class="text-muted d-block">Nombre completo</small>
+            <strong>{{ seguimiento.alumno?.nombres }} {{ seguimiento.alumno?.apellido1 }} {{ seguimiento.alumno?.apellido2 }}</strong>
+          </div>
+          <div class="col-md-3">
+            <small class="text-muted d-block">RUT</small>
+            <strong>{{ seguimiento.alumno?.rut }}</strong>
+          </div>
+          <div class="col-md-3">
+            <small class="text-muted d-block">Práctica</small>
+            <span class="badge bg-primary">Práctica {{ seguimiento.practica_num }}</span>
+          </div>
+          <div class="col-12" *ngIf="seguimiento.informe_final">
+            <small class="text-muted d-block mt-1">Informe del alumno</small>
+            <a [href]="'http://localhost/' + seguimiento.informe_final"
+               target="_blank" class="btn btn-sm btn-outline-success">
+              📄 Abrir informe
+            </a>
+          </div>
+          <div class="col-12" *ngIf="!seguimiento.informe_final">
+            <div class="alert alert-warning py-2 mb-0 small mt-2">⚠️ El alumno aún no ha subido su informe.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Criterios de evaluación -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h6 class="card-title mb-3">Criterios de evaluación</h6>
+        <p class="text-muted small mb-3">
+          Responde cada criterio con: <strong>S</strong> (sí, cumple) · <strong>P</strong> (cumple parcialmente) · <strong>N</strong> (no cumple)
+        </p>
+
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width:50%">Criterio</th>
+                <th class="text-center" style="width:50px">S</th>
+                <th class="text-center" style="width:50px">P</th>
+                <th class="text-center" style="width:50px">N</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let c of criterioLabels">
+                <td>
+                  <strong class="d-block small">{{ c.titulo }}</strong>
+                  <span class="text-muted small">{{ c.texto }}</span>
+                </td>
+                <td class="text-center">
+                  <input type="radio" [name]="c.key" value="S"
+                         [(ngModel)]="criterios[c.key]"
+                         class="form-check-input">
+                </td>
+                <td class="text-center">
+                  <input type="radio" [name]="c.key" value="P"
+                         [(ngModel)]="criterios[c.key]"
+                         class="form-check-input">
+                </td>
+                <td class="text-center">
+                  <input type="radio" [name]="c.key" value="N"
+                         [(ngModel)]="criterios[c.key]"
+                         class="form-check-input">
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Observaciones -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h6 class="card-title mb-1">
+          Observaciones
+          <span *ngIf="requiereObservaciones" class="text-danger">*</span>
+        </h6>
+        <small class="text-muted d-block mb-2">
+          Indica las observaciones al alumno. Son obligatorias para las opciones b y c.
+        </small>
+        <textarea class="form-control" rows="4" [(ngModel)]="observaciones"
+                  placeholder="Escribe aquí las observaciones..."></textarea>
+      </div>
+    </div>
+
+    <!-- Subida de archivo (opción c) -->
+    <div class="card mb-4" *ngIf="requiereArchivo">
+      <div class="card-body">
+        <h6 class="card-title mb-1">Informe con anotaciones <span class="text-muted small">(opcional)</span></h6>
+        <small class="text-muted d-block mb-2">
+          Puedes subir el informe con tus correcciones marcadas para que el alumno lo descargue.
+        </small>
+        <input type="file" class="form-control" accept=".pdf,.doc,.docx"
+               (change)="onArchivoFeedback($event)">
+        <small class="text-muted" *ngIf="archivoFeedback">📎 {{ archivoFeedback.name }}</small>
+      </div>
+    </div>
+
+    <!-- Decisión final -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h6 class="card-title mb-3">Decisión final <span class="text-danger">*</span></h6>
+        <div *ngFor="let op of resultadoOpciones" class="form-check mb-2">
+          <input class="form-check-input" type="radio" [id]="'res-' + op.valor"
+                 [value]="op.valor" [(ngModel)]="resultado" name="resultado">
+          <label class="form-check-label" [for]="'res-' + op.valor">
+            {{ op.label }}
+          </label>
+        </div>
+
+        <!-- Avisos según opción -->
+        <div *ngIf="resultado === 'a'" class="alert alert-success small mt-3 mb-0">
+          ✅ Se aprobará el informe y se avanzará automáticamente al hito de Evaluación Empresa.
+        </div>
+        <div *ngIf="resultado === 'b'" class="alert alert-info small mt-3 mb-0">
+          ℹ️ Se aprobará el informe con las observaciones indicadas. El alumno avanzará al siguiente hito.
+        </div>
+        <div *ngIf="resultado === 'c'" class="alert alert-warning small mt-3 mb-0">
+          ⚠️ El alumno deberá corregir y subir nuevamente su informe. Las observaciones quedarán registradas.
+        </div>
+        <div *ngIf="resultado === 'd'" class="alert alert-danger small mt-3 mb-0">
+          ❌ El informe será rechazado y el alumno recibirá una notificación para repetir la práctica.
+        </div>
+      </div>
+    </div>
+
+    <!-- Validación y submit -->
+    <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+    <div *ngIf="mensaje" class="alert alert-success">{{ mensaje }}</div>
+
+    <div *ngIf="requiereObservaciones && !observaciones.trim()" class="alert alert-warning small">
+      ⚠️ Las observaciones son obligatorias para las opciones b y c.
+    </div>
+
+    <div class="d-flex gap-2 justify-content-end">
+      <button class="btn btn-outline-secondary" (click)="volver()">Cancelar</button>
+      <button class="btn btn-primary px-4"
+              [disabled]="!formularioValido || guardando"
+              (click)="guardar()">
+        {{ guardando ? '⏳ Guardando...' : '💾 Guardar evaluación' }}
+      </button>
+    </div>
+
+  </ng-container>
+  </div>
+</div>

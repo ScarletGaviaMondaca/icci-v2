@@ -1,0 +1,72 @@
+<div class="ingreso">
+    <div class="datos container mt-4" style="max-width: 600px;">
+    <div class="d-flex align-items-center gap-2 mb-4" >
+        <button class="volver btn btn-sm btn-outline-secondary" (click)="volver()">← Volver</button>
+        <h3 class="titulo mb-0">➕ Ingreso Alumno Especial</h3>
+    </div>
+
+    <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+    <div class="card">
+        <div class="card-body">
+        <div class="alert alert-info py-2 mb-3">
+            <small>👤 Para alumnos de planes anteriores que regresan a completar su práctica.</small>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12">
+            <label class="form-label">RUT <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm"
+                    [(ngModel)]="alumno.rut"
+                    placeholder="Ej: 12.345.678-9">
+            </div>
+            <div class="col-12">
+            <label class="form-label">Nombres <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm"
+                    [(ngModel)]="alumno.nombres"
+                    placeholder="Nombres completos">
+            </div>
+            <div class="col-sm-6">
+            <label class="form-label">Apellido Paterno <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm"
+                    [(ngModel)]="alumno.apellido1">
+            </div>
+            <div class="col-sm-6">
+            <label class="form-label">Apellido Materno</label>
+            <input type="text" class="form-control form-control-sm"
+                    [(ngModel)]="alumno.apellido2">
+            </div>
+            <div class="col-sm-4">
+            <label class="form-label">Plan (texto libre)</label>
+            <input type="text" class="form-control form-control-sm"
+                    [(ngModel)]="alumno.plan_texto"
+                    placeholder="Ej: 1995, 2003">
+            </div>
+            <div class="col-sm-4">
+            <label class="form-label">Año Ingreso</label>
+            <input type="number" class="form-control form-control-sm"
+                    [(ngModel)]="alumno.anio_ingreso"
+                    placeholder="Ej: 1998">
+            </div>
+            <div class="col-sm-4">
+            <label class="form-label">Año Reingreso</label>
+            <input type="number" class="form-control form-control-sm"
+                    [(ngModel)]="alumno.anio_reingreso"
+                    placeholder="Ej: 2026">
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+            <button class="guardar btn"
+                    [disabled]="guardando"
+                    (click)="guardar()">
+            {{ guardando ? 'Guardando...' : '💾 Guardar' }}
+            </button>
+            <button class="cancelar btn btn-outline-secondary" (click)="volver()">
+            Cancelar
+            </button>
+        </div>
+        </div>
+    </div>
+    </div>
+</div>

@@ -1,0 +1,97 @@
+.fondo{
+  /* Ruta a tu imagen (asegúrate de que los ../ lleguen a assets) */
+  background-image: url('https://sgc.aici.uta.cl/themes/mitema/canvas.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  
+  /* Esto hace que el fondo ocupe el alto restante de la pantalla */
+  min-height: 80vh; 
+  padding: 40px 0;
+  border-radius: 8px; /* Opcional: para que se vea como una tarjeta grande */
+}
+.oferta {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.titulo {
+  color: #054182;
+  font-family: cursive, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 3px;
+  letter-spacing: 0.01em;
+}
+.subtitulo{
+  color: #054182;
+  font-family: cursive, system-ui, sans-serif;
+}
+
+.oferta-card {
+  border-radius: 12px;
+  border: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.oferta-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important;
+}
+
+.oferta-empresa {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.oferta-datos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 10px;
+  margin-top: 10px;
+}
+.modal-overlay {
+  position: fixed !important;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-notif {
+  background: white;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.modal-notif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.modal-notif-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid #dee2e6;
+}
+
+.btn-cerrar {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #666;
+}

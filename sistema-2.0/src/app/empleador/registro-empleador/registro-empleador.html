@@ -1,0 +1,195 @@
+<div class="registro-fondo">
+  <div class="registro-card">
+
+    <!-- Header -->
+    <div class="registro-header">
+      <h2>🏢 Registro de Empleador</h2>
+      <p class="text-muted">Portal de prácticas profesionales — ICCI UTA</p>
+    </div>
+
+    <!-- Token inválido -->
+    <div *ngIf="tokenError" class="alert alert-danger text-center">
+      <h5>⚠️ {{ tokenError }}</h5>
+      <p class="mb-0">Contacta a la secretaría para obtener un nuevo enlace.</p>
+    </div>
+
+    <!-- Cargando -->
+    <div *ngIf="cargando && !tokenValido" class="text-center py-4">
+      <div class="spinner-border text-primary"></div>
+      <p class="mt-2">Validando token...</p>
+    </div>
+
+    <!-- Registro exitoso -->
+    <div *ngIf="registrado" class="text-center py-4">
+      <div class="icono-exito">✅</div>
+      <h4 class="mt-3">¡Cuenta creada exitosamente!</h4>
+      <p class="text-muted">{{ mensaje }}</p>
+      <p class="text-muted">Ya puedes iniciar sesión en el sistema.</p>
+      <button class="btn btn-primary mt-2" (click)="router.navigate(['/login'])">
+        Ir al Login
+      </button>
+    </div>
+
+    <!-- Formulario -->
+    <form *ngIf="tokenValido && !registrado" (ngSubmit)="registrar()">
+
+      <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+      <h6 class="seccion-titulo">📋 Datos personales</h6>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12">
+          <label class="form-label">Nombres *</label>
+          <input type="text" class="form-control"
+                 [(ngModel)]="form.nombres" name="nombres" required>
+        </div>
+        <div class="col-6">
+          <label class="form-label">Apellido paterno *</label>
+          <input type="text" class="form-control"
+                 [(ngModel)]="form.apellido1" name="apellido1" required>
+        </div>
+        <div class="col-6">
+          <label class="form-label">Apellido materno</label>
+          <input type="text" class="form-control"
+                 [(ngModel)]="form.apellido2" name="apellido2">
+        </div>
+        <div class="col-6">
+          <label class="form-label">Cargo</label>
+          <input type="text" class="form-control"
+                 [(ngModel)]="form.cargo" name="cargo"
+                 placeholder="Ej: Supervisor de práctica">
+        </div>
+        <div class="col-6">
+          <label class="form-label">Teléfono</label>
+          <input type="text" class="form-control"
+                 [(ngModel)]="form.telefono" name="telefono"
+                 placeholder="9XXXXXXXX" maxlength="9">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Correo *</label>
+          <input type="email" class="form-control"
+                 [(ngModel)]="form.correo" name="correo"
+                 required [readonly]="!!correoToken">
+          <small class="text-muted" *ngIf="correoToken">
+            Correo asignado por la secretaría
+          </small>
+        </div>
+      </div>
+      <h6 class="seccion-titulo">🏢 Empresa</h6>
+
+      <div class="mb-3">
+        <label class="form-label">Selecciona tu empresa *</label>
+        <select class="form-select" [(ngModel)]="form.empresa_id" 
+                name="empresa_id">
+          <option [ngValue]="0">-- Selecciona --</option>
+          <option *ngFor="let e of empresas" [ngValue]="e.id">{{ e.nombre }}</option>
+        </select>
+      </div>
+
+      <!-- Agregar nueva empresa -->
+      <div class="mb-3">
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                (click)="mostrarNuevaEmpresa = !mostrarNuevaEmpresa">
+          {{ mostrarNuevaEmpresa ? '✕ Cancelar' : '+ Mi empresa no está en la lista' }}
+        </button>
+        <div *ngIf="mostrarNuevaEmpresa" class="mt-2 p-3 border rounded">
+          <label class="form-label">Nombre de la empresa *</label>
+          <div class="d-flex gap-2">
+            <input type="text" class="form-control form-control-sm"
+                  [(ngModel)]="nuevaEmpresaNombre" name="nuevaEmpresaNombre"
+                  placeholder="Ej: Empresa Acotango">
+            <button type="button" class="btn btn-sm btn-success"
+                    [disabled]="!nuevaEmpresaNombre || creandoEmpresa"
+                    (click)="crearEmpresa()">
+              {{ creandoEmpresa ? '...' : '✅ Agregar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+      <h6 class="seccion-titulo">🔒 Contraseña</h6>
+
+      <div class="row g-3 mb-4">
+        <div class="col-6">
+          <label class="form-label">Contraseña *</label>
+            <div class="input-group">
+              <input [type]="verPassword ? 'text' : 'password'" 
+                    class="form-control"
+                    [(ngModel)]="form.password" name="password"
+                    placeholder="Mínimo 8 caracteres">
+              <button type="button" class="btn btn-outline-secondary"
+                      (click)="verPassword = !verPassword">
+                {{ verPassword ? '🙈' : '👁️' }}
+              </button>
+            </div>
+          <!-- Requisitos -->
+          <div *ngIf="form.password" class="mt-2">
+            <small [class.text-success]="form.password.length >= 8"
+                  [class.text-danger]="form.password.length < 8"
+                  class="d-block">
+              {{ form.password.length >= 8 ? '✅' : '❌' }} Mínimo 8 caracteres
+            </small>
+            <small [class.text-success]="/[A-Z]/.test(form.password)"
+                  [class.text-danger]="!/[A-Z]/.test(form.password)"
+                  class="d-block">
+              {{ /[A-Z]/.test(form.password) ? '✅' : '❌' }} Al menos una mayúscula
+            </small>
+            <small [class.text-success]="/[0-9]/.test(form.password)"
+                  [class.text-danger]="!/[0-9]/.test(form.password)"
+                  class="d-block">
+              {{ /[0-9]/.test(form.password) ? '✅' : '❌' }} Al menos un número
+            </small>
+            <small [class.text-success]="/[@#$%^&*!]/.test(form.password)"
+                  [class.text-danger]="!/[@#$%^&*!]/.test(form.password)"
+                  class="d-block">
+              {{ /[@#$%^&*!]/.test(form.password) ? '✅' : '❌' }} Al menos un carácter especial (@#$%^&*!)
+            </small>
+          </div>
+        </div>
+        <div class="col-6">
+          <label class="form-label">Confirmar contraseña *</label>
+          <div class="input-group">
+            <input [type]="verConfirmar ? 'text' : 'password'"
+                  class="form-control"
+                  [(ngModel)]="form.confirmar_password" name="confirmar_password"
+                  placeholder="Repite la contraseña">
+            <button type="button" class="btn btn-outline-secondary"
+                    (click)="verConfirmar = !verConfirmar">
+              {{ verConfirmar ? '🙈' : '👁️' }}
+            </button>
+          </div>
+          <small *ngIf="form.confirmar_password && form.password !== form.confirmar_password"
+                class="text-danger d-block mt-1">
+            ❌ Las contraseñas no coinciden
+          </small>
+          <small *ngIf="form.confirmar_password && form.password === form.confirmar_password"
+                class="text-success d-block mt-1">
+            ✅ Las contraseñas coinciden
+          </small>
+        </div>
+      </div>
+      <!-- Documento de compromiso -->
+      <div *ngIf="compromisoUrl" class="mb-4">
+        <h6 class="seccion-titulo">📄 Documento de Compromiso</h6>
+        <p class="text-muted small mb-2">Lee el documento antes de crear tu cuenta:</p>
+        <iframe [src]="compromisoUrlSafe" width="100%" height="400"
+                style="border:1px solid #dee2e6; border-radius:6px;"></iframe>
+        <div class="form-check mt-3">
+          <input class="form-check-input" type="checkbox" id="chkCompromiso"
+                 [(ngModel)]="aceptaCompromiso" name="aceptaCompromiso">
+          <label class="form-check-label fw-semibold" for="chkCompromiso">
+            He leído y acepto el documento de compromiso
+          </label>
+        </div>
+        <div *ngIf="!aceptaCompromiso" class="text-danger small mt-1">
+          Debes aceptar el documento para continuar.
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100"
+              [disabled]="cargando || !passwordValida || form.password !== form.confirmar_password || (!!compromisoUrl && !aceptaCompromiso)">
+        {{ cargando ? 'Registrando...' : '✅ Crear cuenta' }}
+      </button>
+
+    </form>
+  </div>
+</div>

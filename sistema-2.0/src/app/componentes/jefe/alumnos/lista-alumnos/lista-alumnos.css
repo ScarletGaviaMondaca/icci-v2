@@ -1,0 +1,268 @@
+.opcion{
+    color: #054182;
+    font-size: large;
+}
+.opcion:hover{
+    background-color: #054182;
+    color: white;
+}
+.opcion.active{
+    background-color: #054182;
+    color: white;
+}
+.titulo, .titulo2 {
+    color: #054182;
+    font-family: cursive, system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 2rem;
+    margin-bottom: 3px;
+    letter-spacing: 0.01em;
+}
+.opciones{
+    border: 2px solid;
+    border-color: #054182;
+    border-radius: 5px;
+    margin-top: 20px;
+    background-color: white;
+}
+.descarga{
+    background-color: #054182;
+    color: white;
+    padding: 6px 12px;
+}
+.descarga:hover{
+    background-color: white;
+    color: #054182;
+    border: 1px solid;
+}
+.carga{
+    background-color: white;
+    color:  #204d7d;
+    border: 1px solid;
+    padding: 6px 12px;
+}
+.carga:hover{
+    background-color: #054182;
+    color: white;
+}
+.accion{
+    border-color: #033265;
+    border-radius: 5px;
+    color: white;
+}
+.accion:hover{
+    background-color: #033263;
+}
+.acciones-superior {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+@media (max-width: 768px) {
+  .acciones-superior {
+    width: 100%;
+    align-items: flex-start;
+  }
+}
+.encabezado{
+    border: 2px solid;
+    border-color: #054182;
+    border-radius: 5px;
+}
+.filtro-grupo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;   /* centra horizontalmente */
+  gap: 4px;
+}
+
+.filtro-grupo label {
+  font-weight: bold;
+}
+
+.filtro-grupo select {
+  padding: 4px;
+}
+.panel-contenido{
+  background: rgba(255, 255, 255, 0.95); /* sólido legible */
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 24px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+}
+
+/* Opcional: que la tabla no “se salga” en móviles */
+.panel-contenido .table{
+  background: white; /* asegura legibilidad dentro del panel */
+}
+
+@media (max-width: 576px){
+  .panel-contenido{
+    padding: 12px;
+    border-radius: 12px;
+  }
+}
+.paginacion{
+    color: #033265;
+    border-color: #033265;
+}
+.paginacion .page-link:hover{
+    background-color: #bfcff3;
+    border-color: #033265;
+    color: #033265;
+}
+/* Página activa */
+.paginacion .page-item.active .page-link{
+  background-color: #032c74; 
+  border-color: #1b3d79;
+  color: #fff;
+}
+/* Disabled */
+.paginacion .page-item.disabled .page-link{
+  color: #37556d;
+  border-color: #dee2e6;
+  background-color: #f8f9fa;
+}
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-box {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.modal-box h3 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+
+.modal-box p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-cancelar {
+  padding: 8px 20px;
+  border: 1px solid #ccc;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-eliminar {
+  padding: 8px 20px;
+  background: #e53935;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.encabezado-superior{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    flex-wrap:wrap; /* clave */
+    gap:20px;
+}
+
+.titulo-bloque{
+   flex:1;
+   min-width:260px;
+}
+
+.acciones-superior{
+    display:flex;
+    flex-wrap:wrap; /* permite bajar botones */
+    gap:10px;
+    align-items:flex-end;
+}
+
+.formato-box{
+   min-width:90px;
+}
+
+.descarga{
+   white-space:nowrap;
+}
+@media (max-width:768px){
+
+.encabezado-superior{
+    flex-direction:column;
+    align-items:flex-start;
+}
+
+.acciones-superior{
+   width:100%;
+}
+
+}
+.table th {
+  border: 1px solid #2f5a99;
+  padding: 8px;
+  color: white;
+  background-color: #054182;
+}
+.table td {
+  border: 1px solid #c8d8ec;
+  padding: 8px;
+  background-color: #eef2f785;
+}
+
+/* Inputs dentro del thead con fondo azul */
+.table thead input[type="text"].form-control {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: white;
+}
+.table thead input[type="text"].form-control::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Select dentro del thead */
+.table thead select {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: white;
+}
+.table thead select option {
+  background: #054182;
+  color: white;
+}
+
+/* Labels dentro del thead */
+.table thead label {
+  color: white;
+}
+
+/* Esquinas redondeadas — igual que la otra tabla */
+.table-wrapper {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #c8d8ec;
+}
+.table {
+  width: 100%;
+  border-radius: 0;   /* el wrapper se encarga */
+  overflow: visible;
+  margin-bottom: 0 !important;
+}
+

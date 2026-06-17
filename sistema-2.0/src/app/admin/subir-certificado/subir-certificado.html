@@ -1,0 +1,232 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <h1 class="titulo">Subir Certificados</h1>
+    <p>Busca cada alumno, completa sus datos y agrégalo a la lista. Al terminar sube todo junto.</p>
+  </div>
+
+  <!-- Éxito total -->
+  <div class="alert-exito" *ngIf="todosExitosos">
+    ✓ Se subieron {{ exitoTotal }} certificado{{ exitoTotal !== 1 ? 's' : '' }} correctamente.
+    <button class="btn-link" (click)="resetearTodo()">Subir más</button>
+  </div>
+  <!-- Error global -->
+  <div class="alert-error" *ngIf="error">⚠ {{ error }}</div>
+
+  <div class="layout" *ngIf="!todosExitosos">
+
+    <!-- ══ COLUMNA IZQUIERDA: búsqueda + formulario ══ -->
+    <div class="col-form">
+      <!-- Buscador -->
+      <div class="card" *ngIf="!alumnoSeleccionado">
+        <h2 class="card-titulo">Buscar alumno</h2>
+        <div class="search-wrap">
+          <input
+            type="text"
+            [(ngModel)]="textoBusqueda"
+            (ngModelChange)="onBusqueda()"
+            placeholder="Nombre o RUT del alumno..."
+            class="form-input"
+          />
+          <span class="buscando-txt" *ngIf="buscando">Buscando...</span>
+        </div>
+
+        <!-- Resultados -->
+        <div class="resultados-lista" *ngIf="resultados.length > 0">
+          <div class="resultado-item"
+               *ngFor="let r of resultados"
+               (click)="seleccionarAlumno(r)">
+            <div>
+              <p class="res-nombre">{{ r.nombre_completo }}</p>
+              <p class="res-rut">{{ r.rut }}</p>
+            </div>
+            <span class="res-accion">Seleccionar →</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario desplegado al seleccionar alumno -->
+      <div class="card card-formulario" *ngIf="alumnoSeleccionado">
+
+        <!-- Datos del alumno -->
+        <div class="alumno-seleccionado">
+          <div class="alumno-avatar">{{ alumnoSeleccionado.nombre_completo.charAt(0) }}</div>
+          <div class="alumno-datos">
+            <p class="alumno-nombre">{{ alumnoSeleccionado.nombre_completo }}</p>
+            <p class="alumno-rut">{{ alumnoSeleccionado.rut }}</p>
+          </div>
+          <button class="btn-cambiar" (click)="cambiarAlumno()">✕ Cambiar</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Error del formulario -->
+        <div class="alert-error-sm" *ngIf="errorForm">⚠ {{ errorForm }}</div>
+
+        <!-- Nombre del certificado -->
+        <div class="form-group">
+          <label>Nombre del certificado <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="nombreCert"
+                 placeholder="Ej: Taller de Programación Web"
+                 class="form-input" />
+        </div>
+
+        <!-- Tipo: asignatura u otro -->
+      <!-- Tipo -->
+      <div class="form-group">
+        <label>Tipo <span class="req">*</span></label>
+        <div class="tipo-tabs">
+          <button class="tipo-tab"
+                  [class.activo]="tipoExtra === 'asignatura'"
+                  (click)="cambiarTipo('asignatura')">
+            📚 Asignatura
+          </button>
+          <button class="tipo-tab"
+                  [class.activo]="tipoExtra === 'actividad'"
+                  (click)="cambiarTipo('actividad')">
+            🏅 Actividad
+          </button>
+        </div>
+      </div>
+
+      <!-- Selector desplegable -->
+      <div class="form-group">
+        <label>
+          {{ tipoExtra === 'asignatura' ? 'Asignatura' : 'Actividad' }}
+          <span class="req">*</span>
+        </label>
+
+        <div class="spinner-sm" *ngIf="cargandoListas">Cargando...</div>
+
+        <select *ngIf="!cargandoListas && !mostrarFormNueva"
+                [(ngModel)]="itemSeleccionado"
+                class="form-input form-select">
+          <option [ngValue]="null" disabled>
+            -- Selecciona {{ tipoExtra === 'asignatura' ? 'una asignatura' : 'una actividad' }} --
+          </option>
+          <option *ngFor="let item of listaActual" [ngValue]="item">
+            {{ item.nombre }}
+          </option>
+        </select>
+
+        <!-- Botón agregar nueva -->
+        <button class="btn-nueva"
+                *ngIf="!mostrarFormNueva"
+                (click)="mostrarFormNueva = true">
+          + Agregar nueva {{ tipoExtra === 'asignatura' ? 'asignatura' : 'actividad' }}
+        </button>
+
+        <!-- Formulario nueva actividad -->
+        <div class="form-nueva" *ngIf="mostrarFormNueva">
+          <input type="text"
+                [(ngModel)]="nuevaActividadNombre"
+                placeholder="Nombre de la nueva {{ tipoExtra === 'asignatura' ? 'asignatura' : 'actividad' }}"
+                class="form-input" />
+          <div class="form-nueva-acciones">
+            <button class="btn-guardar-nueva"
+                    (click)="guardarNuevaActividad()"
+                    [disabled]="!nuevaActividadNombre.trim() || guardandoNueva">
+              {{ guardandoNueva ? 'Guardando...' : '✓ Guardar' }}
+            </button>
+            <button class="btn-cancelar-nueva"
+                    (click)="mostrarFormNueva = false; nuevaActividadNombre = ''">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fecha (solo lectura, se pone automáticamente) -->
+      <div class="form-group">
+        <label>Fecha de emisión</label>
+        <input type="text" [value]="fechaEmision | date:'dd/MM/yyyy'"
+              class="form-input form-input--readonly" readonly />
+      </div>
+
+        <!-- PDF -->
+        <div class="form-group">
+          <label>Archivo PDF <span class="req">*</span></label>
+          <div class="file-drop" (click)="fileRef.click()">
+            <span *ngIf="!archivoPDF">📎 Haz clic para seleccionar el PDF</span>
+            <span *ngIf="archivoPDF" class="file-ok">📄 {{ nombreArchivo }}</span>
+          </div>
+          <input #fileRef type="file" accept=".pdf"
+                 (change)="onArchivo($event)" hidden />
+        </div>
+
+        <!-- Botón agregar -->
+        <button class="btn-agregar-lista" (click)="agregarALista()">
+          + Agregar a la lista
+        </button>
+
+      </div>
+
+    </div>
+
+    <!-- ══ COLUMNA DERECHA: lista acumulada ══ -->
+    <div class="col-lista">
+
+      <div class="card">
+        <div class="lista-header">
+          <h2 class="card-titulo">
+            Lista
+            <span class="badge-count" *ngIf="entradas.length > 0">{{ entradas.length }}</span>
+          </h2>
+        </div>
+
+        <!-- Vacía -->
+        <div class="lista-vacia" *ngIf="entradas.length === 0">
+          <p>Aún no hay alumnos en la lista.</p>
+          <p>Busca y selecciona un alumno para comenzar.</p>
+        </div>
+
+        <!-- Entradas -->
+        <div class="entradas-lista" *ngIf="entradas.length > 0">
+          <div class="entrada-item"
+               *ngFor="let e of entradas; let i = index"
+               [class.entrada-ok]="e.estado === 'ok'"
+               [class.entrada-error]="e.estado === 'error'">
+
+            <div class="entrada-num">{{ i + 1 }}</div>
+
+            <div class="entrada-info">
+              <p class="entrada-nombre">{{ e.alumno.nombre_completo }}</p>
+              <p class="entrada-detalle">{{ e.nombreCert }}</p>
+              <p class="entrada-detalle">
+                {{ e.itemSeleccionado?.nombre }}
+              </p>
+            </div>
+
+            <div class="entrada-estado">
+              <span *ngIf="e.estado === 'pendiente'" class="est-pendiente">Pendiente</span>
+              <span *ngIf="e.estado === 'subiendo'"  class="est-subiendo">⏳</span>
+              <span *ngIf="e.estado === 'ok'"        class="est-ok">✓<br>{{ e.codigoGenerado }}</span>
+              <span *ngIf="e.estado === 'error'"     class="est-error">✗ Error</span>
+            </div>
+
+            <button class="btn-eliminar"
+                    (click)="eliminarEntrada(i)"
+                    [disabled]="subiendo || e.estado === 'ok'"
+                    title="Eliminar">✕</button>
+
+          </div>
+        </div>
+
+        <!-- Botón subir todos -->
+        <div class="lista-footer" *ngIf="entradas.length > 0">
+          <button class="btn-subir-todos"
+                  (click)="subirTodos()"
+                  [disabled]="subiendo">
+            <span *ngIf="!subiendo">
+              ⬆ Subir {{ entradas.length }} certificado{{ entradas.length !== 1 ? 's' : '' }}
+            </span>
+            <span *ngIf="subiendo">Procesando...</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>

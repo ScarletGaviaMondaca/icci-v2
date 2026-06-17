@@ -1,0 +1,98 @@
+.opcion, .sub-opcion{
+     background-color: transparent;
+     border: none;
+    color: #054182;
+    font-size: large;
+}
+.opcion:hover, .sub-opcion:hover{
+    background-color: #054182;
+    color: white;
+}
+.opcion.active{
+    background-color: #054182;
+    color: white;
+}
+.btn{
+    background-color: #054182;
+    color: white;
+}
+.btn:hover{
+    background-color: white;
+    color:  #054182;
+}
+.titulo {
+  color: #054182;
+  font-family: cursive, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 3px;
+  letter-spacing: 0.01em;
+}
+.opciones{
+    border: 2px solid;
+    border-color: #054182;
+    border-radius: 5px;
+    margin-top: 20px;
+    background-color: white;
+}
+table th input {
+  width: 100%;
+  margin-top: 5px;
+}
+/* Resaltar fila completa al pasar el mouse */
+.table tbody tr:hover {
+    background-color: #4491e8d2; /* color azul clarito, puedes cambiar */
+    cursor: pointer; /* cambia el cursor para indicar que es interactivo */
+}
+.carga, .descarga{
+    background-color: #054182;
+    color: white;
+}
+.accion{
+    border-color: #033265;
+    border-radius: 5px;
+    color: white;
+}
+.accion:hover{
+    background-color: #033263;
+}
+.encabezado{
+    border: 2px solid;
+    border-color: #054182;
+    border-radius: 5px;
+}
+.filtro-grupo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;   /* centra horizontalmente */
+  gap: 4px;
+}
+
+.filtro-grupo label {
+  font-weight: bold;
+}
+
+.filtro-grupo select {
+  padding: 4px;
+}
+
+/* tabla*/
+.table {
+  width: 100%;
+}
+.table th{
+  border: 1px solid #033265;
+  padding: 8px;
+  color: #033265;
+  background-color: #e5ecf4;
+}
+.table td {
+ border: 1px solid #033265;
+  padding: 8px;
+  background-color: #eef1f4;
+}
+.texto-largo {
+  text-align: justify;
+  white-space: normal;
+  padding: 12px;
+}

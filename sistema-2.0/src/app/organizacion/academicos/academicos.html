@@ -1,0 +1,48 @@
+<div class="bloque">
+  <h1 class="titulo">Académicos</h1>
+  <p> Los profesores jornada completa de nuestro departamento son:</p>
+
+  <div class="row justify-content-center g-6">
+    <ng-container *ngFor="let persona of activos">
+      <div class="col-12 col-md-5 ">
+        <ng-container *ngTemplateOutlet="tarjeta; context: { persona: persona }">
+        </ng-container>
+      </div>
+    </ng-container>
+  </div>
+
+  <h1 class="titulo">Memoria histórica</h1>
+  <p> Académicos que prestaron servicio a nuestro departamento: </p>
+  <div class="row justify-content-center g-4">
+    <ng-container *ngFor="let persona of inactivos">
+      <div class="col-12 col-md-5 ">
+        <ng-container *ngTemplateOutlet="tarjeta; context: { persona: persona }">
+        </ng-container>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- Tu tarjeta como ng-template -->
+  <ng-template #tarjeta let-persona="persona">
+    <div class="vista-usuario text-center p-3 p-md-5">
+        <img [src]="persona.ruta_foto 
+        ? 'http://localhost/api/' + persona.ruta_foto 
+        : 'assets/img/sin-foto.png'"
+      class="foto shadow mb-2 d-block mx-auto"
+      alt="Foto de {{ persona.nombre }}">
+      <h5>{{ persona.nombre }} {{ persona.apellido1 }} {{ persona.apellido2 }}</h5>
+      <p class="text-muted small">{{ persona.correo }}</p>
+        <!-- Botón para admin -->
+        <div *ngIf="auth.esAdmin()" class="mt-2">
+        <button
+            class="btn btn-sm"
+            [ngClass]="persona.activo ? 'btn-danger' : 'btn-success'"
+            (click)="toggleActivo(persona)"
+            [disabled]="cambiandoId === persona.id"
+        >
+            {{ persona.activo ? 'Desactivar (Mem. histórica)' : 'Reactivar académico' }}
+        </button>
+        </div>
+    </div>
+  </ng-template>
+</div>

@@ -1,0 +1,33 @@
+.contenido h2 {
+  font-size: 30px !important;  /* fuerza el tamaño */
+  color: #054182;
+  font-family :Verdana, Geneva, Tahoma, sans-serif;
+}
+.contenido h3 {
+    color:#1161b7;
+    font-size: 20px;
+}
+.contenido{
+    border-radius: 15px;
+    background-color: white;
+    padding: 20px;
+}
+.encabezado{
+    color: rgb(1, 1, 61);
+    font-size: 15px;
+    text-align: center;
+}
+.respuesta{
+    color: rgb(1, 1, 61);
+    font-size: 15px;
+}
+
+/* Pantallas pequeñas (tablets) */
+@media (max-width: 768px) {
+    .contenido h2 {
+        font-size: 18px;
+  }
+    .contenido h3 {
+        font-size: 12px;
+    }
+}

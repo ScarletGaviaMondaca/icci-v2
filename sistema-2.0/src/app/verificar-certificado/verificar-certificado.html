@@ -1,0 +1,133 @@
+<div class="verify-page">
+
+  <div class="verify-container">
+
+    <!-- Encabezado -->
+    <div class="verify-header">
+      <div class="verify-logo">🔐</div>
+      <h1>Verificador de Documentos</h1>
+      <p>Ingresa el código que aparece en el documento para comprobar su autenticidad.</p>
+      <p class="search-hint" style="margin-top:4px">
+        Certificados: <code>000-000-000</code> &nbsp;·&nbsp;
+        Informes: <code>XXXX-XXXX-XXXX</code>
+      </p>
+    </div>
+
+    <!-- Buscador -->
+    <div class="verify-search">
+      <div class="search-row">
+        <input
+          type="text"
+          [(ngModel)]="codigo"
+          (ngModelChange)="onInput()"
+          (keyup.enter)="verificar()"
+          placeholder="Ej: 000-000-000 ó A1B2-C3D4-E5F6"
+          class="codigo-input"
+          maxlength="14"
+          autocomplete="off"
+          spellcheck="false"
+          style="text-transform: uppercase"
+        />
+        <button class="btn-verificar" (click)="verificar()" [disabled]="buscando">
+          {{ buscando ? 'Verificando...' : 'Verificar' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div class="alert-error" *ngIf="error">
+      ⚠ {{ error }}
+    </div>
+
+    <!-- Resultado inválido -->
+    <div class="resultado-invalido" *ngIf="resultado && !resultado.valido">
+      <div class="resultado-icono">❌</div>
+      <h2>Documento no encontrado</h2>
+      <p>{{ resultado.mensaje }}</p>
+      <p class="hint">Verifica que el código esté escrito correctamente.</p>
+      <button class="btn-limpiar" (click)="limpiar()">Intentar de nuevo</button>
+    </div>
+
+    <!-- Resultado válido -->
+    <div class="resultado-valido" *ngIf="resultado && resultado.valido">
+
+      <div class="resultado-header">
+        <div class="resultado-icono-ok">✓</div>
+        <div>
+          <h2>Documento Válido</h2>
+          <p class="resultado-tipo">{{ tipoLabel(resultado.tipo) }}</p>
+        </div>
+      </div>
+
+      <div class="resultado-grid">
+
+        <div class="resultado-campo">
+          <label>Tipo de documento</label>
+          <span>{{ resultado.nombre }}</span>
+        </div>
+
+        <div class="resultado-campo">
+          <label>Alumno</label>
+          <span>{{ resultado.alumno_nombre }}</span>
+        </div>
+
+        <div class="resultado-campo">
+          <label>RUT</label>
+          <span>{{ resultado.alumno_rut }}</span>
+        </div>
+
+        <div class="resultado-campo" *ngIf="resultado.empresa">
+          <label>Empresa</label>
+          <span>{{ resultado.empresa }}</span>
+        </div>
+
+        <div class="resultado-campo" *ngIf="resultado.practica_num">
+          <label>N° Práctica</label>
+          <span>{{ resultado.practica_num }}</span>
+        </div>
+
+        <div class="resultado-campo" *ngIf="resultado.fecha_inicio">
+          <label>Fecha inicio práctica</label>
+          <span>{{ formatFecha(resultado.fecha_inicio!) }}</span>
+        </div>
+
+        <div class="resultado-campo" *ngIf="resultado.fecha_termino">
+          <label>Fecha término práctica</label>
+          <span>{{ formatFecha(resultado.fecha_termino!) }}</span>
+        </div>
+
+        <div class="resultado-campo" *ngIf="resultado.horas_totales">
+          <label>Horas totales</label>
+          <span>{{ resultado.horas_totales }} hrs.</span>
+        </div>
+
+        <div class="resultado-campo" *ngIf="resultado.fecha_emision">
+          <label>Fecha de emisión</label>
+          <span>{{ formatFecha(resultado.fecha_emision!) }}</span>
+        </div>
+
+        <div class="resultado-campo">
+          <label>Código verificado</label>
+          <span class="codigo-display">{{ codigo }}</span>
+        </div>
+
+      </div>
+
+      <!-- Botones -->
+      <div class="resultado-actions">
+        <a *ngIf="resultado.pdf_url"
+           [href]="baseUrl + resultado.pdf_url"
+           target="_blank"
+           class="btn-ver-pdf">
+          📄 Ver documento original
+        </a>
+        <button class="btn-limpiar" (click)="limpiar()">
+          Verificar otro
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

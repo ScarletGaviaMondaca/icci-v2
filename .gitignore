@@ -1,0 +1,58 @@
+# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+
+# Compiled output
+/dist
+/tmp
+/out-tsc
+/bazel-out
+
+# Node
+/node_modules
+npm-debug.log
+yarn-error.log
+
+# IDEs and editors
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/mcp.json
+.history/*
+
+# Miscellaneous
+/.angular/cache
+.sass-cache/
+/connect.lock
+/coverage
+/libpeerconnection.log
+testem.log
+/typings
+__screenshots__/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Backend NestJS
+back/intranet-icci-api/node_modules/
+back/intranet-icci-api/dist/
+back/intranet-icci-api/.env
+
+# Prisma generated
+back/intranet-icci-api/node_modules/.prisma/
+
+# Uploads (archivos locales)
+back/intranet-icci-api/uploads/
+sistema-2.0/node_modules/
+sistema-2.0/dist/
+sistema-2.0/.angular/

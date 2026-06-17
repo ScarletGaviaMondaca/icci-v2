@@ -1,0 +1,81 @@
+<!-- EDITOR DE TABLA -->
+<div *ngIf="plan" class="plan">
+  <h1 class="titulo">Editar Plan</h1>
+    <div class="mb-2 d-flex gap-2">
+        <button class="btn" (click)="volver()">
+          ← Volver
+        </button>
+    </div>
+    <div class="table-wrapper">
+      <table class="table table-bordered text-center">
+        <!-- TITULO -->
+        <tr>
+          <th colspan="6" >
+            <input class="titulo form-control text-center fw-bold"
+                  [(ngModel)]="plan.titulo">
+          </th>
+        </tr>
+        <!-- FILA -->
+        <tr>
+          <th>Año</th>
+          <td><input class="form-control" [(ngModel)]="plan.anio"></td>
+          <th>Versión</th>
+          <td><input class="form-control" [(ngModel)]="plan.version"></td>
+          <th>Duración</th>
+          <td><input class="form-control" [(ngModel)]="plan.duracion"></td>
+        </tr>
+        <tr>
+          <th>Fecha oficialización</th>
+          <td><input type="date" class="form-control" [(ngModel)]="plan.fecha_oficializacion"></td>
+          <th>Fecha inicio</th>
+          <td><input type="date" class="form-control" [(ngModel)]="plan.fecha_inicio"></td>
+          <th>Fecha cierre</th>
+          <td><input type="date" class="form-control" [(ngModel)]="plan.fecha_cierre"></td>
+        </tr>
+        <!-- SOLO VISUAL (NO EDITABLE AQUÍ) -->
+        <tr>
+          <th colspan="3">Enfoque</th>
+          <td colspan="3" class="p-0">
+            <textarea class="form-control" rows="4" [(ngModel)]="plan.enfoque"></textarea>
+            <ul class="texto-justificado mb-0 px-3 py-2">
+              <li *ngFor="let linea of obtenerLineas(plan.enfoque)">
+                {{ linea }}
+              </li>
+            </ul>
+          </td>
+        </tr>
+        <tr>
+          <th colspan="3">Perfil de egreso</th>
+          <td colspan="3" class="p-0">
+            <textarea class="form-control" rows="5" [(ngModel)]="plan.perfil_egreso"></textarea>
+            <ul class="texto-justificado mb-0 px-3 py-2">
+              <li *ngFor="let linea of obtenerLineas(plan.perfil_egreso)">
+                {{ linea }}
+              </li>
+            </ul>
+          </td>
+        </tr>
+        <tr>
+          <th colspan="3">Propósito formativo</th>
+          <td colspan="3" class="p-0">
+            <textarea class="form-control" rows="4" [(ngModel)]="plan.proposito_formativo"></textarea>
+            <ul class="texto-justificado mb-0 px-3 py-2">
+              <li *ngFor="let linea of obtenerLineas(plan.proposito_formativo)">
+                {{ linea }}
+              </li>
+            </ul>
+          </td>
+        </tr>
+
+      </table>
+    </div>
+  <!-- BOTONES -->
+  <div class="mt-4 d-flex gap-2">
+    <button class="btn btn-secondary" (click)="volver()">
+      ⬅ Volver
+    </button>
+    <button class="btn btn-success" (click)="guardar()">
+      💾 Guardar
+    </button>
+  </div>
+</div>

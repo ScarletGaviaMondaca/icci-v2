@@ -1,0 +1,186 @@
+<div class="tabla">
+    <button class="carga" onclick="window.history.back();"> ← Volver</button>
+    <h1 class="titulo">Seguimiento de Practica {{practicaNum}}</h1>
+    <div class="leyenda-estados mb-3">
+        <h4 class="titulo">Lista de alumnos en practica</h4>
+    
+        <div class="leyenda-item">
+            <span class="estado-dot estado-2"></span>
+            <span>Aprobado / Completado</span>
+        </div>
+        <div class="leyenda-item">
+            <span class="estado-dot estado-1"></span>
+            <span>Pendiente / En curso</span>
+        </div>
+        <div class="leyenda-item">
+            <span class="estado-dot estado-3"></span>
+            <span>Reprobado / Excedido</span>
+        </div>
+        <div class="leyenda-item">
+            <span class="estado-dot estado-0"></span>
+            <span>No iniciado</span>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div class="d-flex align-items-end gap-2">
+            <div *ngIf="auth.esAdmin()" class="d-flex align-items-end gap-2">
+                <button class="opcion btn" (click)="toggleCarga()">
+                    Subir archivo
+                </button>
+            </div>
+            <div *ngIf="mostrarCarga" class="mt-3 p-3 border rounded bg-light">
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <label class="carga btn mb-0">
+                        Seleccionar CSV
+                        <input type="file" hidden accept=".csv" (change)="importarCSV($event)">
+                    </label>
+                    <span *ngIf="nombreArchivo" class="badge bg-success">
+                        {{ nombreArchivo }}
+                    </span>
+                    <button class="opcion" (click)="descargarPlantilla('csv')">
+                        📄 Plantilla CSV
+                    </button>
+                    <button class="opcion" (click)="descargarPlantilla('excel')">
+                        📊 Plantilla Excel
+                    </button>
+                </div>
+            </div>
+            <button class="opcion btn" (click)="exportar()">
+                Exportar lista
+            </button>
+            <div>
+                <label class="form-label mb-0">Formato</label>
+                <select [(ngModel)]="tipoExport" class="form-select">
+                    <option value="csv">CSV</option>
+                    <option value="excel">Excel</option>
+                    <option value="pdf">PDF</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <span *ngIf="estadoSubida" class="small justify-content-end align-items-end">
+        {{ estadoSubida }}
+    </span>
+
+    <div class="table-wrapper">
+        <table class="table table-bordered table-striped mt-3" style="margin-top:0!important">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Rut
+                        <input type="text" class="form-control form-control-sm mt-1"
+                            [(ngModel)]="filtroRut" (ngModelChange)="paginaActual = 1">
+                    </th>
+                    <th>Nombre completo
+                        <input type="text" class="form-control form-control-sm mt-1"
+                            [(ngModel)]="filtroNombre" (ngModelChange)="paginaActual = 1">
+                    </th>
+                    <th>Plan
+                        <input type="text" class="form-control form-control-sm mt-1"
+                            [(ngModel)]="filtroPlan" (ngModelChange)="paginaActual = 1">
+                    </th>
+                    <th>1. Práctica
+                        <select class="form-select form-select-sm mt-1"
+                            [(ngModel)]="filtroPractica1" (ngModelChange)="paginaActual = 1">
+                            <option value="">Todos</option>
+                            <option *ngFor="let e of estadosSeguimiento" [ngValue]="e.value">{{e.label}}</option>
+                        </select>
+                    </th>
+                    <th>2. Elab. Informe
+                        <select class="form-select form-select-sm mt-1"
+                            [(ngModel)]="filtroInformeElab" (ngModelChange)="paginaActual = 1">
+                            <option value="">Todos</option>
+                            <option *ngFor="let e of estadosSeguimiento" [ngValue]="e.value">{{e.label}}</option>
+                        </select>
+                    </th>
+                    <th>3. Rev. Informe
+                        <select class="form-select form-select-sm mt-1"
+                            [(ngModel)]="filtroInformeRev" (ngModelChange)="paginaActual = 1">
+                            <option value="">Todos</option>
+                            <option *ngFor="let e of estadosSeguimiento" [ngValue]="e.value">{{e.label}}</option>
+                        </select>
+                    </th>
+                    <th>4. Eval. Empresa
+                        <select class="form-select form-select-sm mt-1"
+                            [(ngModel)]="filtroEvalEmpresa" (ngModelChange)="paginaActual = 1">
+                            <option value="">Todos</option>
+                            <option *ngFor="let e of estadosSeguimiento" [ngValue]="e.value">{{e.label}}</option>
+                        </select>
+                    </th>
+                    <th>5. Comité Carrera
+                        <select class="form-select form-select-sm mt-1"
+                            [(ngModel)]="filtroComiteCarrera" (ngModelChange)="paginaActual = 1">
+                            <option value="">Todos</option>
+                            <option *ngFor="let e of estadosSeguimiento" [ngValue]="e.value">{{e.label}}</option>
+                        </select>
+                    </th>
+                    <th>6. Env. Regist.
+                        <select class="form-select form-select-sm mt-1"
+                            [(ngModel)]="filtroEnvioreg" (ngModelChange)="paginaActual = 1">
+                            <option value="">Todos</option>
+                            <option *ngFor="let e of estadosSeguimiento" [ngValue]="e.value">{{e.label}}</option>
+                        </select>
+                    </th>
+                    <th class="acc">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let alu of alumnosPaginados(); trackBy: trackById; let i = index">
+                    <td>{{ numeroFila(i) }}</td>
+                    <td>{{ alu.rut }}</td>
+                    <td>{{ alu.nombres }} {{ alu.apellido1 }} {{ alu.apellido2 }}</td>
+                    <td>{{ alu.plan }}</td>
+                    <td class="estado-cell"><span class="estado-dot" [ngClass]="'estado-' + (+alu.practica1_estado)"></span></td>
+                    <td class="estado-cell"><span class="estado-dot" [ngClass]="'estado-' + (+alu.informe_elab_estado)"></span></td>
+                    <td class="estado-cell"><span class="estado-dot" [ngClass]="'estado-' + (+alu.informe_rev_estado)"></span></td>
+                    <td class="estado-cell"><span class="estado-dot" [ngClass]="'estado-' + (+alu.eval_empresa_estado)"></span></td>
+                    <td class="estado-cell"><span class="estado-dot" [ngClass]="'estado-' + (+alu.comite_carrera_estado)"></span></td>
+                    <td class="estado-cell"><span class="estado-dot" [ngClass]="'estado-' + (+alu.envioreg_estado)"></span></td>
+                    <td class="text-center">
+                        <button class="opcion btn btn-info"
+                            [routerLink]="['/seguimiento', 'avance', alu.id, practicaNum]">
+                            Actualizar
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div *ngIf="alumnosFiltrados().length > 0" class="mt-2">
+        <span class="text-success" *ngIf="alumnosFiltrados().some(a => tieneAvance(a))">
+            Hay alumnos con avances 👍
+        </span>
+        <span class="text-danger" *ngIf="!alumnosFiltrados().some(a => tieneAvance(a))">
+            Ningún alumno tiene avance
+        </span>
+    </div>
+
+    <div *ngIf="alumnosFiltrados().length > 0" class="d-flex justify-content-between align-items-center mt-3">
+        <div class="small text-muted">
+            Página {{ paginaActual }} de {{ totalPaginas() }} (Total: {{ alumnosFiltrados().length }})
+        </div>
+
+        <nav class="paginacion">
+            <ul class="pagination mb-0">
+                <li class="page-item" [class.disabled]="paginaActual === 1">
+                    <button class="page-link" (click)="cambiarPagina(paginaActual - 1)" [disabled]="paginaActual === 1">
+                        Anterior
+                    </button>
+                </li>
+                <li class="page-item"
+                    *ngFor="let p of paginasArray(); trackBy: trackByPagina"
+                    [class.active]="p === paginaActual">
+                    <button class="page-link" (click)="cambiarPagina(p)">{{ p }}</button>
+                </li>
+                <li class="page-item" [class.disabled]="paginaActual === totalPaginas()">
+                    <button class="page-link" (click)="cambiarPagina(paginaActual + 1)" [disabled]="paginaActual === totalPaginas()">
+                        Siguiente
+                    </button>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>

@@ -1,0 +1,172 @@
+.avance-alumno .hito-box {
+  border: 2px solid #999;
+  background: #f8f9fa;
+  border-radius: 10px;
+  opacity: 1;
+  transition: opacity 0.2s;
+}
+.avance-alumno .hito-box.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  filter: grayscale(0.8);
+}
+.avance{
+    background-color: white;
+    border-radius: 15px;
+    padding: 15px;
+}
+.titulo {
+  color: #054182;
+  font-family: cursive, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 3px;
+  letter-spacing: 0.01em;
+}
+
+.titulo2 {
+  color: #363636;
+  font-family: cursive, system-ui, sans-serif;
+}
+.card-title{
+    color: #054182;
+}
+.btn{
+    color: white;
+    background-color: #054182;
+    font-size: large;
+}
+.btn:hover{
+    background-color: #054182;
+    color: white;
+}
+.btn.active{
+    background-color: #054182;
+    color: white;
+}
+.card.disabled input,
+.card.disabled select,
+.card.disabled textarea,
+.card.disabled .btn-primary {
+  pointer-events: none;
+  opacity: 0.6;
+}
+.card.disabled .btn-outline-warning,
+.card.disabled .btn-completar,
+.card.disabled .btn-desbloquear {
+  pointer-events: all !important;
+  opacity: 0.6 !important;
+  cursor: pointer !important;
+}
+/* usa background-color, no background */
+.estado-0{ background-color: #ffffff; }
+.estado-1{ background-color: #ffc107; border-color: #b68b00; }
+.estado-2{ background-color: #198754; border-color: #0f5c39; }
+.estado-3{ background-color: #dc3545; border-color: #9b1c28; }
+.card {
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+.card.disabled .btn-outline-warning, 
+.card.disabled .btn-completar{
+  pointer-events: all !important;
+  opacity: 1 !important;
+}
+  .alerta{
+    background-color: #84e7bbcc;
+    color: #00351d;
+    width: 50%;
+    top: 0;
+    z-index: 30; 
+    border-radius: 15px;
+    position: fixed;
+    text-align: center;
+    min-width:300px; 
+    max-width:600px; 
+  }
+  .tiempo{
+    position: fixed;
+    left: 80%;
+    padding: 5px;
+  }
+  .botones {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+button {
+  padding: 10px 15px;
+  border: none;
+  background: #1976d2;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #0d47a1;
+}
+.estado-dot-hito {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.estado-no-iniciado { background-color: #adb5bd; }
+.estado-pendiente   { background-color: #ffc107; }
+.estado-aprobado    { background-color: #198754; }
+.estado-reprobado   { background-color: #dc3545; }
+
+.modal-overlay {
+  position: fixed !important;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-notif {
+  background: white;
+  border-radius: 10px;
+  padding: 0;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.modal-notif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.modal-notif-body {
+  padding: 16px 20px;
+}
+
+.modal-notif-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid #dee2e6;
+}
+
+.btn-cerrar {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+}
+.hito-contenido {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}

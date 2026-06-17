@@ -1,0 +1,124 @@
+
+ 
+<div class="perfil-container" *ngIf="alumno">
+  <div class="botones d-flex gap-3" >
+    <button (click)="volver()">⬅️ Volver</button>
+    <button (click)="guardar()">💾 Guardar</button>
+  </div>
+   <h1 class="titulo">Actualizar datos Alumno</h1>
+   <br>
+
+  <!-- encabezado con foto -->
+  <div class="perfil-header">
+    <img 
+      [src]="alumno.foto ? alumno.foto : 'assets/user.png'"
+      class="foto-alumno"
+      alt="Foto del alumno"
+    />
+
+    <div class="info-principal">
+      <input class="input-nombre" 
+        [(ngModel)]="alumno.nombres" 
+        placeholder="Nombres"
+      />
+
+      <input class="input-nombre"
+        [(ngModel)]="alumno.apellido1"
+        placeholder="Apellido paterno"
+      />
+
+      <input class="input-nombre"
+        [(ngModel)]="alumno.apellido2"
+        placeholder="Apellido materno"
+      />
+    </div>
+  </div>
+
+  <!-- ===================== -->
+  <!-- DATOS PERSONALES -->
+  <!-- ===================== -->
+  <div class="perfil-card">
+    <h3>Datos personales</h3>
+
+    <p><strong>RUT:</strong>
+      <input [(ngModel)]="alumno.rut" />
+    </p>
+
+    <p><strong>Sexo:</strong>
+      <select [(ngModel)]="alumno.sexo">
+        <option value="">Seleccione</option>
+        <option value="M">Masculino</option>
+        <option value="F">Femenino</option>
+        <option value="O">Otro</option>
+      </select>
+    </p>
+
+    <p><strong>Fecha de nacimiento:</strong>
+      <input type="date" [(ngModel)]="alumno.fecha_nacimiento" />
+    </p>
+
+    <p><strong>Nacionalidad:</strong>
+      <input [(ngModel)]="alumno.nacionalidad" />
+    </p>
+
+    <p><strong>Etnia:</strong>
+      <input [(ngModel)]="alumno.etnia" />
+    </p>
+  </div>
+
+  <!-- ===================== -->
+  <!-- CONTACTO -->
+  <!-- ===================== -->
+  <div class="perfil-card">
+    <h3>Datos de contacto</h3>
+
+    <p><strong>Dirección:</strong>
+      <input [(ngModel)]="alumno.direccion" />
+    </p>
+
+    <p><strong>Teléfono:</strong>
+      <input [(ngModel)]="alumno.telefono" />
+    </p>
+
+    <p><strong>Teléfono de emergencia:</strong>
+      <input [(ngModel)]="alumno.telefono_emergencia" />
+    </p>
+
+    <p><strong>Correo personal:</strong>
+      <input [(ngModel)]="alumno.correo_personal" />
+    </p>
+
+    <p><strong>Correo institucional:</strong>
+      <input [(ngModel)]="alumno.correo_institucional" />
+    </p>
+  </div>
+
+  <!-- ===================== -->
+  <!-- DATOS ACADÉMICOS -->
+  <!-- ===================== -->
+  <div class="perfil-card">
+    <h3>Datos académicos</h3>
+
+    <p><strong>Plan:</strong>
+      <input [(ngModel)]="alumno.plan" />
+    </p>
+
+    <p><strong>Colegio:</strong>
+      <input [(ngModel)]="alumno.colegio" />
+    </p>
+
+    <p><strong>Año de ingreso:</strong>
+      <input type="number" [(ngModel)]="alumno.anio_ingreso" />
+    </p>
+
+    <p><strong>Puntaje de ingreso:</strong>
+      <input type="number" [(ngModel)]="alumno.puntaje_ingreso" />
+    </p>
+
+    <p><strong>NEM:</strong>
+      <input type="number" step="0.01" [(ngModel)]="alumno.nem" />
+    </p>
+  </div>
+</div>
+<div *ngIf="!alumno">Cargando datos del alumno...</div>
+<!-- botones -->

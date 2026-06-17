@@ -1,0 +1,210 @@
+
+  <div class="empleador page-container">
+
+    <!-- Evaluaciones pendientes -->
+    <div *ngIf="notifEvaluaciones.length > 0" class="mb-4">
+      <h5 class="fw-bold mb-3">
+        📋 Evaluaciones pendientes
+        <span class="badge bg-danger ms-1">{{ notifEvaluaciones.length }}</span>
+      </h5>
+      <div *ngFor="let notif of notifEvaluaciones" class="card mb-2 border-warning">
+        <div class="card-body d-flex justify-content-between align-items-center py-2">
+          <div>
+            <span *ngIf="!notif.leida" class="badge bg-danger me-2 small">Nueva</span>
+            <strong>{{ notif.nombres }} {{ notif.apellido1 }}</strong>
+            <small class="text-muted ms-2">RUT: {{ notif.rut }} · Práctica {{ notif.practica_num }}</small>
+            <div class="text-muted small">{{ notif.mensaje }}</div>
+          </div>
+          <button class="btn btn-sm btn-warning ms-3" (click)="irEvaluar(notif)">
+            📝 Evaluar alumno
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <div class="page-header d-flex justify-content-between align-items-center">
+      <div>
+        <h1 class="titulo">🏢 Portal Empleador</h1>
+        <p class="text-muted">Gestiona tus ofertas de práctica profesional</p>
+      </div>
+      <button class="nueva btn btn-primary"
+              *ngIf="auth.esEmpleador()"
+              (click)="mostrarFormOferta = !mostrarFormOferta; ofertaEditando = null">
+        {{ mostrarFormOferta ? '✕ Cancelar' : '+ Nueva oferta' }}
+      </button>
+    </div>
+
+    <!-- Mensajes -->
+    <div *ngIf="mensaje" class="alert alert-success">{{ mensaje }}</div>
+    <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+    <!-- Formulario nueva oferta -->
+    <div *ngIf="mostrarFormOferta" class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-4">📋 Nueva oferta de práctica</h5>
+
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Título del cargo *</label>
+            <input type="text" class="form-control"
+                   [(ngModel)]="form.titulo"
+                   placeholder="Ej: Desarrollador Full Stack">
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Descripción</label>
+            <textarea class="form-control" rows="3"
+                      [(ngModel)]="form.descripcion"
+                      placeholder="Descripción general de la práctica..."></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Conocimientos requeridos</label>
+            <textarea class="form-control" rows="3"
+                      [(ngModel)]="form.conocimientos"
+                      placeholder="Ingresa un conocimiento por línea&#10;Ej: Angular&#10;NestJS&#10;Git"></textarea>
+            <small class="text-muted">Ingresa un conocimiento por línea</small>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Tareas a realizar</label>
+            <textarea class="form-control" rows="3"
+                      [(ngModel)]="form.tareas"
+                      placeholder="Describe las tareas que realizará el alumno..."></textarea>
+          </div>
+          <div class="col-4">
+            <label class="form-label">Modalidad</label>
+            <select class="form-select" [(ngModel)]="form.modalidad">
+              <option value="Presencial">Presencial</option>
+              <option value="Remota">Remota</option>
+              <option value="Híbrida">Híbrida</option>
+            </select>
+          </div>
+          <div class="col-4">
+            <label class="form-label">Horas semanales</label>
+            <input type="number" min="0" class="form-control"
+                   [(ngModel)]="form.horas_semanales">
+          </div>
+          <div class="col-4">
+            <label class="form-label">Fecha inicio</label>
+            <input type="date" class="form-control"
+                   [(ngModel)]="form.fecha_inicio">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Nombre del supervisor *</label>
+            <input type="text" class="form-control"
+                   [(ngModel)]="form.nombre_supervisor"
+                   placeholder="Nombre completo del supervisor">
+            <small class="text-muted">Persona que supervisará directamente al practicante en la empresa.</small>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+          <button class="nueva btn btn-primary" (click)="crearOferta()">
+            📤 Publicar oferta
+          </button>
+          <button class="cancelar btn btn-outline-secondary"
+                  (click)="mostrarFormOferta = false">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de ofertas -->
+    <div *ngIf="cargando" class="text-center py-4">
+      <div class="spinner-border text-primary"></div>
+    </div>
+
+    <div *ngIf="!cargando && ofertas.length === 0" class="alert alert-info">
+      No tienes ofertas publicadas aún.
+    </div>
+
+    <div *ngFor="let o of ofertas" class="card mb-3">
+      <!-- Vista normal -->
+      <div class="card-body" *ngIf="ofertaEditando?.id !== o.id">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <h5 class="card-title mb-1">{{ o.titulo }}</h5>
+            <p class="text-muted small mb-2">
+              {{ o.modalidad }} · {{ o.horas_semanales }}h semanales
+            </p>
+            <p class="small mb-1" *ngIf="o.descripcion">{{ o.descripcion }}</p>
+            <div class="d-flex gap-3 small text-muted">
+              <span>📅 {{ o.fecha_inicio | date:'dd/MM/yyyy' }}</span>
+              <span>👤 Supervisor: {{ o.nombre_supervisor }}</span>
+            </div>
+          </div>
+          <div class="d-flex gap-2 align-items-center">
+            <span class="badge bg-success" *ngIf="o.activo == 1">Activa</span>
+            <span class="badge bg-secondary" *ngIf="o.activo == 0">Inactiva</span>
+            <ng-container *ngIf="auth.esEmpleador()">
+              <button class="btn btn-sm btn-outline-secondary"
+                      (click)="editarOferta(o)">
+                ✏️ Editar
+              </button>
+              <button class="btn btn-sm btn-outline-danger"
+                      *ngIf="o.activo == 1"
+                      (click)="desactivarOferta(o.id)">
+                Desactivar
+              </button>
+              <button class="btn btn-sm btn-outline-success"
+                      *ngIf="o.activo == 0"
+                      (click)="desactivarOferta(o.id)">
+                Activar
+              </button>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario de edición inline -->
+      <div class="card-body" *ngIf="ofertaEditando?.id === o.id">
+        <h5 class="card-title mb-4">✏️ Editar oferta</h5>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Título del cargo *</label>
+            <input type="text" class="form-control" [(ngModel)]="formEditar.titulo">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Descripción</label>
+            <textarea class="form-control" rows="3" [(ngModel)]="formEditar.descripcion"></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Conocimientos requeridos</label>
+            <textarea class="form-control" rows="3" [(ngModel)]="formEditar.conocimientos"
+                      placeholder="Un conocimiento por línea"></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Tareas a realizar</label>
+            <textarea class="form-control" rows="3" [(ngModel)]="formEditar.tareas"></textarea>
+          </div>
+          <div class="col-4">
+            <label class="form-label">Modalidad</label>
+            <select class="form-select" [(ngModel)]="formEditar.modalidad">
+              <option value="Presencial">Presencial</option>
+              <option value="Remota">Remota</option>
+              <option value="Híbrida">Híbrida</option>
+            </select>
+          </div>
+          <div class="col-4">
+            <label class="form-label">Horas semanales</label>
+            <input type="number" min="0" class="form-control" [(ngModel)]="formEditar.horas_semanales">
+          </div>
+          <div class="col-4">
+            <label class="form-label">Fecha inicio</label>
+            <input type="date" class="form-control" [(ngModel)]="formEditar.fecha_inicio">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Nombre del supervisor *</label>
+            <input type="text" class="form-control" [(ngModel)]="formEditar.nombre_supervisor">
+            <small class="text-muted">Persona que supervisará directamente al practicante en la empresa.</small>
+          </div>
+        </div>
+        <div class="d-flex gap-2 mt-4">
+          <button class="btn btn-primary" (click)="guardarEdicion()">💾 Guardar cambios</button>
+          <button class="btn btn-outline-secondary" (click)="cancelarEdicion()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+  </div>

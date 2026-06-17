@@ -1,0 +1,232 @@
+<div class="plan ">
+
+  <div class="form-card">
+
+    <!-- Header -->
+    <div class="card-header">
+      <div>
+        <h1 class="titulo">Nuevo Plan de Estudios</h1>
+        <p class="card-subtitle">Completa la información para registrar el plan</p>
+      </div>
+    </div>
+
+    <!-- Feedback Messages -->
+    <div class="alert alert-success" *ngIf="exito">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      Plan creado exitosamente. Redirigiendo…
+    </div>
+
+    <div class="alert alert-error" *ngIf="errorMsg">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      {{ errorMsg }}
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="planForm" (ngSubmit)="onSubmit()" novalidate>
+
+      <!-- Section: Identificación -->
+      <div class="section">
+        <h2 class="section-title">
+          <span class="section-num">01</span> Identificación
+        </h2>
+
+        <div class="field-grid">
+          <!-- Título -->
+          <div class="field full-width">
+            <label class="field-label" for="titulo">
+              Título del Plan <span class="required">*</span>
+            </label>
+            <input
+              id="titulo"
+              type="text"
+              formControlName="titulo"
+              class="field-input"
+              [class.input-error]="f['titulo'].invalid && f['titulo'].touched"
+              placeholder="Ej: Plan de Estudios Ingeniería en Informática"
+            />
+            <span class="error-text"
+              *ngIf="f['titulo'].invalid && f['titulo'].touched">
+              El título es requerido (máx. 150 caracteres).
+            </span>
+          </div>
+
+          <!-- Año -->
+          <div class="field">
+            <label class="field-label" for="anio">
+              Año <span class="required">*</span>
+            </label>
+            <input
+              id="anio"
+              type="number"
+              formControlName="anio"
+              class="field-input"
+              [class.input-error]="f['anio'].invalid && f['anio'].touched"
+              placeholder="Ej: 2024"
+            />
+            <span class="error-text"
+              *ngIf="f['anio'].invalid && f['anio'].touched">
+              Año requerido (2000–2100).
+            </span>
+          </div>
+
+          <!-- Versión -->
+          <div class="field">
+            <label class="field-label" for="version">
+              Versión <span class="required">*</span>
+            </label>
+            <input
+              id="version"
+              type="text"
+              formControlName="version"
+              class="field-input"
+              [class.input-error]="f['version'].invalid && f['version'].touched"
+              placeholder="Ej: v1.0"
+            />
+            <span class="error-text"
+              *ngIf="f['version'].invalid && f['version'].touched">
+              La versión es requerida (máx. 20 caracteres).
+            </span>
+          </div>
+
+          <!-- Duración -->
+          <div class="field">
+            <label class="field-label" for="duracion">
+              Duración (semestres) <span class="required">*</span>
+            </label>
+            <input
+              id="duracion"
+              type="number"
+              formControlName="duracion"
+              class="field-input"
+              [class.input-error]="f['duracion'].invalid && f['duracion'].touched"
+              placeholder="Ej: 10"
+            />
+            <span class="error-text"
+              *ngIf="f['duracion'].invalid && f['duracion'].touched">
+              Duración requerida (mínimo 1).
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Fechas -->
+      <div class="section">
+        <h2 class="section-title">
+          <span class="section-num">02</span> Fechas
+        </h2>
+
+        <div class="field-grid">
+          <!-- Fecha Oficialización -->
+          <div class="field">
+            <label class="field-label" for="fecha_oficializacion">
+              Fecha de Oficialización
+            </label>
+            <input
+              id="fecha_oficializacion"
+              type="date"
+              formControlName="fecha_oficializacion"
+              class="field-input"
+            />
+          </div>
+
+          <!-- Fecha Inicio -->
+          <div class="field">
+            <label class="field-label" for="fecha_inicio">
+              Fecha de Inicio <span class="required">*</span>
+            </label>
+            <input
+              id="fecha_inicio"
+              type="date"
+              formControlName="fecha_inicio"
+              class="field-input"
+              [class.input-error]="f['fecha_inicio'].invalid && f['fecha_inicio'].touched"
+            />
+            <span class="error-text"
+              *ngIf="f['fecha_inicio'].invalid && f['fecha_inicio'].touched">
+              La fecha de inicio es requerida.
+            </span>
+          </div>
+
+          <!-- Fecha Cierre -->
+          <div class="field">
+            <label class="field-label" for="fecha_cierre">
+              Fecha de Cierre
+            </label>
+            <input
+              id="fecha_cierre"
+              type="date"
+              formControlName="fecha_cierre"
+              class="field-input"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Contenido Académico -->
+      <div class="section">
+        <h2 class="section-title">
+          <span class="section-num">03</span> Contenido Académico
+        </h2>
+
+        <div class="field-stack">
+          <!-- Enfoque -->
+          <div class="field full-width">
+            <label class="field-label" for="enfoque">Enfoque</label>
+            <textarea
+              id="enfoque"
+              formControlName="enfoque"
+              class="field-textarea"
+              rows="4"
+              placeholder="Describe el enfoque principal del plan…"
+            ></textarea>
+          </div>
+
+          <!-- Perfil de Egreso -->
+          <div class="field full-width">
+            <label class="field-label" for="perfil_egreso">Perfil de Egreso</label>
+            <textarea
+              id="perfil_egreso"
+              formControlName="perfil_egreso"
+              class="field-textarea"
+              rows="4"
+              placeholder="Competencias y habilidades del egresado…"
+            ></textarea>
+          </div>
+
+          <!-- Propósito Formativo -->
+          <div class="field full-width">
+            <label class="field-label" for="proposito_formativo">Propósito Formativo</label>
+            <textarea
+              id="proposito_formativo"
+              formControlName="proposito_formativo"
+              class="field-textarea"
+              rows="4"
+              placeholder="Objetivos y propósitos del plan de formación…"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <button type="button" class="btn-cancel" (click)="cancelar()">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-submit" [disabled]="enviando">
+          <span class="btn-spinner" *ngIf="enviando"></span>
+
+          {{ enviando ? 'Guardando…' : 'Guardar Plan' }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+</div>

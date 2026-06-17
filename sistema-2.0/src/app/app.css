@@ -1,0 +1,14 @@
+/* styles.css (global) */
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+
+  background-image: url("https://dici.uta.cl/wp-content/uploads/2019/10/motivo-pag-web2_Mesa-de-trabajo-1.png");
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: cover;          /* llena toda la pantalla */
+  background-attachment: fixed;    /* opcional: se queda fija al hacer scroll */
+}

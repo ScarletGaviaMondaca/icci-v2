@@ -1,0 +1,80 @@
+.titulo {
+  color: #054182;
+  font-family: cursive, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 3px;
+  letter-spacing: 0.01em;
+}
+.alumnos{
+    background-color: white;
+    border-radius: 15px;
+    padding: 20px;
+}
+.table th, .table td {
+  vertical-align: middle;
+}
+.opcion{
+    background-color: transparent;
+    border: none;
+    color: #054182;
+    font-size: large;
+}
+.opcion:hover, .sub-opcion:hover{
+    background-color: #054182;
+    color: white;
+}
+.opcion.active{
+    background-color: #054182;
+    color: white;
+}
+.table th {
+  border: 1px solid #2f5a99;
+  padding: 8px;
+  color: white;
+  background-color: #054182;
+}
+.table td {
+  border: 1px solid #c8d8ec;
+  padding: 8px;
+  background-color: #eef2f785;
+}
+
+/* Inputs dentro del thead con fondo azul */
+.table thead input[type="text"].form-control {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: white;
+}
+.table thead input[type="text"].form-control::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Select dentro del thead */
+.table thead select {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: white;
+}
+.table thead select option {
+  background: #054182;
+  color: white;
+}
+
+/* Labels dentro del thead */
+.table thead label {
+  color: white;
+}
+
+/* Esquinas redondeadas — igual que la otra tabla */
+.table-wrapper {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #c8d8ec;
+}
+.table {
+  width: 100%;
+  border-radius: 0;   /* el wrapper se encarga */
+  overflow: visible;
+  margin-bottom: 0 !important;
+}

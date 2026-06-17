@@ -1,0 +1,158 @@
+<div class="perfil-container" *ngIf="alumno">
+    <!-- botones -->
+  <div class="botones d-flex gap-3">
+    <button onclick="window.history.back();"> ← Volver</button>
+    <button (click)="editar()">✏️ Editar datos</button>
+  </div>
+
+  <h1 class="titulo">Perfil del Alumno</h1>
+  <br>
+
+  <!-- encabezado con foto y nombre -->
+  <div class="perfil-header">
+    <img 
+      [src]="alumno.foto || 'assets/user.png'" 
+      class="foto-alumno"
+      alt="Foto del alumno"
+    />
+
+    <div class="info-principal">
+      <h2>
+        {{ alumno.nombres }} 
+        {{ alumno.apellido1 }} 
+        {{ alumno.apellido2 }}
+      </h2>
+      <p><strong>RUT:</strong> {{ alumno.rut }}</p>
+    </div>
+  </div>
+
+  <!-- ===================== -->
+  <!-- DATOS PERSONALES -->
+  <!-- ===================== -->
+  <div class="perfil-card">
+    <h3>Datos personales</h3>
+
+    <p><strong>Sexo:</strong> {{ alumno.sexo }}</p>
+    <p><strong>Fecha de nacimiento:</strong> {{ alumno.fecha_nacimiento | date:'dd/MM/yyyy' }}</p>
+    <p><strong>Nacionalidad:</strong> {{ alumno.nacionalidad || 'No registrado' }}</p>
+    <p><strong>Etnia:</strong> {{ alumno.etnia || 'No registrado' }}</p>
+  </div>
+
+  <!-- ===================== -->
+  <!-- CONTACTO -->
+  <!-- ===================== -->
+  <div class="perfil-card">
+    <h3>Datos de contacto</h3>
+
+    <p><strong>Dirección:</strong> {{ alumno.direccion || 'No registrado' }}</p>
+    <p><strong>Teléfono:</strong> {{ alumno.telefono || 'No registrado' }}</p>
+    <p><strong>Teléfono de emergencia:</strong> {{ alumno.telefono_emergencia || 'No registrado' }}</p>
+    <p><strong>Correo personal:</strong> {{ alumno.correo_personal || 'No registrado' }}</p>
+    <p><strong>Correo institucional:</strong> {{ alumno.correo_institucional || 'No registrado' }}</p>
+  </div>
+
+  <!-- ===================== -->
+  <!-- DATOS ACADÉMICOS -->
+  <!-- ===================== -->
+  <div class="perfil-card">
+    <h3>Datos académicos</h3>
+
+    <p><strong>Plan:</strong> {{ alumno.plan }}</p>
+    <p><strong>Colegio:</strong> {{ alumno.colegio || 'No registrado' }}</p>
+    <p><strong>Año de ingreso:</strong> {{ alumno.anio_ingreso || 'No registrado' }}</p>
+    <p><strong>Tipo de ingreso:</strong> {{ alumno.sistema_ingreso || 'No registrado' }}</p>
+    <p><strong>Puntaje de ingreso:</strong> {{ alumno.puntaje_ingreso || 'No registrado' }}</p>
+    <p><strong>NEM:</strong> {{ alumno.nem || 'No registrado' }}</p>
+  </div>
+
+  <!-- ===================== -->
+  <!-- CAMBIAR CONTRASEÑA -->
+  <!-- ===================== -->
+<div class="card">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">🔑 Cambiar contraseña</h5>
+        <button class="opcion btn btn-sm btn-outline-secondary"
+                (click)="mostrarCambioPass = !mostrarCambioPass">
+          {{ mostrarCambioPass ? 'Cancelar' : 'Cambiar' }}
+        </button>
+      </div>
+
+      <div *ngIf="mostrarCambioPass" class="row g-3">
+        <div class="mb-2">
+          <label class="form-label">Contraseña actual</label>
+          <div class="input-group">
+            <input [type]="verActual ? 'text' : 'password'" 
+                  class="form-control form-control-sm"
+                  [(ngModel)]="passwordActual">
+            <button class="btn btn-outline-secondary btn-sm" 
+                    type="button"
+                    (click)="verConfirmar = !verConfirmar">
+              <i [class]="verConfirmar ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-2">
+          <label class="form-label">Nueva contraseña</label>
+          <div class="input-group">
+            <input [type]="verNueva ? 'text' : 'password'"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="passwordNueva">
+            <button class="btn btn-outline-secondary btn-sm"
+                    type="button"
+                    (click)="verConfirmar = !verConfirmar">
+              <i [class]="verConfirmar ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            </button>
+          </div>
+        <div class="form-text mt-1">
+          <small [class.text-success]="passwordNueva.length >= 8"
+                [class.text-danger]="passwordNueva.length > 0 && passwordNueva.length < 8">
+            ✓ Mínimo 8 caracteres
+          </small><br>
+          <small [class.text-success]="/[A-Z]/.test(passwordNueva)"
+                [class.text-danger]="passwordNueva.length > 0 && !/[A-Z]/.test(passwordNueva)">
+            ✓ Al menos una mayúscula
+          </small><br>
+          <small [class.text-success]="/[a-z]/.test(passwordNueva)"
+                [class.text-danger]="passwordNueva.length > 0 && !/[a-z]/.test(passwordNueva)">
+            ✓ Al menos una minúscula
+          </small><br>
+          <small [class.text-success]="/[0-9]/.test(passwordNueva)"
+                [class.text-danger]="passwordNueva.length > 0 && !/[0-9]/.test(passwordNueva)">
+            ✓ Al menos un número
+          </small>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Confirmar nueva contraseña</label>
+          <div class="input-group">
+            <input [type]="verConfirmar ? 'text' : 'password'"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="passwordConfirmar">
+            <button class="btn btn-outline-secondary btn-sm"
+                    type="button"
+                    (click)="verConfirmar = !verConfirmar">
+              <i [class]="verConfirmar ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            </button>
+          </div>
+          <small *ngIf="passwordConfirmar.length > 0 && passwordNueva !== passwordConfirmar"
+                class="text-danger">⚠️ Las contraseñas no coinciden</small>
+          <small *ngIf="passwordConfirmar.length > 0 && passwordNueva === passwordConfirmar"
+                class="text-success">✅ Las contraseñas coinciden</small>
+        </div>
+
+        <div class="col-12">
+          <button class="btn btn-success btn-sm"
+            [disabled]="passwordNueva !== passwordConfirmar || !passwordActual"
+            (click)="cambiarPassword()">
+            Actualizar contraseña
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="!alumno">
+  Cargando datos...
+</div>

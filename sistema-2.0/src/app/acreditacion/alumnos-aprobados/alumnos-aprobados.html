@@ -1,0 +1,172 @@
+<div class="alumnos container mt-4">
+  <h1 class="titulo">Alumnos Aprobados</h1>
+  <h5 class="titulo">Listado de Alumnos con sus informes</h5>
+  <div *ngIf="cargando">Cargando...</div>
+  <div *ngIf="mensaje" class="alert alert-danger">{{ mensaje }}</div>
+
+  <div class="d-flex mb-3 gap-2">
+    <button class="opcion btn btn-outline-primary"
+            [class.active]="practicaSeleccionada === 1"
+            (click)="seleccionarPractica(1)">
+      Práctica 1
+    </button>
+    <button class="opcion btn btn-outline-primary"
+            [class.active]="practicaSeleccionada === 2"
+            (click)="seleccionarPractica(2)">
+      Práctica 2
+    </button>
+  </div>
+
+  <h3 class="titulo">Práctica {{ practicaSeleccionada }}</h3>
+  <!-- Filtros -->
+<div class="d-flex gap-2 mb-3 align-items-end">
+  <div>
+    <label class="form-label form-label-sm mb-1">RUT</label>
+    <input type="text" class="form-control form-control-sm"
+           [(ngModel)]="filtroRut" placeholder="Filtrar por RUT">
+  </div>
+    <div>
+      <label class="form-label form-label-sm mb-1">Año aprobación</label>
+      <select class="form-select form-select-sm" [(ngModel)]="filtroAnio">
+        <option value="">Todos</option>
+        <option *ngFor="let a of aniosDisponibles" [value]="a">{{ a }}</option>
+      </select>
+    </div>
+  <button class="btn btn-sm btn-primary" (click)="buscar()">🔍 Buscar</button>
+  <button class="btn btn-sm btn-outline-secondary" (click)="limpiar()">✕ Limpiar</button>
+</div>
+
+  <!-- ===== PRÁCTICA 1 ===== -->
+  <ng-container *ngIf="practicaSeleccionada === 1">
+    <div class="table-wrapper">
+      <table *ngIf="practicantes1.length > 0" class="table" style="margin-top:0!important">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nombre</th>
+            <th>Rut</th>
+            <th>Informe Final</th>
+            <th>Evaluación</th>
+            <th>Acta</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of datosPaginados(); let i = index">
+            <td>{{ (paginaActual - 1) * itemsPorPagina + i + 1 }}</td>
+            <td>{{ p.nombre }} {{ p.apellido1 }} {{ p.apellido2 }}</td>
+            <td>{{ p.rut }}</td>
+            <td>
+              <a *ngIf="p.informe" [href]="'http://localhost/' + p.informe"
+                 target="_blank" class="btn btn-outline-success btn-sm">Descargar</a>
+            </td>
+            <td>
+              <a *ngIf="p.evaluacion" [href]="'http://localhost/' + p.evaluacion"
+                 target="_blank" class="btn btn-outline-primary btn-sm">Descargar</a>
+            </td>
+            <td>
+              <a *ngIf="p.acta" [href]="'http://localhost/' + p.acta"
+                 target="_blank" class="btn btn-outline-info btn-sm">Descargar</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!cargando && practicantes1.length === 0" class="text-muted">
+      No hay registros de Práctica 1 con informe y evaluación.
+    </div>
+
+    <!-- Paginación Práctica 1 -->
+    <div *ngIf="practicantes1.length > 0" class="d-flex justify-content-between align-items-center mt-3">
+      <div class="small text-muted">
+        Página {{ paginaActual }} de {{ totalPaginas() }} (Total: {{ practicantes1.length }})
+      </div>
+      <nav class="paginacion">
+        <ul class="pagination mb-0">
+          <li class="page-item" [class.disabled]="paginaActual === 1">
+            <button class="page-link" (click)="cambiarPagina(paginaActual - 1)" [disabled]="paginaActual === 1">
+              Anterior
+            </button>
+          </li>
+          <li class="page-item"
+              *ngFor="let p of paginasArray(); trackBy: trackByPagina"
+              [class.active]="p === paginaActual">
+            <button class="page-link" (click)="cambiarPagina(p)">{{ p }}</button>
+          </li>
+          <li class="page-item" [class.disabled]="paginaActual === totalPaginas()">
+            <button class="page-link" (click)="cambiarPagina(paginaActual + 1)" [disabled]="paginaActual === totalPaginas()">
+              Siguiente
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </ng-container>
+
+  <!-- ===== PRÁCTICA 2 ===== -->
+  <ng-container *ngIf="practicaSeleccionada === 2">
+    <div class="table-wrapper">
+      <table *ngIf="practicantes2.length > 0" class="table" style="margin-top:0!important">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nombre</th>
+            <th>Rut</th>
+            <th>Informe</th>
+            <th>Evaluación Empresa</th>
+            <th>Acta</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of datosPaginados(); let i = index">
+            <td>{{ (paginaActual - 1) * itemsPorPagina + i + 1 }}</td>
+            <td>{{ p.nombre }} {{ p.apellido1 }} {{ p.apellido2 }}</td>
+            <td>{{ p.rut }}</td>
+            <td>
+              <a *ngIf="p.informe" [href]="'http://localhost/' + p.informe"
+                 target="_blank" class="btn btn-outline-success btn-sm">Descargar</a>
+            </td>
+            <td>
+              <a *ngIf="p.evaluacion" [href]="'http://localhost/' + p.evaluacion"
+                 target="_blank" class="btn btn-outline-primary btn-sm">Descargar</a>
+            </td>
+            <td>
+              <a *ngIf="p.acta" [href]="'http://localhost/' + p.acta"
+                 target="_blank" class="btn btn-outline-info btn-sm">Descargar</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!cargando && practicantes2.length === 0" class="text-muted">
+      No hay registros de Práctica 2 con informe y evaluación.
+    </div>
+
+    <!-- Paginación Práctica 2 -->
+    <div *ngIf="practicantes2.length > 0" class="d-flex justify-content-between align-items-center mt-3">
+      <div class="small text-muted">
+        Página {{ paginaActual }} de {{ totalPaginas() }} (Total: {{ practicantes2.length }})
+      </div>
+      <nav class="paginacion">
+        <ul class="pagination mb-0">
+          <li class="page-item" [class.disabled]="paginaActual === 1">
+            <button class="page-link" (click)="cambiarPagina(paginaActual - 1)" [disabled]="paginaActual === 1">
+              Anterior
+            </button>
+          </li>
+          <li class="page-item"
+              *ngFor="let p of paginasArray(); trackBy: trackByPagina"
+              [class.active]="p === paginaActual">
+            <button class="page-link" (click)="cambiarPagina(p)">{{ p }}</button>
+          </li>
+          <li class="page-item" [class.disabled]="paginaActual === totalPaginas()">
+            <button class="page-link" (click)="cambiarPagina(paginaActual + 1)" [disabled]="paginaActual === totalPaginas()">
+              Siguiente
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </ng-container>
+</div>

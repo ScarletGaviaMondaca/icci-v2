@@ -1,0 +1,74 @@
+.plan{
+    background-color: white;
+    border-radius: 15px;
+    padding: 20px;
+}
+.titulo {
+  color: #054182;
+  font-family: cursive, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 3px;
+  letter-spacing: 0.01em;
+}
+
+.texto-justificado {
+  background: #f3f8fb;
+  border-radius: 5px;
+  margin-top: 0.4rem;
+  padding: 8px;
+  font-size: .97rem;
+}
+.texto-justificado li {
+  margin-bottom: 0.35em;
+  margin-left: 1em;
+}
+.btn{
+    background-color: white;
+    color:  #204d7d;
+    border: 1px solid;
+}
+.btn:hover{
+    background-color: #054182;
+    color: white;
+}
+.table th {
+  border: 1px solid #2f5a99;
+  padding: 8px;
+  color: white;
+  background-color: #054182;
+  font-weight: 500;
+}
+.table td {
+  border: 1px solid #c8d8ec;
+  padding: 8px;
+  background-color: #eef2f785;
+}
+.form-control {
+  border-radius: 5px !important;
+  border: 1px solid #bed1ea !important;
+  background-color: #f3f6fb !important;
+  color: #054182 !important;
+  font-size: 1rem;
+}
+.form-control:focus {
+  border-color: #054182 !important;
+  box-shadow: 0 0 0 0.1rem #7898c42e;
+}
+.titulo.form-control {
+  font-weight: 700;
+  color: #054182 !important;
+  font-size: 1.4rem;
+  background: #eaf1fc;
+  border: none !important;
+  margin-bottom: 0;
+}
+textarea.form-control {
+  font-size: 1rem;
+}
+@media (max-width: 576px){
+  .panel-contenido{ padding: 8px; border-radius: 10px; }
+  .table-wrapper{ border-radius: 4px; font-size: .94rem; }
+  .titulo{ font-size: 1.2rem; }
+  .form-control{ font-size: .97rem; }
+}

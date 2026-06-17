@@ -1,0 +1,217 @@
+<!-- BOTÓN FLOTANTE AGREGAR (solo admin) -->
+<button 
+  *ngIf="auth.esAdmin()"
+  class="agregar btn shadow"
+  (click)="toggleFormulario()"> + </button>
+
+   <!-- FORMULARIO AGREGAR NUEVO INTEGRANTE -->
+<div *ngIf="auth.esAdmin() && mostrarFormulario" class="modal-edicion-overlay">
+  <div class="modal-edicion">
+    <div class="text-end">
+      <button class="btn btn-sm btn-danger" (click)="toggleFormulario()">X</button>
+    </div>
+    <h4 class="card-title text-primary text-center mb-4">Agregar Nuevo Integrante</h4>
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Nombre completo</label>
+      <input [(ngModel)]="nuevo.nombre" class="form-control">
+    </div>
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Puesto / Cargo</label>
+      <select [(ngModel)]="nuevo.rol" class="form-control" (ngModelChange)="onRolChange()">
+        <option value="">-- Seleccionar --</option>
+        <option value="Director Departamento">Director Departamento</option>
+        <option value="Jefe de Carrera">Jefe de Carrera</option>
+        <option value="Secretaria del Departamento">Secretaria del Departamento</option>
+        <option value="Secretaria de la Carrera">Secretaria de la Carrera</option>
+        <option value="Académicos DICI">Académicos DICI</option>
+        <option value="Profesional de apoyo">Profesional de apoyo</option>
+        <option value="Ingeniero">Ingeniero</option>
+        <option value="otro">Otro (sin cargo visible)</option>
+      </select>
+    </div>
+
+    <!-- Campo extra si selecciona Ingeniero -->
+    <div class="mb-2" *ngIf="nuevo.rol === 'Ingeniero'">
+      <label class="form-label fw-semibold">Especialidad</label>
+      <input [(ngModel)]="nuevo.especialidad" class="form-control" 
+            placeholder="Ej: Ingeniero de Software">
+    </div>
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Departamento</label>
+      <input [(ngModel)]="nuevo.dpto" class="form-control">
+    </div>
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Correo electrónico</label>
+      <input [(ngModel)]="nuevo.correo" class="form-control">
+    </div>
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Ubicación</label>
+      <input [(ngModel)]="nuevo.lugar" class="form-control">
+    </div>
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Teléfono</label>
+      <input [(ngModel)]="nuevo.telefono" class="form-control">
+    </div>
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Link de perfil</label>
+      <input [(ngModel)]="nuevo.perfil_url" class="form-control" placeholder="https://...">
+    </div>
+    <div class="text-center mt-3">
+      <input type="file" #fotoNueva style="display: none">
+      <button type="button" 
+              [class]="fotoNueva.files?.length ? 'btn btn-success me-2' : 'btn btn-outline-secondary me-2'" 
+              (click)="fotoNueva.click()">
+        {{ fotoNueva.files?.length ? '✓ Foto: ' + fotoNueva.files?.item(0)?.name : 'Seleccionar Foto' }}
+      </button>    
+      <button class="btn btn-primary px-5" (click)="crearNuevo(fotoNueva)">Guardar</button> 
+    </div>
+  </div>
+</div>
+
+  <!-- TARJETAS DE MIEMBROS -->
+<div>
+  <ng-template #tarjeta let-persona="persona">
+    <div class="vista-usuario text-center p-3 p-md-5">
+
+      <a *ngIf="persona.perfil_url; else soloImagen"
+        [href]="persona.perfil_url"
+        target="_blank"
+        rel="noopener noreferrer">
+        <img
+          [src]="persona.ruta_foto?.startsWith('http')
+            ? persona.ruta_foto
+            : 'http://localhost/api/' + persona.ruta_foto"
+          class="foto shadow mb-2 d-block mx-auto"
+          alt="Foto de {{persona.nombre}}">
+      </a>
+
+      <ng-template #soloImagen>
+        <img
+          [src]="persona.ruta_foto?.startsWith('http')
+            ? persona.ruta_foto
+            : 'http://localhost/api/' + persona.ruta_foto"
+          class="foto shadow mb-2 d-block mx-auto"
+          alt="Foto de {{persona.nombre}}">
+      </ng-template>
+      <p class="dpto mb-1">{{ persona.rol === 'otro' || !persona.rol ? '' : persona.rol }}</p>
+      <p class="dpto small">{{persona.dpto}}</p>
+      <h5>{{persona.nombre}}</h5>
+      <p class="text-muted small">{{persona.lugar}}</p>
+      <p class="text-muted small">{{persona.correo}}</p>
+      <p class="text-muted small">{{persona.telefono}}</p>
+      <div *ngIf="auth.esAdmin()" class="mt-2">
+        <button class="btn btn-success btn-sm me-2"
+                (click)="abrirFormularioEdicion(persona)">
+          Editar
+        </button>
+
+        <button class="btn btn-danger btn-sm"
+                (click)="eliminar(persona)">
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </ng-template>
+  
+<div class="bloque">
+  <h1 class="titulo text-center mb-4">Organización</h1>
+
+  <!-- DICI-->
+  <div class="row justify-content-center g-4">
+    <div class="col-12 col-sm-6 col-md-4" *ngFor="let p of directivos">
+      <ng-container *ngTemplateOutlet="tarjeta; context:{persona:p}"></ng-container>
+    </div>
+  </div>
+
+  <!-- ICD -->
+  <div class="row justify-content-center g-4 mt-2">
+    <div class="col-12 col-sm-6 col-md-4" *ngFor="let p of jefesSecundarios">
+      <ng-container *ngTemplateOutlet="tarjeta; context:{persona:p}"></ng-container>
+    </div>
+  </div>
+
+  <!-- secretarias -->
+  <div *ngFor="let fila of filasSecretarias">
+    <div class="row justify-content-center g-4 mt-2">
+      <div class="col-lg-4 col-md-6"
+          *ngFor="let p of fila">
+
+        <ng-container
+          *ngTemplateOutlet="tarjeta; context:{persona:p}">
+        </ng-container>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Docentes -->
+  <div *ngFor="let fila of filasDocentes">
+    <div class="row justify-content-center g-4 mt-2">
+      <div class="col-12 col-sm-6 col-md-4" *ngFor="let p of fila">
+
+        <ng-container
+          *ngTemplateOutlet="tarjeta; context:{persona:p}">
+        </ng-container>
+
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- FORMULARIO MODAL PARA EDICIÓN -->
+<div *ngIf="personaEnEdicion" class="modal-edicion-overlay">
+  <div class="modal-edicion">
+    <h4 class="text-center mb-3">Editar Integrante</h4>
+
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Nombre completo</label>
+      <input [(ngModel)]="personaEnEdicion.nombre" class="form-control">
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Puesto / Cargo</label>
+      <input [(ngModel)]="personaEnEdicion.rol" class="form-control" readonly>
+    </div>
+        <div class="mb-2">
+      <label class="form-label fw-semibold">Departamento</label>
+      <input [(ngModel)]="personaEnEdicion.dpto" class="form-control">
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Correo electrónico</label>
+      <input [(ngModel)]="personaEnEdicion.correo" class="form-control">
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Ubicación</label>
+      <input [(ngModel)]="personaEnEdicion.lugar" class="form-control">
+    </div>
+        <div class="mb-2">
+      <label class="form-label fw-semibold">Telefono</label>
+      <input [(ngModel)]="personaEnEdicion.telefono" class="form-control">
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Link de perfil</label>
+      <input [(ngModel)]="personaEnEdicion.perfil_url" class="form-control" placeholder="https://...">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Foto</label>
+      <input type="file" (change)="onFileEditarSeleccionado($event.target.files)" class="form-control">
+    </div>
+
+    <div class="text-center">
+      <button class="btn btn-primary me-2" (click)="guardarEdicion()">Guardar</button>
+      <button class="btn btn-secondary" (click)="cancelarEdicion()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+   

@@ -1,0 +1,133 @@
+<div class="fondo">
+  <div class="page-container">
+
+    <div class="page-header">
+      <h1>Mis Certificados</h1>
+      <p>Descarga los certificados oficiales de tus prácticas aprobadas.</p>
+    </div>
+
+    <!-- Cargando -->
+    <div class="estado-carga" *ngIf="cargando">
+      <div class="spinner"></div>
+      <span>Cargando tus certificados...</span>
+    </div>
+
+    <!-- Error -->
+    <div class="alert-error" *ngIf="error">
+      ⚠ {{ error }}
+    </div>
+
+    <!-- ── Tarjetas de prácticas ── -->
+    <div class="cert-grid" *ngIf="!cargando && !error">
+
+      <div class="cert-card" *ngFor="let slot of practicasSlots">
+
+        <div class="cert-card-header">
+          <div class="cert-icon">📄</div>
+          <div class="cert-badge">Práctica {{ slot.num }}</div>
+        </div>
+
+        <!-- CASO 1: práctica aprobada -->
+        <ng-container *ngIf="slot.cert as cert">
+          <div class="cert-card-body">
+            <div class="cert-field">
+              <label>Empresa: </label>
+              <span>{{ cert.empresa || '—' }}</span>
+            </div>
+            <div class="cert-field">
+              <label>Período: </label>
+              <span>
+                {{ cert.fecha_inicio  | date:'dd/MM/yyyy' }}
+                → {{ cert.fecha_termino | date:'dd/MM/yyyy' }}
+              </span>
+            </div>
+            <div class="cert-field">
+              <label>Horas totales: </label>
+              <span>{{ cert.horas_totales || '—' }} hrs.</span>
+            </div>
+            <div class="cert-estado">✓ Aprobada</div>
+          </div>
+
+          <div class="cert-card-footer">
+            <!-- PDF ya generado por el coordinador → descarga directa -->
+            <a *ngIf="cert.pdf_url"
+               [href]="'http://localhost/' + cert.pdf_url"
+               target="_blank"
+               class="btn-download">
+              ⬇ Descargar PDF
+            </a>
+            <!-- PDF aún no generado -->
+            <div *ngIf="!cert.pdf_url" class="btn-pendiente">
+              ⏳ Pendiente de generación
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- CASO 2: práctica no aprobada -->
+        <ng-container *ngIf="!slot.cert">
+          <div class="cert-card-body cert-card-body--vacio">
+            <div class="cert-no-disponible">
+              <span class="cert-no-disponible-icono">🔒</span>
+              <p class="cert-no-disponible-titulo">Certificado no disponible</p>
+              <p class="cert-no-disponible-desc">
+                Aún no tienes una práctica {{ slot.num === 1 ? 'N° 1' : 'N° 2' }}
+                aprobada registrada en el sistema.
+              </p>
+            </div>
+          </div>
+          <div class="cert-card-footer">
+            <button class="btn-download btn-download--disabled" disabled>
+              ⬇ Descargar PDF
+            </button>
+          </div>
+        </ng-container>
+
+      </div><!-- /cert-card -->
+    </div><!-- /cert-grid prácticas -->
+
+    <!-- ── Certificados externos ── -->
+    <div class="seccion-externos" *ngIf="!cargando && externos.length > 0">
+      <h2>Otros certificados</h2>
+      <div class="cert-grid">
+
+        <div class="cert-card" *ngFor="let ext of externos">
+          <div class="cert-card-header">
+            <div class="cert-icon">🏅</div>
+            <div class="cert-badge cert-badge--externo">Externo</div>
+          </div>
+          <div class="cert-card-body">
+            <div class="cert-field">
+              <label>Nombre: </label>
+              <span>{{ ext.nombre }}</span>
+            </div>
+            <div class="cert-field">
+              <label>Fecha emisión: </label>
+              <span>{{ formatFecha(ext.fecha_emision) }}</span>
+            </div>
+            <div class="cert-field">
+              <label>Código de verificación:</label>
+              <span class="codigo-verificacion">{{ ext.display }}</span>
+            </div>
+          </div>
+          <div class="cert-card-footer">
+            <button class="btn-download" (click)="descargarExterno(ext)">
+              ⬇ Descargar PDF
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /seccion-externos -->
+
+    <!-- Sin certificados externos -->
+    <div class="alert-info"
+         *ngIf="!cargando && !error && externos.length === 0">
+    </div>
+
+    <!-- Barra de carga -->
+    <div class="loading-bar" *ngIf="cargando">
+      <div class="loading-bar-inner"></div>
+    </div>
+
+  </div>
+</div>

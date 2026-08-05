@@ -35,7 +35,6 @@ export class VerificarCertificado {
   resultado: ResultadoVerificacion | null = null;
   error: string    = '';
 
-  private apiBase  = 'http://localhost/api';
   private nestBase = 'http://localhost:3000';
   readonly baseUrl = 'http://localhost/';
 
@@ -78,9 +77,9 @@ export class VerificarCertificado {
         }
       });
     } else {
-      // Código numérico → certificado via PHP
+      // Código numérico → certificado via NestJS
       this.http.get<ResultadoVerificacion>(
-        `${this.apiBase}/verificar_certificado.php?codigo=${encodeURIComponent(codigo)}`
+        `${this.nestBase}/seguimiento/verificar-certificado?codigo=${encodeURIComponent(codigo)}`
       ).subscribe({
         next: (res) => {
           this.buscando  = false;
@@ -104,14 +103,16 @@ export class VerificarCertificado {
 
   formatFecha(fecha: string): string {
     if (!fecha) return '—';
-    const [y, m, d] = fecha.split('-');
+    const [y, m, d] = fecha.split('T')[0].split('-');
     return `${d}/${m}/${y}`;
   }
 
   tipoLabel(tipo?: string): string {
-    if (tipo === 'informe_confidencial') return 'Informe Confidencial de Práctica';
-    if (tipo === 'formulario_revision')  return 'Formulario de Revisión del Informe';
-    if (tipo === 'practica')             return 'Certificado de Práctica Profesional';
+    if (tipo === 'informe_confidencial')        return 'Informe Confidencial de Práctica';
+    if (tipo === 'formulario_revision')         return 'Formulario de Revisión del Informe';
+    if (tipo === 'solicitud_profesor_evaluador') return 'Solicitud de Profesor Evaluador';
+    if (tipo === 'acta_academico_evaluador')    return 'Acta de Designación de Académico Evaluador';
+    if (tipo === 'practica')                    return 'Certificado de Práctica Profesional';
     return 'Certificado';
   }
 

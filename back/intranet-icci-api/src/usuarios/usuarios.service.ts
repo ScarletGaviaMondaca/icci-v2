@@ -105,7 +105,7 @@ export class UsuariosService {
     if (rol === 'empleador' && empleadorId) {
       const perfil_empleador = await this.prisma.empleadores.findUnique({
         where: { id: empleadorId },
-        include: { empresa: { select: { id: true, nombre: true } } },
+        include: { empresa: { select: { id: true, nombre: true, rut: true, descripcion: true, localidad: true, direccion: true } } },
       });
       return { ...user, perfil_empleador };
     }
@@ -114,7 +114,7 @@ export class UsuariosService {
   }
 
   async actualizarMiPerfil(userId: number, rol: string, data: any, profesorId?: number, empleadorId?: number) {
-    const { perfil_profesor, perfil_empleador, password, passwordActual, ...rest } = data;
+    const { perfil_profesor, perfil_empleador, perfil_empresa, password, passwordActual, ...rest } = data;
     const toStr = (v: any) => (v !== '' && v != null) ? String(v) : null;
 
     const camposUsuario: any = {
@@ -147,7 +147,7 @@ export class UsuariosService {
     }
 
     if (rol === 'empleador' && empleadorId && perfil_empleador) {
-      await this.prisma.empleadores.update({
+      const empleador = await this.prisma.empleadores.update({
         where: { id: empleadorId },
         data: {
           nombres:   toStr(perfil_empleador.nombres)   ?? undefined,
@@ -158,6 +158,18 @@ export class UsuariosService {
           telefono:  toStr(perfil_empleador.telefono),
         },
       });
+
+      if (perfil_empresa) {
+        // El RUT no se edita desde aquí, solo se muestra en modo lectura.
+        await this.prisma.empresas.update({
+          where: { id: empleador.empresa_id },
+          data: {
+            descripcion: toStr(perfil_empresa.descripcion),
+            localidad:   toStr(perfil_empresa.localidad),
+            direccion:   toStr(perfil_empresa.direccion),
+          },
+        });
+      }
     }
 
     return { ok: true };
@@ -169,5 +181,50 @@ export class UsuariosService {
       where: { id },
       data: { activo: user.activo === 1 ? 0 : 1 },
     });
+  }
+
+  // El RUT (sin puntos/guion) es el username y la contraseña inicial, igual
+  // que las cuentas de alumno creadas hasta ahora.
+  async crearUsuariosAlumnos() {
+    const pendientes = await this.prisma.alumnos.findMany({
+      where: { usuario: { none: {} } },
+      select: {
+        id: true, rut: true, nombres: true, apellido1: true, apellido2: true,
+        correo_institucional: true, correo_personal: true,
+      },
+    });
+
+    let creados = 0;
+    const errores: string[] = [];
+
+    for (const a of pendientes) {
+      const clave = a.rut.replace(/[^0-9kK]/gi, '').toUpperCase();
+      if (!clave) { errores.push(`Alumno ${a.id}: RUT inválido`); continue; }
+
+      const existe = await this.prisma.usuarios.findUnique({ where: { username: clave } });
+      if (existe) { errores.push(`Alumno ${a.id} (${a.rut}): el usuario "${clave}" ya existe`); continue; }
+
+      const hash = await bcrypt.hash(clave, 10);
+      await this.prisma.usuarios.create({
+        data: {
+          username:  clave,
+          password:  hash,
+          rol:       'alumno',
+          alumno_id: a.id,
+          nombre:    a.nombres,
+          apellido1: a.apellido1,
+          apellido2: a.apellido2,
+          correo:    a.correo_institucional ?? a.correo_personal ?? null,
+        },
+      });
+      creados++;
+    }
+
+    return {
+      mensaje: `${creados} cuenta(s) creada(s)` + (errores.length ? `, ${errores.length} omitida(s)` : ''),
+      creados,
+      omitidos: errores.length,
+      errores,
+    };
   }
 }

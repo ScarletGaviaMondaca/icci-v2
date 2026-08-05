@@ -1,0 +1,60 @@
+<div class="fondo">
+  <h1 class="titulo">Evaluar postulaciones</h1>
+  <p class="text-muted">Revisa si el alumno cumple los requisitos de la práctica. El jefe de carrera tomará la decisión final.</p>
+
+  <div *ngIf="mensaje" class="alert alert-success">{{ mensaje }}</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <div *ngIf="cargando" class="text-center py-4">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div class="row" *ngIf="!cargando">
+    <div class="col-md-12">
+      <div class="table-wrapper">
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Apellidos</th>
+            <th>RUT</th>
+            <th>N° Práctica</th>
+            <th>Cumple con requisitos</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of postulaciones">
+            <td>{{ p.nombres }}</td>
+            <td>{{ p.apellidos }}</td>
+            <td>{{ p.rut }}</td>
+            <td>{{ p.practica_num }}</td>
+            <td>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-success"
+                        [disabled]="evaluandoId !== null"
+                        (click)="evaluar(p, true)">
+                  {{ evaluandoId === p.id ? '⏳...' : '✅ Sí' }}
+                </button>
+                <button class="btn btn-sm btn-danger"
+                        [disabled]="evaluandoId !== null"
+                        (click)="evaluar(p, false)">
+                  ❌ No
+                </button>
+              </div>
+            </td>
+            <td>
+              <input type="text" class="form-control form-control-sm"
+                     placeholder="Observaciones"
+                     [(ngModel)]="observaciones[p.id]">
+            </td>
+          </tr>
+          <tr *ngIf="postulaciones.length === 0">
+            <td colspan="6" class="text-center text-muted">No hay postulaciones pendientes de evaluación.</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+</div>

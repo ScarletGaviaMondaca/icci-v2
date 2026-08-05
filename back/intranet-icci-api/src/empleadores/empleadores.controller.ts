@@ -37,8 +37,8 @@ export class EmpleadoresController {
   }
 
   @Post('empresas')
-  crearEmpresa(@Body('nombre') nombre: string) {
-    return this.empleadoresService.crearEmpresa(nombre);
+  crearEmpresa(@Body() body: { nombre: string; rut: string; descripcion?: string; localidad?: string }) {
+    return this.empleadoresService.crearEmpresa(body.nombre, body.rut, body.descripcion, body.localidad);
   }
 
   @Get('compromiso')

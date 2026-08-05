@@ -1,11 +1,3 @@
-.titulo {
-  color: #054182;
-  font-family: cursive, system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 2rem;
-  margin-bottom: 3px;
-  letter-spacing: 0.01em;
-}
 .fondo{
   background-color:white;
   padding: 20px;
@@ -77,6 +69,7 @@
   border-bottom: 1px solid #e0e6f0;
   padding: 20px 20px 16px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
 
@@ -170,6 +163,7 @@
 
 .cert-card-body--vacio {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   min-height: 130px;

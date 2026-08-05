@@ -54,7 +54,7 @@
     <tbody>
       <tr  *ngFor="let alumno of alumnosPaginados(); let i = index">
         <td> {{ ((paginaActual - 1) * elementosPorPagina) + i + 1 }} </td>
-        <td>{{ alumno.rut }}</td>
+        <td>{{ alumno.rut | rutFormato }}</td>
         <td>{{ alumno.nombre }}
           <span *ngIf="alumno.tipo === 'especial'"
                 class="badge bg-warning text-dark ms-1">

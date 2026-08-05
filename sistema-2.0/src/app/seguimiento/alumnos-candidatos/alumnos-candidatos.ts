@@ -3,10 +3,11 @@ import { SeguimientoService } from '../../servicios/seguimiento.service';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RutFormatoPipe } from '../../pipes/rut-formato.pipe';
 
 @Component({
   selector: 'app-alumnos-candidatos',
-  imports: [RouterLink, CommonModule, FormsModule],
+  imports: [RouterLink, CommonModule, FormsModule, RutFormatoPipe],
   templateUrl: './alumnos-candidatos.html',
   styleUrl: './alumnos-candidatos.css',
 })

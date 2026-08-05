@@ -1,0 +1,53 @@
+<div class="fondo">
+  <h1 class="titulo">Informes Atrasados</h1>
+  <p class="text-muted">Alumnos que llevan más de 2 meses sin entregar su informe de práctica desde que venció el plazo. Puedes enviarlos al comité de carrera para que decida.</p>
+
+  <div *ngIf="mensaje" class="alert alert-success">{{ mensaje }}</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <div *ngIf="cargando" class="text-center py-4">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div class="row" *ngIf="!cargando">
+    <div class="col-md-12">
+      <div class="table-wrapper">
+        <table class="table table-striped table-hover mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Apellidos</th>
+              <th>RUT</th>
+              <th>Práctica</th>
+              <th>Vencimiento informe</th>
+              <th>Días de atraso</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let a of alumnos; let i = index">
+              <td>{{ i + 1 }}</td>
+              <td>{{ a.nombres }}</td>
+              <td>{{ a.apellido1 }} {{ a.apellido2 }}</td>
+              <td>{{ a.rut }}</td>
+              <td>{{ a.practica_num === 1 ? 'Práctica I' : 'Práctica II' }}</td>
+              <td>{{ a.informe_elab_fecha_termino | date:'dd/MM/yyyy' }}</td>
+              <td><span class="badge bg-danger">{{ a.dias_atraso }} día(s)</span></td>
+              <td>
+                <button class="btn btn-sm btn-outline-warning"
+                        [disabled]="enviandoId === a.seguimiento_id"
+                        (click)="enviarAComite(a)">
+                  📨 Enviar a comité
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="alumnos.length === 0">
+              <td colspan="8" class="text-center text-muted">No hay informes atrasados pendientes.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

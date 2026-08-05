@@ -54,7 +54,21 @@ import { Organizacion } from './organizacion/organizacion';
 import { RegistroEmpleador } from './empleador/registro-empleador/registro-empleador';
 import { VistaEmpleador } from './empleador/vista-empleador/vista-empleador';
 import { EvaluacionInforme } from './evaluacion-informe/evaluacion-informe'
-import { EvaluacionEmpresa } from './evaluacion-empresa/evaluacion-empresa';
+import { EvaluacionEmpresa } from './empleador/evaluacion-empresa/evaluacion-empresa';
+import { EvaluacionesEmpresa } from './empleador/evaluaciones/evaluaciones';
+import { ListaAlumnosEmpresa } from './empleador/lista-alumnos/lista-alumnos';
+import { VistaSolicitud } from './solicitud-practica/vista-solicitud/vista-solicitud';
+import { Practicas } from './jefe-carrera/practicas/practicas';
+import { Solicitudes } from './jefe-carrera/solicitudes/solicitudes';
+import { SolicitudesEmpresa } from './jefe-carrera/solicitudes-empresa/solicitudes-empresa';
+import { EvaluacionInformes } from './jefe-carrera/evaluacion-informes/evaluacion-informes';
+import { ProfesorEvaluador } from './director/profesor-evaluador/profesor-evaluador';
+import { Practicantes } from './jefe-carrera/practicantes/practicantes';
+import { Evaluar } from './secretaria/evaluar/evaluar';
+import { AlumnosEvaluados } from './director/alumnos-evaluados/alumnos-evaluados';
+import { ComiteCarrera } from './jefe-carrera/comite-carrera/comite-carrera';
+import { InformesAtrasados } from './jefe-carrera/informes-atrasados/informes-atrasados';
+import { Subrogante } from './secretaria/subrogante/subrogante';
 
 export const routes: Routes = [
     { path: 'login', component : Login},
@@ -73,6 +87,7 @@ export const routes: Routes = [
             { path: 'nosotros', component: Nosotros },
             { path: 'mision', component: Mision},
             { path: 'contacto', component: Contacto },
+            { path: 'vista-solicitud/:id', component: VistaSolicitud },
             { path: 'organizacion', component: Organizacion, 
                 children: [
                     { path: '', redirectTo: 'organigrama', pathMatch: 'full' },
@@ -120,6 +135,7 @@ export const routes: Routes = [
                 { path: '', redirectTo: 'listado-alumnos', pathMatch: 'full' }
                 ]
             },
+            
             { path: 'seguimiento', component : Seguimiento, 
                 canActivate: [rolGuard], data: { roles: ['admin', 'secretaria'] },
                 children: [
@@ -146,19 +162,44 @@ export const routes: Routes = [
                 { path: 'editar/:id', component : ExalumnosEditar},
                 { path: 'listado', component: ExalumnosList },
             ]},
+            { path: 'evaluar', component: Evaluar,
+                canActivate: [rolGuard], data: { roles: ['secretaria', 'admin'] },
+            },
+            { path: 'secretaria/subrogante', component: Subrogante,
+                canActivate: [rolGuard], data: { roles: ['secretaria', 'secretaria_dici', 'admin'] },
+            },
+            { path: 'practicas', component : Practicas,
+                canActivate: [rolGuard], data: { roles: ['jefe_carrera', 'secretaria'] },
+                children: [
+                    { path: '', redirectTo: 'practicantes', pathMatch: 'full' },
+                    { path: 'solicitudes', component : Solicitudes,
+                        canActivate: [rolGuard], data: { roles: ['jefe_carrera'] },
+                    },
+                  //  { path: 'solicitudes-empresa', component : SolicitudesEmpresa},
+                    { path: 'practicantes', component : Practicantes},
+                    { path: 'evaluacion-informes', component : EvaluacionInformes},
+                    { path: 'evaluacion-empresas', component : Solicitudes},
+                    { path: 'informes-atrasados', component : InformesAtrasados},
+            ]},
+            { path: 'solicitudes-empresa', component : SolicitudesEmpresa,
+                canActivate: [rolGuard], data: { roles: ['jefe_carrera'] },
+            },
+            { path: 'comite', component : ComiteCarrera,
+                canActivate: [rolGuard], data: { roles: ['jefe_carrera', 'secretaria'] },
+            },
             { path: 'certificados', component: Certificados},
             //Vista solo para alumnos y admin
             { path: 'alumno', component : Alumno,
                 canActivate: [rolGuard], data: { roles: ['admin', 'alumno'] },
                 children: [
                 { path: 'mapa', component: Mapa},
-                { path: 'perfil', component: VerAlumno },       
+                { path: 'perfil', component: VerAlumno },
                 { path: 'editar-perfil', component: EditarAlumno },
                 { path: '', redirectTo: 'mapa', pathMatch: 'full' },
             ]},
             { path: 'miseguimiento', component: SeguimientoAlumno},
             { path: 'miscertificados', component: CertificadoAlumno},
-            
+
             // Solo admin
             { path: 'usuarios', component: GestionUsuarios,
                 canActivate: [rolGuard], data: { roles: ['admin'] }
@@ -174,8 +215,14 @@ export const routes: Routes = [
             },
             { path: 'subir-certificado', component: SubirCertificado,
                 canActivate: [authGuard]
-             },
+                },
             { path: 'empleador', component: VistaEmpleador,
+                canActivate: [rolGuard], data: { roles: ['admin', 'empleador'] }
+            },
+            { path: 'evaluaciones', component: EvaluacionesEmpresa,
+                canActivate: [rolGuard], data: { roles: ['admin', 'empleador'] }
+            },
+            { path: 'lista-alumnos', component: ListaAlumnosEmpresa,
                 canActivate: [rolGuard], data: { roles: ['admin', 'empleador'] }
             },
             { path: 'evaluar-informe/:seguimientoId', component: EvaluacionInforme,
@@ -184,9 +231,14 @@ export const routes: Routes = [
             { path: 'evaluar-empresa', component: EvaluacionEmpresa,
                 canActivate: [rolGuard], data: { roles: ['empleador', 'admin'] }
             },
-
+            { path: 'profesor-evaluador', component: ProfesorEvaluador,
+                canActivate: [rolGuard], data: { roles: ['director_departamento', 'admin', 'secretaria_dici'] }
+            },
+            { path: 'alumnos-evaluados', component: AlumnosEvaluados,
+                canActivate: [rolGuard], data: { roles: ['profesor', 'director_departamento', 'admin'] }
+            },
         ]
     },
 
-            
-];
+]
+

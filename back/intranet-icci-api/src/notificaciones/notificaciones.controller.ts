@@ -12,25 +12,25 @@ export class NotificacionesController {
   // ── Seguimiento (admin / secretaria) — static routes first ──────
 
   @Get('seguimiento')
-  @Roles('admin', 'secretaria', 'jefe_carrera')
+  @Roles('admin', 'secretaria', 'jefe_carrera', 'director_departamento', 'secretaria_dici')
   findAllSeguimiento() {
     return this.notificacionesService.findAllSeguimiento();
   }
 
   @Get('seguimiento/count')
-  @Roles('admin', 'secretaria', 'jefe_carrera')
+  @Roles('admin', 'secretaria', 'jefe_carrera', 'director_departamento', 'secretaria_dici')
   countNoLeidasSeguimiento() {
     return this.notificacionesService.countNoLeidasSeguimiento();
   }
 
   @Put('seguimiento/leer-todas')
-  @Roles('admin', 'secretaria', 'jefe_carrera')
+  @Roles('admin', 'secretaria', 'jefe_carrera', 'director_departamento', 'secretaria_dici')
   marcarTodasLeidasSeguimiento() {
     return this.notificacionesService.marcarTodasLeidasSeguimiento();
   }
 
   @Put('seguimiento/:id/leer')
-  @Roles('admin', 'secretaria', 'jefe_carrera')
+  @Roles('admin', 'secretaria', 'jefe_carrera', 'director_departamento', 'secretaria_dici')
   marcarLeidaSeguimiento(@Param('id') id: string) {
     return this.notificacionesService.marcarLeidaSeguimiento(+id);
   }

@@ -27,6 +27,7 @@
     <div *ngFor="let cat of categoriasFiltradas()" class="mb-5">
       <h2 class="titulo2 mb-3">{{ cat }}</h2>
 
+      <div class="table-wrapper">
       <table class="table table-bordered align-middle">
         <thead class="table-light">
           <tr>
@@ -53,6 +54,7 @@
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
 
     <!-- Mensaje vacío -->

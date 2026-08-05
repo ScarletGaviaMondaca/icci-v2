@@ -9,10 +9,13 @@
     </div>
     <div class="modal-notif-body">
       <div *ngFor="let n of notificacionesPendientes" class="notif-item-modal">
-        <strong>{{ n.nombres }} {{ n.apellido1 }}</strong> venció su fecha límite
-        del hito <strong>{{ n.hito_label }}</strong>
+        <strong>{{ n.hito_label }}</strong>
         <br>
-        <small class="text-muted">📅 {{ n.fecha_vencimiento | date:'dd/MM/yyyy' }} · RUT: {{ n.rut }}</small>
+        <small class="text-muted">
+          {{ n.nombres }} {{ n.apellido1 }} {{ n.apellido2 }} · RUT: {{ n.rut }}
+          <span *ngIf="n.practica_num"> · Práctica {{ n.practica_num }}</span>
+          · {{ n.created_at | date:'dd/MM/yyyy' }}
+        </small>
       </div>
     </div>
     <div class="modal-notif-footer">
@@ -58,6 +61,6 @@
       </a>
     </div>
      <br>
-     <span>© 2026 Sistema de Gestion - Universidad de Tarapacá</span>
+     <span>© 2026 Sistema de Gestión - Universidad de Tarapacá</span>
       <br>
   </footer>

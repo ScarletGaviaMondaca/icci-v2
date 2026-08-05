@@ -60,11 +60,13 @@ export class GestionUsuarios implements OnInit {
     ) {}
 
   togglingJefeCarrera: number | null = null;
+  togglingDirector: number | null = null;
 
   get usuariosStaff() {
     return this.usuarios.filter(u =>
-      ['admin', 'secretaria'].includes(u.rol) ||
-      (u.rol === 'jefe_carrera' && !u.profesor_id)
+      ['admin', 'secretaria', 'secretaria_dici'].includes(u.rol) ||
+      (u.rol === 'jefe_carrera' && !u.profesor_id) ||
+      (u.rol === 'director_departamento' && !u.profesor_id)
     );
   }
   get usuariosProfesores() {
@@ -99,6 +101,30 @@ export class GestionUsuarios implements OnInit {
         this.zone.run(() => {
           this.mostrarError('❌ Error al cambiar rol');
           this.togglingJefeCarrera = null;
+          this.cdr.detectChanges();
+        });
+      }
+    });
+  }
+
+  toggleDirectorDepartamento(u: any) {
+    const nuevoRol = u.rol === 'director_departamento' ? 'profesor' : 'director_departamento';
+    const accion   = nuevoRol === 'director_departamento' ? 'asignar como Director de Departamento' : 'quitar como Director de Departamento';
+    if (!confirm(`¿${accion} a ${this.nombreCompleto(u)}?`)) return;
+    this.togglingDirector = u.id;
+    this.svc.cambiarRol(u.id, nuevoRol).subscribe({
+      next: () => {
+        this.zone.run(() => {
+          this.mostrarMensaje(`✅ Rol actualizado a ${nuevoRol}`);
+          this.togglingDirector = null;
+          this.cdr.detectChanges();
+          this.cargar();
+        });
+      },
+      error: () => {
+        this.zone.run(() => {
+          this.mostrarError('❌ Error al cambiar rol');
+          this.togglingDirector = null;
           this.cdr.detectChanges();
         });
       }
@@ -335,6 +361,10 @@ export class GestionUsuarios implements OnInit {
   cambiarPasswordAlumno() {
     if (!this.nuevaPasswordAlumno || this.nuevaPasswordAlumno.length < 6) {
       this.mostrarError('Mínimo 6 caracteres');
+      return;
+    }
+    if (!this.alumnoEncontrado?.usuario_id) {
+      this.mostrarError('❌ Este alumno no tiene una cuenta de usuario creada');
       return;
     }
     this.cambiandoPasswordAlumno = true;

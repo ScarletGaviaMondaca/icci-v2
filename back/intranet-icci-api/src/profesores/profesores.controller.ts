@@ -10,7 +10,7 @@ export class ProfesoresController {
   constructor(private profesoresService: ProfesoresService) {}
 
   @Get()
-  @Roles('admin', 'secretaria', 'jefe_carrera', 'alumno', 'profesor', 'empleador')
+  @Roles('admin', 'secretaria', 'jefe_carrera', 'alumno', 'profesor', 'empleador', 'director_departamento', 'secretaria_dici')
   findAll(@Query('soloActivos') soloActivos?: string) {
     return this.profesoresService.findAll(soloActivos === '1');
   }

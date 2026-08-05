@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import {
   Document, Packer, Paragraph, Table, TableRow, TableCell,
   TextRun, AlignmentType, WidthType, BorderStyle,
@@ -62,7 +63,10 @@ export class GeneradoresService {
         const empresa = d.empresa_nombre || d.practica1_empresa || 'No registrado';
         const supervisor = d.practica1_supervisor || 'No registrado';
         const profesor = d.profesor_nombre?.trim() || 'No registrado';
-        const jefeCarrera = d.jefe_nombre?.toUpperCase() || 'HUMBERTO URRUTIA LÓPEZ';
+        const jefeEfectivo = await this.getJefeCarreraEfectivo();
+        const jefeCarrera = jefeEfectivo
+          ? `${jefeEfectivo.nombre} ${jefeEfectivo.apellido1} ${jefeEfectivo.apellido2 ?? ''}`.trim().toUpperCase()
+          : (d.jefe_nombre?.toUpperCase() || 'HUMBERTO URRUTIA LÓPEZ');
         const fechaInicio = this.formatearFecha(d.practica1_fecha_inicio);
         const fechaTerm = this.formatearFecha(d.practica1_fecha_termino);
 
@@ -262,6 +266,472 @@ export class GeneradoresService {
 
     return await Packer.toBuffer(doc);
     }
+
+  async getProfesorPorRol(rol: string): Promise<{ nombre: string; apellido1: string; apellido2: string | null } | null> {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT p.nombre, p.apellido1, p.apellido2
+      FROM usuarios u
+      JOIN profesores p ON p.id = u.profesor_id
+      WHERE u.rol = ${rol}
+      ORDER BY u.id DESC
+      LIMIT 1
+    `;
+    return rows[0] ?? null;
+  }
+
+  // Prioriza al subrogante activo (designado por secretaría cuando el jefe de
+  // carrera no puede firmar) sobre el jefe de carrera real; mismo shape que
+  // getProfesorPorRol para ser un reemplazo directo en los call sites existentes.
+  async getJefeCarreraEfectivo(): Promise<{ nombre: string; apellido1: string; apellido2: string | null } | null> {
+    const sub = await this.prisma.subrogancias.findFirst({
+      where: { activo: 1, rol_suplido: 'jefe_carrera' },
+      include: { profesor: true },
+    });
+    if (sub?.profesor) {
+      return { nombre: sub.profesor.nombre, apellido1: sub.profesor.apellido1, apellido2: sub.profesor.apellido2 };
+    }
+    return this.getProfesorPorRol('jefe_carrera');
+  }
+
+  // Análogo a getJefeCarreraEfectivo() pero para el director de departamento
+  // (designado por secretaría DICI).
+  async getDirectorDepartamentoEfectivo(): Promise<{ nombre: string; apellido1: string; apellido2: string | null } | null> {
+    const sub = await this.prisma.subrogancias.findFirst({
+      where: { activo: 1, rol_suplido: 'director_departamento' },
+      include: { profesor: true },
+    });
+    if (sub?.profesor) {
+      return { nombre: sub.profesor.nombre, apellido1: sub.profesor.apellido1, apellido2: sub.profesor.apellido2 };
+    }
+    return this.getProfesorPorRol('director_departamento');
+  }
+
+  formatearFechaCartaOficial(fecha: Date): string {
+    const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    return `${meses[fecha.getMonth()]} ${String(fecha.getDate()).padStart(2, '0')} de ${fecha.getFullYear()}`;
+  }
+
+  async generarListaProfesorEvaluador(
+    seguimientoIds: number[], creadoPor: string, numeroCarta: string,
+  ): Promise<{ buffer: Buffer; codigo: string }> {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT a.nombres, a.apellido1, a.apellido2, a.rut, sp.practica_num,
+             COALESCE(e.nombre, sp.practica1_empresa) AS empresa
+      FROM seguimiento_practica sp
+      JOIN alumnos a ON a.id = sp.alumno_id
+      LEFT JOIN empresas e ON e.id = sp.empresa_id
+      WHERE sp.id IN (${Prisma.join(seguimientoIds)})
+      ORDER BY a.apellido1, a.apellido2, a.nombres
+    `;
+
+    const [director, jefe] = await Promise.all([
+      this.getDirectorDepartamentoEfectivo(),
+      this.getJefeCarreraEfectivo(),
+    ]);
+    const nombreCompleto = (p: { nombre: string; apellido1: string; apellido2: string | null } | null) =>
+      p ? `${p.nombre} ${p.apellido1} ${p.apellido2 ?? ''}`.trim() : null;
+    const directorNombre = nombreCompleto(director)?.toUpperCase() || 'DIRECTOR(A) DE DEPARTAMENTO';
+    const jefeNombre      = nombreCompleto(jefe)?.toUpperCase() || 'JEFE DE CARRERA ICCI';
+
+    const fechaActual = this.formatearFechaCartaOficial(new Date());
+    const romanos: Record<number, string> = { 1: 'I', 2: 'II' };
+    const numsPractica = [...new Set(rows.map(r => Number(r.practica_num)))].sort((a, b) => a - b);
+    const practicaTexto = numsPractica.map(n => romanos[n] ?? String(n)).join(' y ');
+
+    // Código de verificación: determinístico según el N° de carta y el conjunto de alumnos,
+    // comprobable luego en /verificar-certificado (reemplaza a la firma del jefe de carrera).
+    const idsOrdenados = [...seguimientoIds].sort((a, b) => a - b).join(',');
+    const hash   = require('crypto').createHash('md5').update(`sol_prof_${numeroCarta}_${idsOrdenados}`).digest('hex');
+    const codigo = hash.substring(0, 12).toUpperCase();
+    const codigoDisplay = `${codigo.substring(0, 4)}-${codigo.substring(4, 8)}-${codigo.substring(8, 12)}`;
+
+    const bodyFont  = { size: 20, font: 'Century Gothic' };
+    const headFont  = { size: 16, font: 'Century Gothic' };
+    const cellBorder = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
+    const headerCell = (text: string) => new TableCell({
+      margins: { top: 80, bottom: 80, left: 100, right: 100 },
+      children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text, bold: true, ...bodyFont })] })],
+    });
+    const dataCell = (text: string) => new TableCell({
+      margins: { top: 80, bottom: 80, left: 100, right: 100 },
+      children: [new Paragraph({ children: [new TextRun({ text, ...bodyFont })] })],
+    });
+
+    const filas = rows.map(r => new TableRow({
+      children: [
+        dataCell(`${r.nombres} ${r.apellido1} ${r.apellido2 ?? ''}`.trim()),
+        dataCell(`✓  ${r.empresa ?? '—'}`),
+      ],
+    }));
+
+    // Logos del membrete (mismo criterio que el resto de documentos institucionales)
+    const logosDir  = 'C:/xampp/htdocs/api/uploads/logos/';
+    const logoUTAData  = fs.existsSync(logosDir + 'uta_linea.png') ? fs.readFileSync(logosDir + 'uta_linea.png') : null;
+    const logoICCIData = fs.existsSync(logosDir + 'logo_icci.png') ? fs.readFileSync(logosDir + 'logo_icci.png') : null;
+    const noBorder = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+
+    const membrete = new Table({
+      width: { size: 9200, type: WidthType.DXA },
+      borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder,
+                 insideHorizontal: noBorder, insideVertical: noBorder },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              width: { size: 1300, type: WidthType.DXA },
+              borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder },
+              children: [new Paragraph({
+                children: logoUTAData ? [new ImageRun({ data: logoUTAData, transformation: { width: 45, height: 60 }, type: 'png' })] : [new TextRun({ text: '' })],
+              })],
+            }),
+            new TableCell({
+              width: { size: 5900, type: WidthType.DXA },
+              borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder },
+              children: [
+                new Paragraph({ children: [new TextRun({ text: 'Universidad de Tarapacá', ...headFont })] }),
+                new Paragraph({ children: [new TextRun({ text: 'Facultad de Ingeniería', ...headFont })] }),
+                new Paragraph({ children: [new TextRun({ text: 'Jefatura de Carrera de Ingeniería en Computación e Informática', bold: true, ...headFont })] }),
+              ],
+            }),
+            new TableCell({
+              width: { size: 2000, type: WidthType.DXA },
+              borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder },
+              children: [new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: logoICCIData ? [new ImageRun({ data: logoICCIData, transformation: { width: 130, height: 45 }, type: 'png' })] : [new TextRun({ text: '' })],
+              })],
+            }),
+          ],
+        }),
+      ],
+    });
+
+    const doc = new Document({
+      sections: [{
+        children: [
+          membrete,
+          new Paragraph({
+            border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '000000', space: 4 } },
+            spacing: { after: 400 },
+            children: [new TextRun({ text: '' })],
+          }),
+          new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            spacing: { after: 200 },
+            children: [new TextRun({ text: `Arica, ${fechaActual}.`, ...bodyFont })],
+          }),
+          new Paragraph({
+            spacing: { after: 400 },
+            children: [new TextRun({ text: `ICCI N° ${numeroCarta}`, bold: true, ...bodyFont })],
+          }),
+          new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: 'Señor', ...bodyFont })] }),
+          new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: directorNombre, bold: true, ...bodyFont })] }),
+          new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: 'Director', ...bodyFont })] }),
+          new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: 'Departamento de Ing. Computación e Informática', ...bodyFont })] }),
+          new Paragraph({ spacing: { after: 300 }, children: [new TextRun({ text: 'Presente', underline: {}, ...bodyFont })] }),
+          new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: 'De mi consideración:', ...bodyFont })] }),
+          new Paragraph({
+            alignment: AlignmentType.JUSTIFIED,
+            spacing: { after: 300 },
+            children: [new TextRun({
+              text: `A través de la presente me permito solicitar a usted, tenga a bien, asignar académicos del Departamento de Ingeniería en Computación e Informática para revisar Informes de práctica profesional ${practicaTexto} de los alumnos indicados a continuación:`,
+              ...bodyFont,
+            })],
+          }),
+          new Table({
+            width: { size: 9000, type: WidthType.DXA },
+            borders: { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder,
+                       insideHorizontal: cellBorder, insideVertical: cellBorder },
+            rows: [
+              new TableRow({ children: [headerCell('ALUMNO (A)'), headerCell('LUGAR DE PRÁCTICA')] }),
+              ...filas,
+            ],
+          }),
+          new Paragraph({
+            alignment: AlignmentType.JUSTIFIED,
+            spacing: { before: 300, after: 300 },
+            children: [
+              new TextRun({ text: 'Se ', ...bodyFont }),
+              new TextRun({ text: 'adjunta Formulario de Revisión Informe de Práctica Profesional', bold: true, ...bodyFont }),
+              new TextRun({ text: ' junto con los ', ...bodyFont }),
+              new TextRun({ text: 'Informes de Práctica Profesional', bold: true, ...bodyFont }),
+              new TextRun({ text: ' entregados por los estudiantes.', ...bodyFont }),
+            ],
+          }),
+          new Paragraph({ spacing: { after: 600 }, children: [new TextRun({ text: 'Atentamente,', ...bodyFont })] }),
+          new Paragraph({ spacing: { after: 400 }, children: [new TextRun({ text: '' })] }),
+          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: jefeNombre, bold: true, ...bodyFont })] }),
+          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Jefe de Carrera', ...bodyFont })] }),
+          new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 500 }, children: [new TextRun({ text: 'Ingeniería Civil en Computación e Informática', ...bodyFont })] }),
+          new Paragraph({
+            children: [new TextRun({
+              text: `Código de verificación: ${codigoDisplay}`,
+              size: 18, font: 'Century Gothic', color: '555555',
+            })],
+          }),
+          new Paragraph({
+            children: [new TextRun({
+              text: 'Este documento puede comprobarse en el sistema, en la sección "Verificar documento".',
+              size: 16, italics: true, font: 'Century Gothic', color: '888888',
+            })],
+          }),
+        ],
+      }],
+    });
+
+    const buffer = await Packer.toBuffer(doc);
+
+    const nombreArchivo = `Solicitud_Profesor_Evaluador_${codigo}.docx`;
+    const carpeta   = 'C:/xampp/htdocs/uploads/solicitudes_profesor_evaluador';
+    const rutaBD    = `uploads/solicitudes_profesor_evaluador/${nombreArchivo}`;
+    try {
+      fs.mkdirSync(carpeta, { recursive: true });
+      fs.writeFileSync(path.join(carpeta, nombreArchivo), buffer);
+    } catch (e) {
+      console.error('[generarListaProfesorEvaluador] Error guardando archivo:', e);
+    }
+
+    const alumnosResumen  = rows.map(r => `${r.nombres} ${r.apellido1} ${r.apellido2 ?? ''}`.trim()).join(', ');
+    const empresasResumen = [...new Set(rows.map(r => r.empresa).filter(Boolean))].join(', ');
+
+    await this.prisma.solicitudes_profesor_evaluador.upsert({
+      where: { codigo },
+      update: {
+        seguimiento_ids: idsOrdenados,
+        alumnos_resumen: alumnosResumen,
+        empresas_resumen: empresasResumen || null,
+        numero_carta: numeroCarta,
+        creado_por: creadoPor,
+        ruta_archivo: rutaBD,
+      },
+      create: {
+        codigo,
+        seguimiento_ids: idsOrdenados,
+        alumnos_resumen: alumnosResumen,
+        empresas_resumen: empresasResumen || null,
+        numero_carta: numeroCarta,
+        creado_por: creadoPor,
+        ruta_archivo: rutaBD,
+      },
+    });
+
+    // Deja registrada la carta de petición en el seguimiento de cada alumno solicitado
+    await this.prisma.seguimiento_practica.updateMany({
+      where: { id: { in: seguimientoIds } },
+      data: { informe_rev_carta_peticion: numeroCarta },
+    });
+
+    return { buffer, codigo: codigoDisplay };
+  }
+
+  // Solicitudes ICCI (jefe de carrera) que incluyen a alguno de los seguimientos dados —
+  // permite al director ver/enlazar el documento que originó la petición de evaluador.
+  async listarSolicitudesIcci(seguimientoIds: number[]) {
+    const rows = await this.prisma.solicitudes_profesor_evaluador.findMany({
+      orderBy: { created_at: 'desc' },
+    });
+    return rows
+      .filter(r => r.seguimiento_ids.split(',').map(Number).some(id => seguimientoIds.includes(id)))
+      .map(r => ({
+        id: r.id,
+        codigo: r.codigo,
+        numero_carta: r.numero_carta,
+        fecha: r.created_at,
+        ruta_archivo: r.ruta_archivo,
+        alumnos_resumen: r.alumnos_resumen,
+      }));
+  }
+
+  private async resolverReferenciaIcci(seguimientoIds: number[]): Promise<string> {
+    const rows = await this.prisma.solicitudes_profesor_evaluador.findMany({
+      orderBy: { created_at: 'desc' },
+    });
+    const match = rows.find(r => r.seguimiento_ids.split(',').map(Number).some(id => seguimientoIds.includes(id)));
+    if (match?.numero_carta) {
+      return `ICCI N° ${match.numero_carta}, de fecha ${this.formatearFechaCartaOficial(match.created_at)}`;
+    }
+    return 'carta ICCI correspondiente';
+  }
+
+  async generarActaAcademicoEvaluador(
+    seguimientoIds: number[], creadoPor: string, numeroDici: string,
+  ): Promise<{ buffer: Buffer; codigo: string }> {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT a.nombres, a.apellido1, a.apellido2,
+             CONCAT(p.nombre, ' ', p.apellido1, ' ', COALESCE(p.apellido2, '')) AS academico
+      FROM seguimiento_practica sp
+      JOIN alumnos a ON a.id = sp.alumno_id
+      JOIN profesores p ON p.id = sp.informe_rev_profesor_id
+      WHERE sp.id IN (${Prisma.join(seguimientoIds)})
+      ORDER BY a.apellido1, a.apellido2, a.nombres
+    `;
+    if (rows.length === 0) throw new Error('Ninguno de los alumnos seleccionados tiene un académico evaluador asignado');
+
+    const referencia = await this.resolverReferenciaIcci(seguimientoIds);
+    const jefe = await this.getJefeCarreraEfectivo();
+    const nombreCompleto = (p: { nombre: string; apellido1: string; apellido2: string | null } | null) =>
+      p ? `${p.nombre} ${p.apellido1} ${p.apellido2 ?? ''}`.trim() : null;
+    const jefeNombre     = nombreCompleto(jefe)?.toUpperCase() || 'JEFE DE CARRERA ICCI';
+    const director       = await this.getDirectorDepartamentoEfectivo();
+    const directorNombre = nombreCompleto(director)?.toUpperCase() || 'DIRECTOR(A) DE DEPARTAMENTO';
+
+    const fechaActual = this.formatearFechaCartaOficial(new Date());
+
+    // Código de verificación: determinístico según el N° DICI y el conjunto de alumnos,
+    // comprobable luego en /verificar-certificado (reemplaza a la firma del director).
+    const idsOrdenados = [...seguimientoIds].sort((a, b) => a - b).join(',');
+    const hash   = require('crypto').createHash('md5').update(`acta_academico_${numeroDici}_${idsOrdenados}`).digest('hex');
+    const codigo = hash.substring(0, 12).toUpperCase();
+    const codigoDisplay = `${codigo.substring(0, 4)}-${codigo.substring(4, 8)}-${codigo.substring(8, 12)}`;
+
+    const bodyFont   = { size: 20, font: 'Century Gothic' };
+    const headFont   = { size: 16, font: 'Century Gothic' };
+    const cellBorder = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
+    const headerCell = (text: string) => new TableCell({
+      margins: { top: 80, bottom: 80, left: 100, right: 100 },
+      children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text, bold: true, ...bodyFont })] })],
+    });
+    const dataCell = (text: string) => new TableCell({
+      margins: { top: 80, bottom: 80, left: 100, right: 100 },
+      children: [new Paragraph({ children: [new TextRun({ text, ...bodyFont })] })],
+    });
+
+    const filas = rows.map(r => new TableRow({
+      children: [
+        dataCell(`${r.nombres} ${r.apellido1} ${r.apellido2 ?? ''}`.trim()),
+        dataCell(r.academico),
+      ],
+    }));
+
+    // Logos del membrete DICI: logo genérico de facultad (izquierda) + logo del
+    // Departamento de Ingeniería en Computación e Informática, que ya trae el texto (derecha)
+    const logosDir     = 'C:/xampp/htdocs/api/uploads/logos/';
+    const logoFacData  = fs.existsSync(logosDir + 'facultad_fixed.png') ? fs.readFileSync(logosDir + 'facultad_fixed.png') : null;
+    const logoDiciData = fs.existsSync(logosDir + 'DICI_fixed.png') ? fs.readFileSync(logosDir + 'DICI_fixed.png') : null;
+    const noBorder = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+
+    const membrete = new Table({
+      width: { size: 9200, type: WidthType.DXA },
+      borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder,
+                 insideHorizontal: noBorder, insideVertical: noBorder },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              width: { size: 2600, type: WidthType.DXA },
+              borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder },
+              children: [new Paragraph({
+                children: logoFacData ? [new ImageRun({ data: logoFacData, transformation: { width: 60, height: 60 }, type: 'png' })] : [new TextRun({ text: '' })],
+              })],
+            }),
+            new TableCell({
+              width: { size: 3600, type: WidthType.DXA },
+              borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder },
+              children: [new Paragraph({ children: [new TextRun({ text: '' })] })],
+            }),
+            new TableCell({
+              width: { size: 3000, type: WidthType.DXA },
+              borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder },
+              children: [new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: logoDiciData ? [new ImageRun({ data: logoDiciData, transformation: { width: 150, height: 50 }, type: 'png' })] : [new TextRun({ text: '' })],
+              })],
+            }),
+          ],
+        }),
+      ],
+    });
+
+    const doc = new Document({
+      sections: [{
+        children: [
+          membrete,
+          new Paragraph({
+            border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '000000', space: 4 } },
+            spacing: { after: 400 },
+            children: [new TextRun({ text: '' })],
+          }),
+          new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            spacing: { after: 200 },
+            children: [new TextRun({ text: `Arica, ${fechaActual}.`, ...bodyFont })],
+          }),
+          new Paragraph({
+            spacing: { after: 400 },
+            children: [new TextRun({ text: `DICI N° ${numeroDici}`, bold: true, ...bodyFont })],
+          }),
+          new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: 'Señor', ...bodyFont })] }),
+          new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: jefeNombre, bold: true, ...bodyFont })] }),
+          new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: 'Jefe de Carrera', ...bodyFont })] }),
+          new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: 'Ingeniería Civil en Computación e Informática', ...bodyFont })] }),
+          new Paragraph({ spacing: { after: 300 }, children: [new TextRun({ text: 'Presente', underline: {}, ...bodyFont })] }),
+          new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: 'De mi consideración:', ...bodyFont })] }),
+          new Paragraph({
+            alignment: AlignmentType.JUSTIFIED,
+            spacing: { after: 300 },
+            children: [new TextRun({
+              text: `En respuesta a su carta ${referencia}, le informo que el (los) académico (s) designado (s) para evaluar informe de práctica:`,
+              ...bodyFont,
+            })],
+          }),
+          new Table({
+            width: { size: 9000, type: WidthType.DXA },
+            borders: { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder,
+                       insideHorizontal: cellBorder, insideVertical: cellBorder },
+            rows: [
+              new TableRow({ children: [headerCell('ALUMNO (A)'), headerCell('ACADÉMICO EVALUADOR')] }),
+              ...filas,
+            ],
+          }),
+          new Paragraph({ spacing: { before: 400, after: 600 }, children: [new TextRun({ text: 'Sin otro particular, le saluda cordialmente,', ...bodyFont })] }),
+          new Paragraph({ spacing: { after: 400 }, children: [new TextRun({ text: '' })] }),
+          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: directorNombre, bold: true, ...bodyFont })] }),
+          new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 500 }, children: [new TextRun({ text: 'Director', ...bodyFont })] }),
+          new Paragraph({
+            children: [new TextRun({
+              text: `Código de verificación: ${codigoDisplay}`,
+              size: 18, font: 'Century Gothic', color: '555555',
+            })],
+          }),
+          new Paragraph({
+            children: [new TextRun({
+              text: 'Este documento puede comprobarse en el sistema, en la sección "Verificar documento".',
+              size: 16, italics: true, font: 'Century Gothic', color: '888888',
+            })],
+          }),
+        ],
+      }],
+    });
+
+    const buffer = await Packer.toBuffer(doc);
+
+    const nombreArchivo = `Acta_Academico_Evaluador_${codigo}.docx`;
+    const carpeta   = 'C:/xampp/htdocs/uploads/actas_academico_evaluador';
+    const rutaBD    = `uploads/actas_academico_evaluador/${nombreArchivo}`;
+    try {
+      fs.mkdirSync(carpeta, { recursive: true });
+      fs.writeFileSync(path.join(carpeta, nombreArchivo), buffer);
+    } catch (e) {
+      console.error('[generarActaAcademicoEvaluador] Error guardando archivo:', e);
+    }
+
+    const alumnosResumen = rows.map(r => `${r.nombres} ${r.apellido1} ${r.apellido2 ?? ''}`.trim() + ' → ' + r.academico).join(', ');
+
+    await this.prisma.actas_academico_evaluador.upsert({
+      where: { codigo },
+      update: { seguimiento_ids: idsOrdenados, alumnos_resumen: alumnosResumen, numero_dici: numeroDici, creado_por: creadoPor, ruta_archivo: rutaBD },
+      create: { codigo, seguimiento_ids: idsOrdenados, alumnos_resumen: alumnosResumen, numero_dici: numeroDici, creado_por: creadoPor, ruta_archivo: rutaBD },
+    });
+
+    // Deja registrada la carta de asignación en el seguimiento de cada alumno incluido en el acta
+    await this.prisma.seguimiento_practica.updateMany({
+      where: { id: { in: seguimientoIds } },
+      data: { informe_rev_carta_asignacion: numeroDici },
+    });
+
+    return { buffer, codigo: codigoDisplay };
+  }
 
   async generarCertificado(alumno_rut: string, practica_num: number, creado_por: string): Promise<{ ok: boolean; archivo: string; id: number }> {
     const rows = await this.prisma.$queryRaw<any[]>`
@@ -620,15 +1090,15 @@ export class GeneradoresService {
 
       const addHeader = () => {
         const hy = doc.y;
-        try { if (fs.existsSync(logoUTA))  doc.image(logoUTA,  lm,               hy, { fit: [mm(18), mm(14)] }); } catch (_) {}
-        try { if (fs.existsSync(logoIcci)) doc.image(logoIcci, lm + usable - mm(18), hy, { fit: [mm(18), mm(14)] }); } catch (_) {}
+        try { if (fs.existsSync(logoUTA))  doc.image(logoUTA,  lm,                    hy, { fit: [mm(18), mm(14)] }); } catch (_) {}
+        try { if (fs.existsSync(logoIcci)) doc.image(logoIcci, lm + usable - mm(30),  hy, { fit: [mm(28), mm(20)] }); } catch (_) {}
         doc.font('Helvetica').fontSize(7).fillColor('#000');
-        doc.text('Jefatura de Carrera',                                     lm + mm(22), hy,         { width: usable - mm(44), align: 'left', lineBreak: false });
-        doc.text('Departamento de Ingeniería en Computación e Informática', lm + mm(22), hy + mm(4), { width: usable - mm(44), align: 'left', lineBreak: false });
-        doc.text('Facultad de Ingeniería',                                  lm + mm(22), hy + mm(8), { width: usable - mm(44), align: 'left', lineBreak: false });
-        doc.text('Universidad de Tarapacá',                                 lm + mm(22), hy + mm(12),{ width: usable - mm(44), align: 'left', lineBreak: false });
-        doc.moveTo(lm, hy + mm(17)).lineTo(lm + usable, hy + mm(17)).lineWidth(0.5).strokeColor('#000').stroke();
-        doc.y = hy + mm(20);
+        doc.text('Jefatura de Carrera',                                     lm + mm(22), hy,         { width: usable - mm(56), align: 'left', lineBreak: false });
+        doc.text('Departamento de Ingeniería en Computación e Informática', lm + mm(22), hy + mm(4), { width: usable - mm(56), align: 'left', lineBreak: false });
+        doc.text('Facultad de Ingeniería',                                  lm + mm(22), hy + mm(8), { width: usable - mm(56), align: 'left', lineBreak: false });
+        doc.text('Universidad de Tarapacá',                                 lm + mm(22), hy + mm(12),{ width: usable - mm(56), align: 'left', lineBreak: false });
+        doc.moveTo(lm, hy + mm(22)).lineTo(lm + usable, hy + mm(22)).lineWidth(0.5).strokeColor('#000').stroke();
+        doc.y = hy + mm(25);
       };
 
       const field = (label: string, value: string, y?: number) => {
@@ -654,12 +1124,12 @@ export class GeneradoresService {
       doc.moveDown(1);
 
       doc.font('Helvetica').fontSize(9);
-      doc.text('El presente informe se ciñe al formato de un cuestionario, en el cual se formulan preguntas para las que se ofrecen alternativas de respuestas y en el que además hay preguntas de respuestas abiertas para posibilitar una expresión más libre de sus importantes opiniones. Es obvio que insistamos en que sea contestado por el Jefe bajo cuyas órdenes directas estuvo el alumno en práctica. Para nuestros propósitos es esencial contar con opiniones y evaluaciones todo lo sinceras y objetivas que sea posible. Le rogamos emplee como patrón la referencia para juzgar al alumno-practicante, la conducta que normalmente exhibe el profesional joven que ha sido contratado para realizar funciones similares en su primer período de trabajo para la empresa. Recuerde que la información que Ud. Nos proporcione es absolutamente confidencial.', lm, doc.y, { width: usable, align: 'justify' });
+      doc.text('El presente informe se ciñe al formato de un cuestionario, en el cual se formulan preguntas para las que se ofrecen alternativas de respuestas y en el que además hay preguntas de respuestas abiertas para posibilitar una expresión más libre de sus importantes opiniones. Es obvio que insistamos en que sea contestado por el Jefe bajo cuyas órdenes directas estuvo el alumno en práctica. Para nuestros propósitos es esencial contar con opiniones y evaluaciones todo lo sinceras y objetivas que sea posible. Le rogamos emplee como patrón la referencia para juzgar al alumno-practicante, la conducta que normalmente exhibe el profesional joven que ha sido contratado para realizar funciones similares en su primer período de trabajo para la empresa. Recuerde que la información que Ud. nos proporcione es absolutamente confidencial.', lm, doc.y, { width: usable, align: 'justify' });
       doc.moveDown(1.2);
 
       // Sección 1
       doc.font('Helvetica-Bold').fontSize(10);
-      doc.text('1.   CARACTERISTICAS DE LA INDUSTRIA O INSTITUCION.', lm, doc.y);
+      doc.text('1.   CARACTERÍSTICAS DE LA INDUSTRIA O INSTITUCIÓN.', lm, doc.y);
       doc.moveDown(0.6);
       field('1.1.   Razón Social', d.empresa_nombre ?? '');
       field('1.2.   Ubicación', d.empresa_direccion ?? '');
@@ -692,7 +1162,7 @@ export class GeneradoresService {
       addHeader();
 
       doc.font('Helvetica-Bold').fontSize(10);
-      doc.text('3.   EVALUACION DE LOS MERITOS DEL ALUMNO PRACTICANTE.', lm, doc.y);
+      doc.text('3.   EVALUACIÓN DE LOS MÉRITOS DEL ALUMNO PRACTICANTE.', lm, doc.y);
       doc.moveDown(0.4);
       doc.font('Helvetica').fontSize(9);
       doc.text('(Marque una y sólo una (x) en el paréntesis a la derecha de la alternativa de respuestas que mejor corresponda a su opinión, en cada uno de los aspectos considerados).', lm, doc.y, { width: usable });
@@ -717,7 +1187,7 @@ export class GeneradoresService {
       // ── Sección 4 ──────────────────────────────────────────────────────
       if (doc.y > doc.page.height - mm(80)) { doc.addPage(); addHeader(); }
       doc.font('Helvetica-Bold').fontSize(10);
-      doc.text('4.   INFORMACION ADICIONAL.', lm, doc.y);
+      doc.text('4.   INFORMACIÓN ADICIONAL.', lm, doc.y);
       doc.moveDown(0.6);
 
       const textoBox = (numero: string, titulo: string, contenido: string) => {
@@ -739,17 +1209,10 @@ export class GeneradoresService {
       };
 
       textoBox('4.1.', 'Descripción del trabajo (o trabajos) realizado (s).', d.descripcion_trabajo ?? '');
-      textoBox('4.2.', 'Comentarios que Ud. Quiere agregar para completar sus respuestas.', d.comentarios ?? '');
+      textoBox('4.2.', 'Comentarios que Ud. quiere agregar para completar sus respuestas.', d.comentarios ?? '');
       textoBox('4.3.', 'Fue de utilidad el trabajo del practicante para su Empresa.', d.utilidad ?? '');
 
-      // Firma
       doc.moveDown(1.5);
-      const sigX = lm + usable / 2 - mm(40);
-      doc.moveTo(sigX, doc.y).lineTo(sigX + mm(80), doc.y).lineWidth(0.5).stroke();
-      doc.moveDown(0.3);
-      doc.font('Helvetica-Bold').fontSize(10);
-      doc.text('FIRMA Y TIMBRE EMPRESA Y/O INSTITUCION', lm, doc.y, { width: usable, align: 'center' });
-      doc.moveDown(1.2);
       doc.font('Helvetica').fontSize(10);
       const evalFecha = d.eval_fecha ? fmtF(d.eval_fecha) : '_______________';
       doc.text(`FECHA  ${evalFecha}`, lm, doc.y);
@@ -772,7 +1235,7 @@ export class GeneradoresService {
       doc.font('Helvetica').fontSize(7).fillColor('#888888');
       doc.text(
         `Documento generado por Sistema Intranet ICCI UTA · Código de verificación: ${codigoConf}`,
-        lm, doc.page.height - mm(12),
+        lm, doc.page.height - mm(30),
         { width: usable, align: 'center', lineBreak: false }
       );
 
@@ -869,7 +1332,7 @@ export class GeneradoresService {
       try { if (fs.existsSync(logoIcci)) doc.image(logoIcci, lm + usable - mm(22), headerY, { fit: [mm(22), mm(16)] }); } catch (_) {}
       // Texto encabezado centro
       doc.font('Helvetica-Bold').fontSize(8).fillColor('#000000');
-      doc.text('UNIVERSIDAD DE TARAPACA', lm + mm(25), headerY, { width: usable - mm(50), align: 'center', lineBreak: false });
+      doc.text('UNIVERSIDAD DE TARAPACÁ', lm + mm(25), headerY, { width: usable - mm(50), align: 'center', lineBreak: false });
       doc.font('Helvetica').fontSize(7);
       doc.text('Facultad de Ingeniería', lm + mm(25), headerY + mm(5), { width: usable - mm(50), align: 'center', lineBreak: false });
       doc.font('Helvetica-Bold').fontSize(7);
@@ -888,9 +1351,10 @@ export class GeneradoresService {
       const labelFont = () => doc.font('Helvetica').fontSize(10).fillColor('#000');
       const boldFont  = () => doc.font('Helvetica-Bold').fontSize(10).fillColor('#000');
 
+      const yFechas = doc.y;
       labelFont();
-      doc.text(`Fecha de Recepción: ${fechaRec}`, lm, doc.y, { continued: true, width: usable / 2 });
-      doc.text(`Fecha de Entrega: ${fechaEnt}`, { align: 'right' });
+      doc.text(`Fecha de Recepción: ${fechaRec}`, lm, yFechas, { width: usable / 2, lineBreak: false });
+      doc.text(`Fecha de Término: ${fechaEnt}`, lm + usable / 2, yFechas, { width: usable / 2, align: 'right', lineBreak: false });
       doc.moveDown(0.7);
 
       labelFont();
@@ -1009,7 +1473,10 @@ export class GeneradoresService {
     const alumno    = `${d.nombres} ${d.apellido1} ${d.apellido2 ?? ''}`.trim();
     const empresa   = d.empresa_nombre || d.practica1_empresa || 'Sin empresa';
     const supervisor = d.practica1_supervisor || '';
-    const jefe      = d.jefe_nombre?.toUpperCase() || 'JEFE DE CARRERA ICCI';
+    const jefeEfectivo = await this.getJefeCarreraEfectivo();
+    const jefe      = jefeEfectivo
+      ? `${jefeEfectivo.nombre} ${jefeEfectivo.apellido1} ${jefeEfectivo.apellido2 ?? ''}`.trim().toUpperCase()
+      : (d.jefe_nombre?.toUpperCase() || 'JEFE DE CARRERA ICCI');
     const practicaNum = d.practica_num == 1 ? 'I' : 'II';
     const fechaActual = this.formatearFechaLarga(new Date());
     const ciudadFecha = `Arica, ${fechaActual}.`;

@@ -44,6 +44,13 @@ export class SeguimientoService {
     );
   }
 
+  getEnCurso() {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/seguimiento/en-curso`,
+      this.auth.getHeaders()
+    );
+  }
+
   agregarFechaObservacion(payload: {
     seguimiento_id: number;
     hito: string;
@@ -187,10 +194,165 @@ export class SeguimientoService {
     );
   }
 
+  getAlumnosEmpresa(usuarioId: number) {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/seguimiento/alumnos-empresa?usuario_id=${usuarioId}`,
+      this.auth.getHeaders()
+    );
+  }
+
   generarFormularioRevision(seguimientoId: number) {
     return this.http.get(
       `${this.apiUrl}/generadores/formulario-revision?seguimiento_id=${seguimientoId}`,
       { headers: { Authorization: `Bearer ${this.auth.getToken()}` }, responseType: 'blob' as const }
+    );
+  }
+
+  // ── Hito 3: solicitud de profesor evaluador ────────────────────────
+
+  solicitarProfesorEvaluador(seguimientoId: number) {
+    return this.http.post<any>(
+      `${this.apiUrl}/seguimiento/${seguimientoId}/solicitar-profesor`,
+      {},
+      this.auth.getHeaders()
+    );
+  }
+
+  getEvaluacionInformes() {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/seguimiento/evaluacion-informes`,
+      this.auth.getHeaders()
+    );
+  }
+
+  getAlumnosEvaluados() {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/seguimiento/alumnos-evaluados`,
+      this.auth.getHeaders()
+    );
+  }
+
+  getPendientesAsignacionAcademico() {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/seguimiento/pendientes-asignacion-academico`,
+      this.auth.getHeaders()
+    );
+  }
+
+  proponerProfesoresEvaluadores(asignaciones: { seguimiento_id: number; profesor_id: number }[]) {
+    return this.http.put<any>(
+      `${this.apiUrl}/seguimiento/proponer-profesores`,
+      { asignaciones },
+      this.auth.getHeaders()
+    );
+  }
+
+  getListosParaActa() {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/seguimiento/listos-para-acta`,
+      this.auth.getHeaders()
+    );
+  }
+
+  getResumenProfesorEvaluador() {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/seguimiento/resumen-profesor-evaluador`,
+      this.auth.getHeaders()
+    );
+  }
+
+  getComitePendientes() {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/seguimiento/comite-pendientes`,
+      this.auth.getHeaders()
+    );
+  }
+
+  decidirComite(seguimientoId: number, decision: 'aprobado' | 'rechazado') {
+    return this.http.put<any>(
+      `${this.apiUrl}/seguimiento/${seguimientoId}/comite`,
+      { decision },
+      this.auth.getHeaders()
+    );
+  }
+
+  getComiteRechazados() {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/seguimiento/comite-rechazados`,
+      this.auth.getHeaders()
+    );
+  }
+
+  getInformesAtrasados() {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/seguimiento/informes-atrasados`,
+      this.auth.getHeaders()
+    );
+  }
+
+  enviarComiteAtrasado(seguimientoId: number) {
+    return this.http.put<any>(
+      `${this.apiUrl}/seguimiento/${seguimientoId}/enviar-comite-atrasado`,
+      {},
+      this.auth.getHeaders()
+    );
+  }
+
+  eliminarSeguimiento(seguimientoId: number) {
+    return this.http.delete<any>(
+      `${this.apiUrl}/seguimiento/${seguimientoId}`,
+      this.auth.getHeaders()
+    );
+  }
+
+  solicitarProfesorEvaluadorBulk(seguimientoIds: number[]) {
+    return this.http.post<any>(
+      `${this.apiUrl}/seguimiento/evaluacion-informes/solicitar`,
+      { seguimiento_ids: seguimientoIds },
+      this.auth.getHeaders()
+    );
+  }
+
+  asignarProfesorEvaluador(seguimientoId: number, profesorId: number) {
+    return this.http.put<any>(
+      `${this.apiUrl}/seguimiento/${seguimientoId}/asignar-profesor`,
+      { profesor_id: profesorId },
+      this.auth.getHeaders()
+    );
+  }
+
+  generarListaProfesorEvaluador(seguimientoIds: number[], numeroCarta: string) {
+    const params = new URLSearchParams();
+    params.set('seguimiento_ids', seguimientoIds.join(','));
+    params.set('numero_carta', numeroCarta);
+    return this.http.get(
+      `${this.apiUrl}/generadores/lista-profesor-evaluador?${params.toString()}`,
+      {
+        headers: { Authorization: `Bearer ${this.auth.getToken()}` },
+        responseType: 'blob' as const,
+        observe: 'response' as const,
+      }
+    );
+  }
+
+  generarActaAcademicoEvaluador(seguimientoIds: number[], diciNumero: string) {
+    const params = new URLSearchParams();
+    params.set('seguimiento_ids', seguimientoIds.join(','));
+    params.set('dici_numero', diciNumero);
+    return this.http.get(
+      `${this.apiUrl}/generadores/acta-academico-evaluador?${params.toString()}`,
+      {
+        headers: { Authorization: `Bearer ${this.auth.getToken()}` },
+        responseType: 'blob' as const,
+        observe: 'response' as const,
+      }
+    );
+  }
+
+  listarSolicitudesIcci(seguimientoIds: number[]) {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/generadores/solicitudes-icci?seguimiento_ids=${seguimientoIds.join(',')}`,
+      this.auth.getHeaders()
     );
   }
 }

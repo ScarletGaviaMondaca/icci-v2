@@ -100,7 +100,7 @@
                         <tbody>
                             <tr *ngFor="let alu of alumnosPaginados(); trackBy: trackById; let i = index">
                                 <td>{{ numeroFila(i) }}</td>
-                                <td>{{ alu.rut }}</td>
+                                <td>{{ alu.rut | rutFormato }}</td>
                                 <td>{{ alu.nombres }}</td>
                                 <td>{{ alu.apellido1 }} {{ alu.apellido2 }}</td>
                                 <td>{{ alu.anio_ingreso }}</td>

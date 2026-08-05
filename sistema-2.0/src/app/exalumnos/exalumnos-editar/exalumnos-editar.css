@@ -1,13 +1,3 @@
-.titulo {
-  color: #054182;
-  font-family: cursive, system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 2rem;
-  margin-bottom: 3px;
-  letter-spacing: 0.01em;
-}
-
-
 .foto-alumno {
   width: 90px;
   height: 90px;
@@ -23,6 +13,7 @@
 
 .botones {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 10px;
   max-width: 700px;
@@ -89,6 +80,7 @@ button:hover {
 
 .campo-inline {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 10px;
 }
@@ -100,6 +92,7 @@ button:hover {
 }
 .perfil-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 20px;
   margin-bottom: 20px;

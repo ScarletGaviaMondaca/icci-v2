@@ -39,6 +39,12 @@ export class UsuariosController {
     return this.usuariosService.create(body);
   }
 
+  @Post('crear-alumnos')
+  @Roles('admin')
+  crearUsuariosAlumnos() {
+    return this.usuariosService.crearUsuariosAlumnos();
+  }
+
   @Put(':id')
   @Roles('admin')
   update(@Param('id') id: string, @Body() body: any) {

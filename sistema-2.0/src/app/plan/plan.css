@@ -15,17 +15,9 @@
   .planes.ap-page { padding: 22px 6px 12px 6px; }
 }
 
-.titulo {
-  color: #054182;
-  font-family: cursive, system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 2rem;
-  margin-bottom: 3px;
-  letter-spacing: 0.01em;
-}
-
 .ap-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-end;
   gap: 12px;
@@ -72,10 +64,12 @@
   font-weight: 480;
   margin-bottom: 25px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
 }
 .ap-loading {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   font-size: 1.12rem;
@@ -159,6 +153,7 @@
 .ap-badge-anio { color: #1e549e; background: #d0e2fa;font-weight: 510; }
 .ap-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
   align-items: center;
@@ -222,6 +217,7 @@
   background: #03264e65;
   z-index: 1100;
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
   animation: modalFadeIn .22s;
@@ -252,6 +248,7 @@
 }
 .ap-modal-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 13px;
   justify-content: center;
   align-items: center;
@@ -292,7 +289,6 @@
   .planes.ap-page { padding: 5px 0 8px 0; }
   .ap-table th, .ap-table td { font-size: .99rem; padding: 7px 2.5px;}
   .ap-header { flex-direction: column;  align-items: flex-start;  gap: 4px;}
-  .ap-header-text .titulo { font-size: 1.22rem; }
   .ap-footer { margin-top: 11px; font-size: .99rem;}
 }
 

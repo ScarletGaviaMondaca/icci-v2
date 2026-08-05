@@ -1,0 +1,62 @@
+<div class="fondo">
+  <h1 class="titulo">Alumnos Evaluados</h1>
+  <p class="text-muted">Listado de alumnos cuyo informe de práctica ya fue evaluado, con el académico que realizó la evaluación.</p>
+
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <div *ngIf="cargando" class="text-center py-4">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div class="row" *ngIf="!cargando">
+    <div class="col-md-12">
+
+      <div class="mb-3" style="max-width:320px" *ngIf="alumnos.length > 0">
+        <label class="form-label">Filtrar por académico evaluador</label>
+        <select class="form-select form-select-sm" [(ngModel)]="filtroProfesor">
+          <option value="">-- Todos --</option>
+          <option *ngFor="let p of profesoresDisponibles" [value]="p">{{ p }}</option>
+        </select>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="table table-striped table-hover mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Apellidos</th>
+              <th>RUT</th>
+              <th>Práctica</th>
+              <th>Académico evaluador</th>
+              <th>Resultado</th>
+              <th>Fecha evaluación</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let a of alumnosFiltrados; let i = index">
+              <td>{{ i + 1 }}</td>
+              <td>{{ a.nombres }}</td>
+              <td>{{ a.apellido1 }} {{ a.apellido2 }}</td>
+              <td>{{ a.rut }}</td>
+              <td>{{ a.practica_num === 1 ? 'Práctica I' : 'Práctica II' }}</td>
+              <td>{{ a.profesor_nombre?.trim() || '—' }}</td>
+              <td>
+                <span [class]="resultadoClases[a.resultado] || 'badge bg-secondary'">
+                  {{ resultadoLabels[a.resultado] || a.resultado || '—' }}
+                </span>
+              </td>
+              <td>{{ a.fecha_evaluacion | date:'dd/MM/yyyy' }}</td>
+            </tr>
+            <tr *ngIf="alumnos.length === 0">
+              <td colspan="8" class="text-center text-muted">Aún no hay alumnos evaluados.</td>
+            </tr>
+            <tr *ngIf="alumnos.length > 0 && alumnosFiltrados.length === 0">
+              <td colspan="8" class="text-center text-muted">Ningún alumno evaluado por este académico.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

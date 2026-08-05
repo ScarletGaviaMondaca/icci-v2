@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Param, Body, Query, UseGuards, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Param, Body, Query, Req, UseGuards, NotFoundException } from '@nestjs/common';
 import { OfertasService } from './ofertas.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -33,6 +33,18 @@ export class OfertasController {
     return this.ofertasService.todasPostulaciones();
   }
 
+  @Get('pendientes-aprobacion')
+  @Roles('admin', 'secretaria', 'jefe_carrera')
+  pendientesAprobacion() {
+    return this.ofertasService.pendientesAprobacion();
+  }
+
+  @Get('postulaciones/evaluadas')
+  @Roles('admin', 'jefe_carrera')
+  postulacionesEvaluadas() {
+    return this.ofertasService.postulacionesEvaluadas();
+  }
+
   @Get(':id')
   @Roles('admin', 'secretaria', 'alumno', 'jefe_carrera', 'empleador')
   findOne(@Param('id') id: string) {
@@ -59,6 +71,18 @@ export class OfertasController {
     return this.ofertasService.toggleActivo(+id);
   }
 
+  @Put(':id/aprobar')
+  @Roles('admin', 'secretaria', 'jefe_carrera')
+  aprobar(@Param('id') id: string, @Body() body: { practica_num: number }) {
+    return this.ofertasService.aprobar(+id, +body.practica_num);
+  }
+
+  @Put(':id/rechazar')
+  @Roles('admin', 'secretaria', 'jefe_carrera')
+  rechazar(@Param('id') id: string, @Body() body: { motivo?: string }) {
+    return this.ofertasService.rechazar(+id, body.motivo);
+  }
+
   @Post(':id/postular')
   @Roles('alumno')
   postular(
@@ -75,5 +99,15 @@ export class OfertasController {
     @Body() body: { estado: string; motivo_rechazo?: string },
   ) {
     return this.ofertasService.responderPostulacion(+id, body.estado, body.motivo_rechazo);
+  }
+
+  @Put('postulaciones/:id/evaluar')
+  @Roles('admin', 'secretaria')
+  evaluarPostulacion(
+    @Param('id') id: string,
+    @Body() body: { cumple_requisitos: boolean; motivo?: string },
+    @Req() req: any,
+  ) {
+    return this.ofertasService.evaluarPostulacion(+id, body.cumple_requisitos, body.motivo, req.user.id);
   }
 }

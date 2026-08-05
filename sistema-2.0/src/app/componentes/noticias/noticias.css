@@ -16,14 +16,6 @@
   padding: 20px;
 }
 
-.titulo {
-  color: #054182;
-  font-family: cursive, system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 2rem;
-  margin-bottom: 3px;
-  letter-spacing: 0.01em;
-}
 .subtitulo{
   color: #054182;
   font-family: cursive, system-ui, sans-serif;
@@ -42,6 +34,7 @@
 
 .oferta-empresa {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 4px;
 }
@@ -59,6 +52,7 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   z-index: 9999;
@@ -74,6 +68,7 @@
 
 .modal-notif-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
@@ -82,6 +77,7 @@
 
 .modal-notif-footer {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
   padding: 12px 20px;

@@ -25,11 +25,13 @@ export class RegistroEmpleador implements OnInit {
   compromisoUrl: string | null = null;
   compromisoUrlSafe: SafeResourceUrl | null = null;
   aceptaCompromiso = false;
+  mostrarModalCompromiso = false;
 
   empresas: any[] = [];
   form = {
     token: '',
     empresa_id: 0,
+    empresa_direccion: '',
     nombres: '',
     apellido1: '',
     apellido2: '',
@@ -40,7 +42,7 @@ export class RegistroEmpleador implements OnInit {
     confirmar_password: ''
   };
   mostrarNuevaEmpresa = false;
-  nuevaEmpresaNombre = '';
+  nuevaEmpresa = { nombre: '', rut: '', descripcion: '', localidad: '' };
   creandoEmpresa = false;
   verPassword = false;
   verConfirmar = false  
@@ -99,7 +101,19 @@ export class RegistroEmpleador implements OnInit {
       error: () => {}
     });
   }
-  registrar() {
+  abrirModalCompromiso() {
+    if (!this.form.nombres.trim() || !this.form.apellido1.trim()) {
+      this.error = 'Ingresa tus nombres y apellido paterno';
+      return;
+    }
+    if (!this.form.correo.trim()) {
+      this.error = 'Ingresa tu correo';
+      return;
+    }
+    if (!this.form.empresa_id) {
+      this.error = 'Selecciona o agrega tu empresa';
+      return;
+    }
     if (!this.passwordValida) {
       this.error = 'La contraseña no cumple los requisitos';
       return;
@@ -108,6 +122,22 @@ export class RegistroEmpleador implements OnInit {
       this.error = 'Las contraseñas no coinciden';
       return;
     }
+    this.error = '';
+    this.aceptaCompromiso = false;
+    this.mostrarModalCompromiso = true;
+  }
+
+  cerrarModalCompromiso() {
+    this.mostrarModalCompromiso = false;
+  }
+
+  confirmarCrearCuenta() {
+    if (!this.aceptaCompromiso) return;
+    this.mostrarModalCompromiso = false;
+    this.registrar();
+  }
+
+  registrar() {
     this.cargando = true;
     this.error = '';
     this.svc.registrarEmpleador(this.form).subscribe({
@@ -135,14 +165,19 @@ export class RegistroEmpleador implements OnInit {
     });
   }
   crearEmpresa() {
-    if (!this.nuevaEmpresaNombre.trim()) return;
+    if (!this.nuevaEmpresa.nombre.trim() || !this.nuevaEmpresa.rut.trim()) return;
     this.creandoEmpresa = true;
-    this.svc.crearEmpresaPublico(this.nuevaEmpresaNombre.trim()).subscribe({
+    this.svc.crearEmpresaPublico(
+      this.nuevaEmpresa.nombre.trim(),
+      this.nuevaEmpresa.rut.trim(),
+      this.nuevaEmpresa.descripcion.trim(),
+      this.nuevaEmpresa.localidad.trim(),
+    ).subscribe({
       next: (res) => {
         this.empresas = [...this.empresas, { id: res.id, nombre: res.nombre }];
         this.form.empresa_id = res.id;
         this.mostrarNuevaEmpresa = false;
-        this.nuevaEmpresaNombre = '';
+        this.nuevaEmpresa = { nombre: '', rut: '', descripcion: '', localidad: '' };
         this.creandoEmpresa = false;
       },
       error: (err) => {

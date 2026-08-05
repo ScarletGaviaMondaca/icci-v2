@@ -80,7 +80,6 @@ export class UsuariosService {
   }
 
   crearUsuariosAlumnos() {
-    // Esta función masiva se puede implementar después
-    return this.http.get<any>(`${this.apiUrl}/usuarios`, this.auth.getHeaders());
+    return this.http.post<any>(`${this.apiUrl}/usuarios/crear-alumnos`, {}, this.auth.getHeaders());
   }
 }

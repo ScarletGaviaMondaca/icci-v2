@@ -26,7 +26,8 @@
       </div>
 
       <!-- Tabla con datos -->
-      <table class="ap-table" *ngIf="planes.length > 0">
+      <div class="table-wrapper" *ngIf="planes.length > 0">
+      <table class="ap-table">
         <thead>
           <tr>
             <th></th>
@@ -96,6 +97,7 @@
           </tr>
         </tbody>
       </table>
+      </div>
 
       <!-- Contador -->
       <div class="ap-footer" *ngIf="planes.length > 0">

@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChangeDetectorRef } from '@angular/core';
 import { CertificadoService, CertificadoData } from '../../servicios/certificado.service';
+import { RutFormatoPipe } from '../../pipes/rut-formato.pipe';
 
 @Component({
   selector: 'app-certificados',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RutFormatoPipe],
   templateUrl: './certificados.html',
   styleUrls: ['./certificados.css']
 })

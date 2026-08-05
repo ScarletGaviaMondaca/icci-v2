@@ -37,15 +37,67 @@
             <small class="text-muted d-block">Práctica</small>
             <span class="badge bg-primary">Práctica {{ seguimiento.practica_num }}</span>
           </div>
-          <div class="col-12" *ngIf="seguimiento.informe_final">
-            <small class="text-muted d-block mt-1">Informe del alumno</small>
-            <a [href]="'http://localhost/' + seguimiento.informe_final"
-               target="_blank" class="btn btn-sm btn-outline-success">
-              📄 Abrir informe
-            </a>
+          <div class="col-12 d-flex gap-2" *ngIf="seguimiento.informe_final">
+            <div>
+              <small class="text-muted d-block mt-1">Informe del alumno</small>
+              <a [href]="'http://localhost/' + seguimiento.informe_final"
+                 target="_blank" class="btn btn-sm btn-outline-success">
+                📄 Abrir informe
+              </a>
+            </div>
+            <div>
+              <small class="text-muted d-block mt-1">&nbsp;</small>
+              <button type="button" class="btn btn-sm btn-outline-primary" (click)="mostrarDetallePractica = !mostrarDetallePractica">
+                🏢 {{ mostrarDetallePractica ? 'Ocultar detalles de práctica' : 'Ver detalles de práctica' }}
+              </button>
+            </div>
           </div>
           <div class="col-12" *ngIf="!seguimiento.informe_final">
             <div class="alert alert-warning py-2 mb-0 small mt-2">⚠️ El alumno aún no ha subido su informe.</div>
+            <button type="button" class="btn btn-sm btn-outline-primary mt-2" (click)="mostrarDetallePractica = !mostrarDetallePractica">
+              🏢 {{ mostrarDetallePractica ? 'Ocultar detalles de práctica' : 'Ver detalles de práctica' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detalle de la práctica solicitada -->
+    <div class="card mb-4" *ngIf="mostrarDetallePractica">
+      <div class="card-body">
+        <h6 class="card-title text-muted mb-3">Detalle de la práctica solicitada</h6>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <small class="text-muted d-block">Empresa</small>
+            <strong>{{ seguimiento.empresa?.nombre || seguimiento.practica1_empresa || '—' }}</strong>
+          </div>
+          <div class="col-md-6" *ngIf="seguimiento.empresa?.direccion">
+            <small class="text-muted d-block">Dirección</small>
+            <strong>{{ seguimiento.empresa?.direccion }}</strong>
+          </div>
+          <div class="col-md-4">
+            <small class="text-muted d-block">Fecha inicio</small>
+            <strong>{{ (seguimiento.practica1_fecha_inicio | date:'dd/MM/yyyy') || '—' }}</strong>
+          </div>
+          <div class="col-md-4">
+            <small class="text-muted d-block">Fecha término</small>
+            <strong>{{ (seguimiento.practica1_fecha_termino | date:'dd/MM/yyyy') || '—' }}</strong>
+          </div>
+          <div class="col-md-4">
+            <small class="text-muted d-block">Horas (sem. / totales)</small>
+            <strong>{{ seguimiento.practica1_horas_sem || '—' }} / {{ seguimiento.practica1_horas_tot || '—' }}</strong>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted d-block">Supervisor en la empresa</small>
+            <strong>{{ seguimiento.practica1_supervisor || '—' }}</strong>
+          </div>
+          <div class="col-md-6" *ngIf="seguimiento.practica1_correo || seguimiento.practica1_telefono">
+            <small class="text-muted d-block">Contacto</small>
+            <strong>{{ seguimiento.practica1_correo || '—' }} {{ seguimiento.practica1_telefono ? '· ' + seguimiento.practica1_telefono : '' }}</strong>
+          </div>
+          <div class="col-12" *ngIf="seguimiento.herramientas">
+            <small class="text-muted d-block">Conocimientos / herramientas requeridas</small>
+            <span class="small">{{ seguimiento.herramientas }}</span>
           </div>
         </div>
       </div>

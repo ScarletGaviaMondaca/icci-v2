@@ -1,0 +1,139 @@
+<div class="fondo">
+  <h1 class="titulo">Profesor Evaluador</h1>
+  <p class="text-muted" *ngIf="!auth.esSecretariaDici()">Elige un académico evaluador para los alumnos cuyo informe de práctica está en revisión y guarda tu selección.</p>
+  <p class="text-muted" *ngIf="auth.esSecretariaDici()">Alumnos con académico evaluador propuesto por el director, listos para generar el acta DICI.</p>
+
+  <div *ngIf="mensaje" class="alert alert-success">{{ mensaje }}</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <div *ngIf="cargando" class="text-center py-4">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div class="row" *ngIf="!cargando">
+    <div class="col-md-12">
+
+      <!-- Resumen de informes por académico evaluador -->
+      <div class="resumen-profesores mb-3" *ngIf="!auth.esSecretariaDici() && resumenProfesores.length > 0">
+        <strong class="d-block mb-2">📊 Informes por académico evaluador</strong>
+        <div class="cards-wrapper">
+          <div class="card-profesor" *ngFor="let r of resumenProfesores">
+            <div class="card-profesor-nombre">{{ r.profesor_nombre }}</div>
+            <div class="card-profesor-conteos">
+              <span class="conteo conteo-evaluando" title="Evaluando actualmente">
+                {{ r.evaluando }} evaluando
+              </span>
+              <span class="conteo conteo-evaluados" title="Informes ya evaluados">
+                {{ r.evaluados }} evaluados
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Documentos ICCI que solicitaron estos evaluadores -->
+      <div class="solicitudes-icci mb-3" *ngIf="solicitudesIcci.length > 0">
+        <strong class="d-block mb-1">📨 Solicitudes recibidas de jefatura de carrera</strong>
+        <div *ngFor="let s of solicitudesIcci" class="solicitud-item">
+          <span>
+            <strong>ICCI N° {{ s.numero_carta || '—' }}</strong>
+            · {{ s.alumnos_resumen }}
+          </span>
+          <a *ngIf="s.ruta_archivo" [href]="'http://localhost/' + s.ruta_archivo" target="_blank">
+            📄 Ver documento
+          </a>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="table table-striped table-hover mb-0">
+          <thead>
+            <tr>
+              <th style="width:40px" *ngIf="auth.esSecretariaDici()">
+                <input type="checkbox" [checked]="todosSeleccionados" (change)="toggleTodos($event)">
+              </th>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Apellidos</th>
+              <th>RUT</th>
+              <th>Empresa</th>
+              <th>Práctica</th>
+              <th>Académico evaluador</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let a of alumnos; let i = index">
+              <td *ngIf="auth.esSecretariaDici()">
+                <input type="checkbox"
+                       [checked]="seleccionados.has(a.seguimiento_id)"
+                       (change)="toggleSeleccion(a.seguimiento_id)">
+              </td>
+              <td>{{ i + 1 }}</td>
+              <td>{{ a.nombres }}</td>
+              <td>{{ a.apellido1 }} {{ a.apellido2 }}</td>
+              <td>{{ a.rut }}</td>
+              <td>{{ a.empresa || '—' }}</td>
+              <td>{{ a.practica_num === 1 ? 'Práctica I' : 'Práctica II' }}</td>
+              <td>
+                <select *ngIf="!auth.esSecretariaDici()" class="form-select form-select-sm" [(ngModel)]="a.informe_rev_profesor_id">
+                  <option [ngValue]="null">-- Seleccionar profesor --</option>
+                  <option *ngFor="let prof of profesores" [ngValue]="prof.id">
+                    {{ prof.nombre }} {{ prof.apellido1 || '' }} {{ prof.apellido2 || '' }}
+                  </option>
+                </select>
+                <span *ngIf="auth.esSecretariaDici()">{{ a.profesor_propuesto_nombre || '—' }}</span>
+              </td>
+            </tr>
+            <tr *ngIf="alumnos.length === 0">
+              <td [attr.colspan]="auth.esSecretariaDici() ? 8 : 7" class="text-center text-muted">
+                {{ auth.esSecretariaDici() ? 'No hay alumnos listos para generar acta actualmente.' : 'No hay alumnos con informe en revisión actualmente.' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-end" *ngIf="alumnos.length > 0">
+        <button *ngIf="!auth.esSecretariaDici()" class="btn"
+                [disabled]="guardando"
+                (click)="guardarPropuestas()">
+          {{ guardando ? '⏳ Guardando...' : '💾 Guardar selección' }}
+        </button>
+        <button *ngIf="auth.esSecretariaDici()" class="btn"
+                [disabled]="seleccionados.size === 0 || enviando"
+                (click)="abrirModalDici()">
+          {{ enviando ? '⏳ Generando...' : '📋 Generar acta DICI (' + seleccionados.size + ')' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal N° DICI -->
+  <div class="modal-overlay" *ngIf="mostrarModalDici" (click)="cancelarModalDici()">
+    <div class="modal-notif" style="max-width:420px" (click)="$event.stopPropagation()">
+      <div class="modal-notif-header">
+        <h5>📋 Acta de Designación de Académico Evaluador</h5>
+        <button class="btn-cerrar" (click)="cancelarModalDici()">✕</button>
+      </div>
+      <div class="modal-notif-body p-3">
+        <p class="text-muted small mb-3">
+          Ingresa el N° DICI con el que se identificará esta acta. Se asignará el académico elegido a cada alumno seleccionado y se generará el documento.
+        </p>
+        <div class="mb-2">
+          <label class="form-label">DICI N°</label>
+          <input type="text" class="form-control form-control-sm"
+                 [(ngModel)]="diciNumero"
+                 (keyup.enter)="confirmarGenerarActa()"
+                 placeholder="Ej: 050/2026"
+                 autofocus>
+        </div>
+      </div>
+      <div class="modal-notif-footer">
+        <button class="btn btn-sm btn-outline-secondary" (click)="cancelarModalDici()">Cancelar</button>
+        <button class="btn btn-sm btn-primary" [disabled]="!diciNumero.trim()" (click)="confirmarGenerarActa()">
+          Generar acta
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

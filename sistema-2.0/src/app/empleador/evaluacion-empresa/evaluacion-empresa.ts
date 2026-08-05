@@ -2,13 +2,14 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { SeguimientoService } from '../servicios/seguimiento.service';
-import { AuthService } from '../servicios/auth.service';
+import { SeguimientoService } from '../../servicios/seguimiento.service';
+import { AuthService } from '../../servicios/auth.service';
 
 @Component({
   selector: 'app-evaluacion-empresa',
   imports: [CommonModule, FormsModule],
   templateUrl: './evaluacion-empresa.html',
+  styleUrl: './evaluacion-empresa.css'
 })
 export class EvaluacionEmpresa implements OnInit {
   notif: any = null;
@@ -28,6 +29,7 @@ export class EvaluacionEmpresa implements OnInit {
     criterio_trabajo_equipo: '',
   };
 
+  nombre_supervisor = '';
   descripcion_trabajo = '';
   comentarios = '';
   utilidad = '';
@@ -116,6 +118,7 @@ export class EvaluacionEmpresa implements OnInit {
     const state = history.state;
     if (state?.notif) {
       this.notif = state.notif;
+      this.nombre_supervisor = this.notif.practica1_supervisor ?? '';
       this.cargando = false;
     } else {
       this.error = 'No se encontraron datos de evaluación.';
@@ -134,6 +137,7 @@ export class EvaluacionEmpresa implements OnInit {
 
     const payload = {
       seguimiento_id: this.notif.seguimiento_id,
+      nombre_supervisor: this.nombre_supervisor,
       ...this.criterios,
       descripcion_trabajo: this.descripcion_trabajo,
       comentarios: this.comentarios,

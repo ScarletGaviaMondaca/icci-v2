@@ -69,6 +69,7 @@
 
 .eje-item {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 14px;
   padding: 1rem 1.25rem;
@@ -99,6 +100,7 @@
   background: #e8f1fb;
   color: #0F4C81;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;

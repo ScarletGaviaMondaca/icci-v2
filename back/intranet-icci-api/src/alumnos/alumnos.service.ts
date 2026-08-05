@@ -25,12 +25,23 @@ async findOne(id: number) {
 }
 
 async findByRut(rut: string) {
+  // Compara ignorando puntos/guion/mayúsculas, ya que el RUT puede haberse
+  // tipeado o guardado con un formato distinto al almacenado.
+  const rutNorm = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+  const coincidencias = await this.prisma.$queryRaw<{ id: number }[]>`
+    SELECT id FROM alumnos
+    WHERE UPPER(REPLACE(REPLACE(rut, '.', ''), '-', '')) = ${rutNorm}
+    LIMIT 1
+  `;
+  if (!coincidencias[0]) throw new NotFoundException('Alumno no encontrado');
+
   const alumno = await this.prisma.alumnos.findUnique({
-    where: { rut },
-    include: { seguimiento: true },
+    where: { id: coincidencias[0].id },
+    include: { seguimiento: true, usuario: true },
   });
   if (!alumno) throw new NotFoundException('Alumno no encontrado');
-  return alumno;
+  // El front necesita el id de la cuenta de usuario asociada para poder cambiar la clave.
+  return { ...alumno, usuario_id: alumno.usuario[0]?.id ?? null };
 }
   async findEspeciales() {
     return this.prisma.alumnos.findMany({
@@ -61,7 +72,7 @@ async findByRut(rut: string) {
     const toStr  = (v: any) => v !== '' && v != null ? String(v) : null;
 
     return {
-      rut:                  data.rut,
+      rut:                  this.formatearRutLibre(data.rut),
       nombres:              data.nombres,
       apellido1:            data.apellido1,
       apellido2:            toStr(data.apellido2),
@@ -116,7 +127,10 @@ async findByRut(rut: string) {
     try {
       let buf = fs.readFileSync(file.path);
       if (buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF) buf = buf.slice(3);
-      const texto = buf.toString('utf-8');
+      // Excel en Windows suele exportar CSV en ANSI/Windows-1252; si la decodificación
+      // UTF-8 produce caracteres inválidos (ej. "Año" -> "A�o"), se reintenta como latin1.
+      let texto = buf.toString('utf-8');
+      if (texto.includes('�')) texto = buf.toString('latin1');
 
       const lineas = texto.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
         .split('\n').filter(l => l.trim() !== '');
@@ -162,6 +176,13 @@ async findByRut(rut: string) {
         if (!n) return null;
         const s = String(n);
         return s.length >= 4 ? parseInt(s.slice(0, 4)) : n;
+      };
+      // El % de avance curricular viene con decimales (ej. "18.5"); la columna es Int,
+      // por lo que se redondea al guardar.
+      const toAvance = (v: string | null): number | null => {
+        if (!v) return null;
+        const n = parseFloat(v.replace(',', '.'));
+        return isNaN(n) ? null : Math.round(n);
       };
 
       for (let i = 1; i < lineas.length; i++) {
@@ -243,16 +264,25 @@ async findByRut(rut: string) {
             puntaje_ingreso:      toInt(get(row, 'puntaje_ingreso', 'puntaje_nem', 'puntaje')),
             nem:                  toInt(get(row, 'nem')),
             gratuidad:            get(row, 'gratuidad', 'beca_gratuidad') ?? null,
+            avance:               toAvance(get(row, 'avance', 'avance_curricular', 'porcentaje_avance')),
           };
 
-          const existing = await this.prisma.alumnos.findUnique({ where: { rut } });
+          // Compara ignorando puntos/guion para encontrar alumnos cuyo RUT quedó
+          // guardado con un formato distinto (ingreso manual previo, importaciones antiguas, etc.)
+          const rutNorm = rut.replace(/[^0-9K]/g, '');
+          const coincidencias = await this.prisma.$queryRaw<{ id: number }[]>`
+            SELECT id FROM alumnos
+            WHERE UPPER(REPLACE(REPLACE(rut, '.', ''), '-', '')) = ${rutNorm}
+            LIMIT 1
+          `;
+          const existing = coincidencias[0] ?? null;
 
           if (existing) {
-            const update: any = { nombres, apellido1, apellido2, plan, anio_ingreso };
+            const update: any = { rut, nombres, apellido1, apellido2, plan, anio_ingreso };
             for (const [k, v] of Object.entries(optional)) {
               if (v != null) update[k] = v;
             }
-            await this.prisma.alumnos.update({ where: { rut }, data: update });
+            await this.prisma.alumnos.update({ where: { id: existing.id }, data: update });
             result.actualizados++;
           } else {
             await this.prisma.alumnos.create({ data: { rut, nombres: nombres ?? '', apellido1: apellido1 ?? '', apellido2, plan, anio_ingreso, ...optional } });
@@ -277,6 +307,19 @@ async findByRut(rut: string) {
     }
     const r = suma % 11;
     return r === 0 ? '0' : r === 1 ? 'K' : String(11 - r);
+  }
+
+  // Normaliza el formato del RUT (XX.XXX.XXX-X) sin rechazar dígitos verificadores
+  // inválidos; usado en altas/ediciones manuales para mantener consistencia con
+  // los RUT que sí se validan al importar el CSV.
+  private formatearRutLibre(raw: string): string {
+    if (!raw) return raw;
+    const limpio = raw.toString().trim().replace(/[^0-9kK]/g, '');
+    if (limpio.length < 2) return raw.toString().trim();
+    const cuerpo = limpio.slice(0, -1);
+    const dv = limpio.slice(-1).toUpperCase();
+    const cuerpoConPuntos = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return `${cuerpoConPuntos}-${dv}`;
   }
 
   private formatearRut(raw: string): string | null {

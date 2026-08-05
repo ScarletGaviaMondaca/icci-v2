@@ -1,6 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+function parseFecha(val: any): Date | null {
+  if (!val || val === '') return null;
+  if (val instanceof Date) return val;
+  if (typeof val === 'string' && !val.includes('T')) return new Date(val + 'T00:00:00.000Z');
+  return new Date(val);
+}
+
 @Injectable()
 export class OfertasService {
   constructor(private prisma: PrismaService) {}
@@ -19,7 +26,9 @@ export class OfertasService {
     const rows = await this.prisma.ofertas_practica.findMany({
       where: {
         activo: 1,
-        ...(empleadorId ? { empleador_id: empleadorId } : {}),
+        // El listado público (alumno) solo debe ver ofertas ya aprobadas por el jefe de carrera.
+        // El propio empleador ve todas sus ofertas sin importar el estado.
+        ...(empleadorId ? { empleador_id: empleadorId } : { estado_aprobacion: 'aprobada' }),
         ...(excluirOfertas.length ? { id: { notIn: excluirOfertas } } : {}),
       },
       include: { empleador: { include: { empresa: { select: { nombre: true } } } } },
@@ -28,9 +37,35 @@ export class OfertasService {
     return rows.map(o => ({ ...o, empresa_nombre: o.empleador?.empresa?.nombre ?? '' }));
   }
 
+  // Ofertas creadas por empresas a la espera de aprobación del jefe de carrera
+  async pendientesAprobacion() {
+    const rows = await this.prisma.ofertas_practica.findMany({
+      where: { estado_aprobacion: 'pendiente' },
+      include: { empleador: { include: { empresa: { select: { nombre: true } } } } },
+      orderBy: { created_at: 'desc' },
+    });
+    return rows.map(o => ({ ...o, empresa_nombre: o.empleador?.empresa?.nombre ?? '' }));
+  }
+
+  async aprobar(id: number, practica_num: number) {
+    await this.findOne(id);
+    return this.prisma.ofertas_practica.update({
+      where: { id },
+      data: { estado_aprobacion: 'aprobada', practica_num, motivo_rechazo: null },
+    });
+  }
+
+  async rechazar(id: number, motivo?: string) {
+    await this.findOne(id);
+    return this.prisma.ofertas_practica.update({
+      where: { id },
+      data: { estado_aprobacion: 'rechazada', motivo_rechazo: motivo ?? null },
+    });
+  }
+
   async verificarCandidato(alumno_id: number) {
     const alumno = await this.prisma.alumnos.findUnique({ where: { id: alumno_id } });
-    if (!alumno || alumno.tipo !== 'regular') return { es_candidato: false, practica_num: null };
+    if (!alumno) return { es_candidato: false, practica_num: null };
 
     const seg1 = await this.prisma.seguimiento_practica.findFirst({
       where: { alumno_id, practica_num: 1 },
@@ -54,9 +89,22 @@ export class OfertasService {
     return { es_candidato: false, practica_num: null };
   }
 
+  // Postulaciones pendientes que la secretaria aún no evalúa
   async todasPostulaciones() {
+    return this.listarPostulacionesPendientes(false);
+  }
+
+  // Postulaciones a la espera de la decisión del jefe de carrera
+  async postulacionesEvaluadas() {
+    return this.listarPostulacionesPendientes(true);
+  }
+
+  private async listarPostulacionesPendientes(evaluadas: boolean) {
     const posts = await this.prisma.postulaciones.findMany({
-      where: { estado: 'pendiente' },
+      where: {
+        estado: 'pendiente',
+        revisado_por: evaluadas ? { not: null } : null,
+      },
       include: {
         alumno: { select: { nombres: true, apellido1: true, apellido2: true, rut: true } },
         oferta: {
@@ -68,30 +116,47 @@ export class OfertasService {
       orderBy: { created_at: 'desc' },
     });
     return posts.map(p => ({
-      id:              p.id,
-      oferta_id:       p.oferta_id,
-      alumno_id:       p.alumno_id,
-      practica_num:    p.practica_num,
-      estado:          p.estado,
-      created_at:      p.created_at,
-      nombres:         p.alumno.nombres,
-      apellido1:       p.alumno.apellido1,
-      apellido2:       p.alumno.apellido2,
-      rut:             p.alumno.rut,
-      titulo:          p.oferta.titulo,
-      conocimientos:   p.oferta.conocimientos,
-      horas_semanales: p.oferta.horas_semanales,
-      fecha_inicio:    p.oferta.fecha_inicio,
+      id:                p.id,
+      oferta_id:         p.oferta_id,
+      alumno_id:         p.alumno_id,
+      practica_num:      p.practica_num,
+      estado:            p.estado,
+      created_at:        p.created_at,
+      nombres:           p.alumno.nombres,
+      apellido1:         p.alumno.apellido1,
+      apellido2:         p.alumno.apellido2,
+      rut:               p.alumno.rut,
+      titulo:            p.oferta.titulo,
+      conocimientos:     p.oferta.conocimientos,
+      horas_semanales:   p.oferta.horas_semanales,
+      fecha_inicio:      p.oferta.fecha_inicio,
       nombre_supervisor: p.oferta.nombre_supervisor,
-      empresa_nombre:  p.oferta.empleador?.empresa?.nombre ?? '',
+      empresa_nombre:    p.oferta.empleador?.empresa?.nombre ?? '',
+      cumple_requisitos: p.cumple_requisitos,
+      motivo_no_cumple:  p.motivo_no_cumple,
     }));
+  }
+
+  async evaluarPostulacion(id: number, cumpleRequisitos: boolean, motivo: string | undefined, revisadoPor: number) {
+    const postulacion = await this.prisma.postulaciones.findUnique({ where: { id } });
+    if (!postulacion) throw new NotFoundException('Postulación no encontrada');
+
+    return this.prisma.postulaciones.update({
+      where: { id },
+      data: {
+        cumple_requisitos: cumpleRequisitos,
+        motivo_no_cumple:  motivo ?? null,
+        revisado_por:      revisadoPor,
+        revisado_en:       new Date(),
+      },
+    });
   }
 
   async findOne(id: number) {
     const oferta = await this.prisma.ofertas_practica.findUnique({
       where: { id },
       include: {
-        empleador: true,
+        empleador: { include: { empresa: true } },
         postulaciones: {
           include: {
             alumno: {
@@ -111,25 +176,19 @@ export class OfertasService {
   }
 
   async create(data: any) {
-    const parsed = { ...data };
-    if (parsed.fecha_inicio && typeof parsed.fecha_inicio === 'string' && !parsed.fecha_inicio.includes('T')) {
-      parsed.fecha_inicio = new Date(parsed.fecha_inicio + 'T00:00:00.000Z');
-    }
-    if (parsed.fecha_fin && typeof parsed.fecha_fin === 'string' && !parsed.fecha_fin.includes('T')) {
-      parsed.fecha_fin = new Date(parsed.fecha_fin + 'T00:00:00.000Z');
-    }
+    const { fecha_fin, ...rest } = data;
+    const parsed = { ...rest };
+    parsed.fecha_inicio  = parseFecha(parsed.fecha_inicio);
+    parsed.fecha_termino = parseFecha(parsed.fecha_termino);
     return this.prisma.ofertas_practica.create({ data: parsed });
   }
 
   async update(id: number, data: any) {
     await this.findOne(id);
-    const parsed = { ...data };
-    if (parsed.fecha_inicio && typeof parsed.fecha_inicio === 'string' && !parsed.fecha_inicio.includes('T')) {
-      parsed.fecha_inicio = new Date(parsed.fecha_inicio + 'T00:00:00.000Z');
-    }
-    if (parsed.fecha_fin && typeof parsed.fecha_fin === 'string' && !parsed.fecha_fin.includes('T')) {
-      parsed.fecha_fin = new Date(parsed.fecha_fin + 'T00:00:00.000Z');
-    }
+    const { fecha_fin, ...rest } = data;
+    const parsed = { ...rest };
+    parsed.fecha_inicio  = parseFecha(parsed.fecha_inicio);
+    parsed.fecha_termino = parseFecha(parsed.fecha_termino);
     return this.prisma.ofertas_practica.update({ where: { id }, data: parsed });
   }
 
@@ -142,7 +201,7 @@ export class OfertasService {
   }
 
   async postular(oferta_id: number, alumno_id: number, practica_num: number) {
-    return this.prisma.postulaciones.create({
+    const postulacion = await this.prisma.postulaciones.create({
       data: {
         oferta_id,
         alumno_id,
@@ -150,6 +209,22 @@ export class OfertasService {
         estado: 'pendiente',
       },
     });
+
+    // Notificación a secretaría/jefe de carrera: nueva postulación pendiente de evaluar
+    try {
+      const [alumno, oferta] = await Promise.all([
+        this.prisma.alumnos.findUnique({ where: { id: alumno_id }, select: { nombres: true, apellido1: true } }),
+        this.prisma.ofertas_practica.findUnique({ where: { id: oferta_id }, select: { titulo: true } }),
+      ]);
+      const nombreAlumno = alumno ? `${alumno.nombres} ${alumno.apellido1}` : 'Alumno';
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO notificaciones (alumno_id, hito, hito_label, fecha_vencimiento) VALUES (?, 'postulacion_pendiente', ?, CURDATE())`,
+        alumno_id,
+        `📩 Nueva postulación: ${nombreAlumno} → ${oferta?.titulo ?? ''}`.slice(0, 100),
+      );
+    } catch (e) {}
+
+    return postulacion;
   }
 
   async responderPostulacion(id: number, estado: string, motivo_rechazo?: string) {
@@ -159,7 +234,7 @@ export class OfertasService {
         oferta: {
           include: { empleador: { include: { empresa: true } } },
         },
-        alumno: { select: { id: true, plan: true } },
+        alumno: { select: { id: true, plan: true, nombres: true, apellido1: true, apellido2: true, rut: true } },
       },
     });
     if (!postulacion) throw new NotFoundException('Postulación no encontrada');
@@ -172,13 +247,42 @@ export class OfertasService {
     if (estado === 'aceptada') {
       const oferta        = postulacion.oferta;
       const alumno        = postulacion.alumno;
+
+      // La oferta deja de estar disponible para el resto de los alumnos.
+      await this.prisma.ofertas_practica.update({
+        where: { id: oferta.id },
+        data: { activo: 0 },
+      });
+
+      // Las demás postulaciones pendientes a esta oferta quedan rechazadas automáticamente.
+      const otrasPendientes = await this.prisma.postulaciones.findMany({
+        where: { oferta_id: oferta.id, estado: 'pendiente', id: { not: id } },
+        select: { id: true, alumno_id: true },
+      });
+      if (otrasPendientes.length) {
+        await this.prisma.postulaciones.updateMany({
+          where: { id: { in: otrasPendientes.map(p => p.id) } },
+          data: {
+            estado: 'rechazada',
+            motivo_rechazo: 'La vacante fue ocupada por otro postulante.',
+          },
+        });
+        for (const p of otrasPendientes) {
+          try {
+            await this.prisma.$executeRawUnsafe(
+              `INSERT INTO notificaciones_alumno (alumno_id, tipo, titulo, mensaje) VALUES (?, 'postulacion_rechazada', '❌ Práctica no aceptada', ?)`,
+              p.alumno_id,
+              `Tu postulación a "${oferta.titulo}" fue rechazada porque la vacante ya fue ocupada por otro alumno.`,
+            );
+          } catch (e) {}
+        }
+      }
+
       const empleador     = oferta.empleador;
       const empresaNombre = empleador?.empresa?.nombre ?? null;
       const empresaId     = empleador?.empresa?.id ?? null;
       const fechaInicio   = oferta.fecha_inicio ? new Date(oferta.fecha_inicio) : null;
-
       const practicaNum = postulacion.practica_num ?? 1;
-
       // Horas totales reglamentarias por práctica
       const horasTot = practicaNum === 1 ? 180 : 320;
 
@@ -189,7 +293,6 @@ export class OfertasService {
         fechaTermino = new Date(fechaInicio);
         fechaTermino.setDate(fechaTermino.getDate() + semanas * 7);
       }
-
       // Datos del jefe (quien creó la cuenta del empleador)
       const jefeNombre = empleador
         ? `${empleador.nombres} ${empleador.apellido1}${empleador.apellido2 ? ' ' + empleador.apellido2 : ''}`.trim()
@@ -214,13 +317,15 @@ export class OfertasService {
         ...(empresaId ? { empresa_id: empresaId } : {}),
       };
 
+      let seguimientoId: number;
       if (seg) {
         await this.prisma.seguimiento_practica.update({
           where: { id: seg.id },
           data: hitoData,
         });
+        seguimientoId = seg.id;
       } else {
-        await this.prisma.seguimiento_practica.create({
+        const nuevoSeg = await this.prisma.seguimiento_practica.create({
           data: {
             alumno_id:    alumno.id,
             plan:         alumno.plan ? String(alumno.plan) : '0',
@@ -228,7 +333,10 @@ export class OfertasService {
             ...hitoData,
           },
         });
+        seguimientoId = nuevoSeg.id;
       }
+
+      const nombreAlumno = `${alumno.nombres} ${alumno.apellido1}${alumno.apellido2 ? ' ' + alumno.apellido2 : ''}`.trim();
 
       // Notificación al alumno
       await this.prisma.$executeRawUnsafe(
@@ -236,6 +344,32 @@ export class OfertasService {
         alumno.id,
         `Tu postulación a "${oferta.titulo}" fue aceptada. Ya puedes iniciar tu práctica.`,
       );
+
+      // Notificación a secretaría (hito_label es VARCHAR(100), se mantiene breve)
+      try {
+        await this.prisma.$executeRawUnsafe(
+          `INSERT INTO notificaciones (alumno_id, seguimiento_id, hito, hito_label, fecha_vencimiento)
+           VALUES (?, ?, 'postulacion_aceptada', ?, CURDATE())`,
+          alumno.id, seguimientoId,
+          `✅ Práctica aprobada por jefe de carrera: ${nombreAlumno}`.slice(0, 100),
+        );
+      } catch (e) {}
+
+      // Notificación a la empresa
+      try {
+        const empUsuario = empleador
+          ? await this.prisma.usuarios.findFirst({ where: { empleador_id: empleador.id } })
+          : null;
+        if (empUsuario) {
+          await this.prisma.$executeRawUnsafe(
+            `INSERT INTO notificaciones_empleador (usuario_id, seguimiento_id, alumno_id, tipo, titulo, mensaje)
+             VALUES (?, ?, ?, 'postulacion_aceptada', ?, ?)`,
+            empUsuario.id, seguimientoId, alumno.id,
+            '✅ Postulación aceptada',
+            `El alumno ${nombreAlumno} (RUT: ${alumno.rut}) fue aceptado para realizar su práctica "${oferta.titulo}" en tu empresa.`,
+          );
+        }
+      } catch (e) {}
     } else if (estado === 'rechazada') {
       await this.prisma.$executeRawUnsafe(
         `INSERT INTO notificaciones_alumno (alumno_id, tipo, titulo, mensaje) VALUES (?, 'postulacion_rechazada', '❌ Práctica no aceptada', ?)`,

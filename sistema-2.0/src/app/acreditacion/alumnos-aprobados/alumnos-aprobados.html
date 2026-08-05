@@ -1,6 +1,6 @@
 <div class="alumnos container mt-4">
   <h1 class="titulo">Alumnos Aprobados</h1>
-  <h5 class="titulo">Listado de Alumnos con sus informes</h5>
+  <p class="text-muted">Listado de Alumnos con sus informes</p>
   <div *ngIf="cargando">Cargando...</div>
   <div *ngIf="mensaje" class="alert alert-danger">{{ mensaje }}</div>
 
@@ -54,7 +54,7 @@
           <tr *ngFor="let p of datosPaginados(); let i = index">
             <td>{{ (paginaActual - 1) * itemsPorPagina + i + 1 }}</td>
             <td>{{ p.nombre }} {{ p.apellido1 }} {{ p.apellido2 }}</td>
-            <td>{{ p.rut }}</td>
+            <td>{{ p.rut | rutFormato }}</td>
             <td>
               <a *ngIf="p.informe" [href]="'http://localhost/' + p.informe"
                  target="_blank" class="btn btn-outline-success btn-sm">Descargar</a>
@@ -121,7 +121,7 @@
           <tr *ngFor="let p of datosPaginados(); let i = index">
             <td>{{ (paginaActual - 1) * itemsPorPagina + i + 1 }}</td>
             <td>{{ p.nombre }} {{ p.apellido1 }} {{ p.apellido2 }}</td>
-            <td>{{ p.rut }}</td>
+            <td>{{ p.rut | rutFormato }}</td>
             <td>
               <a *ngIf="p.informe" [href]="'http://localhost/' + p.informe"
                  target="_blank" class="btn btn-outline-success btn-sm">Descargar</a>

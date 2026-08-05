@@ -10,14 +10,6 @@
     background-color: #054182;
     color: white;
 }
-.titulo, .titulo2 {
-    color: #054182;
-    font-family: cursive, system-ui, sans-serif;
-    font-weight: 700;
-    font-size: 2rem;
-    margin-bottom: 3px;
-    letter-spacing: 0.01em;
-}
 .opciones{
     border: 2px solid;
     border-color: #054182;
@@ -140,6 +132,7 @@
   border-radius: 8px;
   padding: 24px;
   width: 320px;
+  max-width: calc(100vw - 32px);
   text-align: center;
   box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }

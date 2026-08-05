@@ -1,13 +1,3 @@
-
-.titulo {
-  color: #054182;
-  font-family: cursive, system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 2rem;
-  margin-bottom: 3px;
-  letter-spacing: 0.01em;
-}
-
 .exalumnos{
     background-color: white;
     border-radius: 15px;
@@ -120,7 +110,7 @@
 /* Esquinas redondeadas — igual que la otra tabla */
 .table-wrapper {
   border-radius: 10px;
-  overflow: hidden;
+  overflow-x: auto;
   border: 1px solid #c8d8ec;
 }
 .table {

@@ -15,19 +15,6 @@
     border-radius: 15px;
     padding: 15px;
 }
-.titulo {
-  color: #054182;
-  font-family: cursive, system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 2rem;
-  margin-bottom: 3px;
-  letter-spacing: 0.01em;
-}
-
-.titulo2 {
-  color: #363636;
-  font-family: cursive, system-ui, sans-serif;
-}
 .card-title{
     color: #054182;
 }
@@ -91,6 +78,7 @@
   }
   .botones {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 10px;
 }
@@ -124,6 +112,7 @@ button:hover {
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   z-index: 9999;
@@ -140,6 +129,7 @@ button:hover {
 
 .modal-notif-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
@@ -152,6 +142,7 @@ button:hover {
 
 .modal-notif-footer {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
   padding: 12px 20px;

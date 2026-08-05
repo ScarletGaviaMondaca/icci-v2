@@ -18,16 +18,52 @@ export class DocumentosController {
     return this.documentosService.findAll();
   }
 
+  // ── Rutas estáticas primero para evitar conflicto con :id ──────────────
+
   @Get('certificados/me')
   @Roles('alumno')
   getMisCertificados(@Req() req: any) {
     return this.documentosService.getMisCertificados(req.user.alumno_id);
   }
 
+  @Get('certificados/lista')
+  @Roles('admin', 'secretaria', 'jefe_carrera')
+  findCertificados(@Query('rut') rut?: string) {
+    return this.documentosService.findCertificados(rut);
+  }
+
+  @Get('certificados-externos/lista')
+  @Roles('admin', 'secretaria', 'jefe_carrera', 'alumno')
+  findCertificadosExternos(@Query('alumno_id') alumno_id?: string) {
+    return this.documentosService.findCertificadosExternos(
+      alumno_id ? +alumno_id : undefined,
+    );
+  }
+
+  @Get('categorias')
+  @Roles('admin', 'secretaria', 'jefe_carrera', 'alumno', 'profesor')
+  getCategorias() {
+    return this.documentosService.getCategorias();
+  }
+
+  // ── Rutas dinámicas después de las estáticas ───────────────────────────
+
   @Get(':id')
   @Roles('admin', 'secretaria', 'jefe_carrera')
   findOne(@Param('id') id: string) {
     return this.documentosService.findOne(+id);
+  }
+
+  @Get(':id/descargar')
+  @Roles('admin', 'secretaria', 'jefe_carrera', 'alumno', 'profesor')
+  async descargar(@Param('id') id: string, @Res() res: Response) {
+    const doc = await this.documentosService.findOne(+id);
+    const rutaArchivo = path.join('C:/xampp/htdocs', doc.archivo);
+
+    if (!fs.existsSync(rutaArchivo)) {
+      return res.status(404).json({ error: 'Archivo no encontrado' });
+    }
+    return res.download(rutaArchivo, doc.nombre);
   }
 
   @Post()
@@ -48,47 +84,15 @@ export class DocumentosController {
     return this.documentosService.toggleActivo(+id);
   }
 
-  @Get('certificados/lista')
-  @Roles('admin', 'secretaria', 'jefe_carrera')
-  findCertificados(@Query('rut') rut?: string) {
-    return this.documentosService.findCertificados(rut);
-  }
-
   @Post('certificados')
   @Roles('admin', 'secretaria')
   createCertificado(@Body() body: any) {
     return this.documentosService.createCertificado(body);
   }
 
-  @Get('certificados-externos/lista')
-  @Roles('admin', 'secretaria', 'jefe_carrera', 'alumno')
-  findCertificadosExternos(@Query('alumno_id') alumno_id?: string) {
-    return this.documentosService.findCertificadosExternos(
-      alumno_id ? +alumno_id : undefined,
-    );
-  }
-
   @Post('certificados-externos')
   @Roles('admin', 'secretaria')
   createCertificadoExterno(@Body() body: any) {
     return this.documentosService.createCertificadoExterno(body);
-  }
-
-  @Get(':id/descargar')
-  @Roles('admin', 'secretaria', 'jefe_carrera', 'alumno', 'profesor')
-  async descargar(@Param('id') id: string, @Res() res: Response) {
-    const doc = await this.documentosService.findOne(+id);
-    const rutaArchivo = path.join('C:/xampp/htdocs', doc.archivo);
-    
-    if (!fs.existsSync(rutaArchivo)) {
-      return res.status(404).json({ error: 'Archivo no encontrado' });
-    }
-    return res.download(rutaArchivo, doc.nombre);
-  }
-  
-  @Get('categorias')
-  @Roles('admin', 'secretaria', 'jefe_carrera', 'alumno', 'profesor')
-  getCategorias() {
-    return this.documentosService.getCategorias();
   }
 }

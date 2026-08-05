@@ -76,7 +76,7 @@
             <td>
               <div class="alumno-nombre">{{ item.alumno_nombre }}</div>
             </td>
-            <td class="rut">{{ item.rut }}</td>
+            <td class="rut">{{ item.rut | rutFormato }}</td>
             <td>{{ item.empresa || '—' }}</td>
             <td class="fechas">
               {{ item.fecha_inicio | date:'dd/MM/yyyy' }}

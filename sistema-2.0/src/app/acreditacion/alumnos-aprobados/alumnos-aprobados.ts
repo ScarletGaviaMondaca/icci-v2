@@ -2,10 +2,11 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { SeguimientoService } from '../../servicios/seguimiento.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RutFormatoPipe } from '../../pipes/rut-formato.pipe';
 
 @Component({
   selector: 'app-alumnos-aprobados',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RutFormatoPipe],
   templateUrl: './alumnos-aprobados.html',
   styleUrl: './alumnos-aprobados.css',
 })

@@ -6,6 +6,29 @@ datasource db {
   provider = "mysql"
 }
 
+model solicitudes_profesor_evaluador {
+  id               Int      @id @default(autoincrement())
+  codigo           String   @unique(map: "uq_solicitud_codigo") @db.VarChar(12)
+  seguimiento_ids  String   @db.Text
+  alumnos_resumen  String   @db.Text
+  empresas_resumen String?  @db.Text
+  numero_carta     String?  @db.VarChar(50)
+  creado_por       String   @db.VarChar(100)
+  ruta_archivo     String?  @db.VarChar(500)
+  created_at       DateTime @default(now()) @db.Timestamp(0)
+}
+
+model actas_academico_evaluador {
+  id              Int      @id @default(autoincrement())
+  codigo          String   @unique(map: "uq_acta_academico_codigo") @db.VarChar(12)
+  seguimiento_ids String   @db.Text
+  alumnos_resumen String   @db.Text
+  numero_dici     String?  @db.VarChar(50)
+  creado_por      String   @db.VarChar(100)
+  ruta_archivo    String?  @db.VarChar(500)
+  created_at      DateTime @default(now()) @db.Timestamp(0)
+}
+
 model actividades_certificado {
   id     Int           @id @default(autoincrement())
   nombre String        @db.VarChar(255)
@@ -13,39 +36,40 @@ model actividades_certificado {
 }
 
 model alumnos {
-  id                    Int                     @id @default(autoincrement())
-  rut                   String                  @unique(map: "rut") @db.VarChar(15)
-  nombres               String                  @db.VarChar(50)
-  apellido1             String                  @db.VarChar(50)
-  apellido2             String?                 @db.VarChar(50)
+  id                      Int                       @id @default(autoincrement())
+  rut                     String                    @unique(map: "rut") @db.VarChar(15)
+  nombres                 String                    @db.VarChar(50)
+  apellido1               String                    @db.VarChar(50)
+  apellido2               String?                   @db.VarChar(50)
   /// NULL = alumno especial (sin plan asignado)
-  plan                  Int?
-  clave                 String?                 @db.VarChar(255)
-  sexo                  String?                 @db.VarChar(10)
-  fecha_nacimiento      DateTime?               @db.Date
-  nacionalidad          String?                 @db.VarChar(50)
-  etnia                 String?                 @db.VarChar(50)
-  direccion             String?                 @db.VarChar(255)
-  telefono              String?                 @db.VarChar(20)
-  telefono_emergencia   String?                 @db.VarChar(20)
-  correo_personal       String?                 @db.VarChar(100)
-  correo_institucional  String?                 @db.VarChar(100)
-  colegio               String?                 @db.VarChar(255)
-  anio_ingreso          Int?                    @db.Year
-  fecha_matricula       DateTime?               @db.DateTime(0)
-  sistema_ingreso       String?                 @db.VarChar(50)
-  puntaje_ingreso       Int?
-  nem                   Int?
-  avance                Int?
-  gratuidad             String?                 @db.VarChar(255)
-  tipo                  TipoAlumno?             @default(regular)
-  anio_reingreso        Int?
-  plan_texto            String?                 @db.VarChar(50)
-  notificaciones        notificaciones[]
-  notificaciones_alumno notificaciones_alumno[]
-  postulaciones         postulaciones[]
-  seguimiento           seguimiento_practica[]
-  usuario               usuarios[]
+  plan                    Int?
+  clave                   String?                   @db.VarChar(255)
+  sexo                    String?                   @db.VarChar(10)
+  fecha_nacimiento        DateTime?                 @db.Date
+  nacionalidad            String?                   @db.VarChar(50)
+  etnia                   String?                   @db.VarChar(50)
+  direccion               String?                   @db.VarChar(255)
+  telefono                String?                   @db.VarChar(20)
+  telefono_emergencia     String?                   @db.VarChar(20)
+  correo_personal         String?                   @db.VarChar(100)
+  correo_institucional    String?                   @db.VarChar(100)
+  colegio                 String?                   @db.VarChar(255)
+  anio_ingreso            Int?                      @db.Year
+  fecha_matricula         DateTime?                 @db.DateTime(0)
+  sistema_ingreso         String?                   @db.VarChar(50)
+  puntaje_ingreso         Int?
+  nem                     Int?
+  avance                  Int?
+  gratuidad               String?                   @db.VarChar(255)
+  tipo                    TipoAlumno?               @default(regular)
+  anio_reingreso          Int?
+  plan_texto              String?                   @db.VarChar(50)
+  notificaciones          notificaciones[]
+  notificaciones_alumno   notificaciones_alumno[]
+  notificaciones_profesor notificaciones_profesor[]
+  postulaciones           postulaciones[]
+  seguimiento             seguimiento_practica[]
+  usuario                 usuarios[]
 
   @@index([plan], map: "idx_alumnos_plan")
 }
@@ -134,12 +158,15 @@ model empleador_tokens {
 model empresas {
   id              Int                    @id @default(autoincrement())
   nombre          String                 @unique(map: "nombre") @db.VarChar(150)
+  rut             String?                @unique(map: "rut_empresa") @db.VarChar(15)
   activo          Int?                   @default(1) @db.TinyInt
   created_at      DateTime               @default(now()) @db.Timestamp(0)
   sector          SectorEmpresa?         @default(Privado)
   region          String?                @db.VarChar(100)
   comuna          String?                @db.VarChar(100)
   direccion       String?                @db.VarChar(255)
+  descripcion     String?                @db.Text
+  localidad       String?                @db.VarChar(150)
   tipo_convenio   TipoConvenio?          @default(Sin_especificar)
   estado_convenio EstadoConvenio?        @default(Sin_convenio)
   fecha_convenio  DateTime?              @db.Date
@@ -275,14 +302,14 @@ model notificaciones {
 }
 
 model notificaciones_alumno {
-  id         Int                    @id @default(autoincrement())
+  id         Int                         @id @default(autoincrement())
   alumno_id  Int
-  tipo       TipoNotificacionAlumno
-  titulo     String                 @db.VarChar(150)
-  mensaje    String?                @db.Text
-  leida      Int?                   @default(0) @db.TinyInt
-  created_at DateTime               @default(now()) @db.Timestamp(0)
-  alumno     alumnos                @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "notificaciones_alumno_ibfk_1")
+  tipo       notificaciones_alumno_tipo?
+  titulo     String                      @db.VarChar(150)
+  mensaje    String?                     @db.MediumText
+  leida      Int?                        @default(0) @db.TinyInt
+  created_at DateTime                    @default(now()) @db.Timestamp(0)
+  alumno     alumnos                     @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "notificaciones_alumno_ibfk_1")
 
   @@index([alumno_id], map: "alumno_id")
 }
@@ -300,8 +327,11 @@ model ofertas_practica {
   fecha_inicio      DateTime?        @db.Date
   fecha_termino     DateTime?        @db.Date
   nombre_supervisor String?          @db.VarChar(150)
+  turno             String?          @db.VarChar(50)
   practica_num      Int?             @default(1) @db.TinyInt
   activo            Int?             @default(1) @db.TinyInt
+  estado_aprobacion EstadoOferta?    @default(pendiente)
+  motivo_rechazo    String?          @db.Text
   created_at        DateTime         @default(now()) @db.Timestamp(0)
   empleador         empleadores      @relation(fields: [empleador_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "ofertas_practica_ibfk_1")
   postulaciones     postulaciones[]
@@ -310,19 +340,25 @@ model ofertas_practica {
 }
 
 model postulaciones {
-  id             Int                @id @default(autoincrement())
-  oferta_id      Int
-  alumno_id      Int
-  estado         EstadoPostulacion? @default(pendiente)
-  motivo_rechazo String?            @db.Text
-  carta_ruta     String?            @db.VarChar(255)
-  created_at     DateTime           @default(now()) @db.Timestamp(0)
-  practica_num   Int?               @default(1) @db.TinyInt
-  oferta         ofertas_practica   @relation(fields: [oferta_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "postulaciones_ibfk_1")
-  alumno         alumnos            @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "postulaciones_ibfk_2")
+  id                Int                @id @default(autoincrement())
+  oferta_id         Int
+  alumno_id         Int
+  estado            EstadoPostulacion? @default(pendiente)
+  motivo_rechazo    String?            @db.Text
+  carta_ruta        String?            @db.VarChar(255)
+  created_at        DateTime           @default(now()) @db.Timestamp(0)
+  practica_num      Int?               @default(1) @db.TinyInt
+  cumple_requisitos Boolean?
+  motivo_no_cumple  String?            @db.Text
+  revisado_en       DateTime?          @db.Timestamp(0)
+  revisado_por      Int?
+  oferta            ofertas_practica   @relation(fields: [oferta_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "postulaciones_ibfk_1")
+  alumno            alumnos            @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "postulaciones_ibfk_2")
+  revisor           usuarios?          @relation("PostulacionRevisadaPor", fields: [revisado_por], references: [id], onUpdate: Restrict, map: "postulaciones_ibfk_3")
 
   @@index([alumno_id], map: "alumno_id")
   @@index([oferta_id], map: "oferta_id")
+  @@index([revisado_por], map: "revisado_por")
 }
 
 model practica {
@@ -365,6 +401,21 @@ model profesores {
   created_at   DateTime               @default(now()) @db.Timestamp(0)
   seguimientos seguimiento_practica[]
   usuario      usuarios[]
+  subrogancias subrogancias[]
+}
+
+model subrogancias {
+  id           Int        @id @default(autoincrement())
+  profesor_id  Int
+  rol_suplido  String     @default("jefe_carrera") @db.VarChar(30)
+  activo       Int        @default(1) @db.TinyInt
+  fecha_inicio DateTime   @default(now())
+  fecha_fin    DateTime?
+  creado_por   String?    @db.VarChar(100)
+  profesor     profesores @relation(fields: [profesor_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@index([profesor_id])
+  @@index([rol_suplido])
 }
 
 model seguimiento_observaciones {
@@ -416,6 +467,7 @@ model seguimiento_practica {
   eval_empresa_archivo            String?                     @db.VarChar(255)
   herramientas                    String?                     @db.Text
   informe_rev_profesor_id         Int?
+  informe_rev_profesor_propuesto_id Int?
   informe_rev_carta_peticion      String?                     @db.VarChar(100)
   informe_rev_carta_asignacion    String?                     @db.VarChar(100)
   informe_fecha_subida            DateTime?                   @db.DateTime(0)
@@ -440,7 +492,12 @@ model seguimiento_practica {
   eval_empresa_fecha_aprobacion   DateTime?                   @db.Date
   comite_carrera_fecha_aprobacion DateTime?                   @db.Date
   envioreg_fecha_aprobacion       DateTime?                   @db.Date
+  informe_rev_formulario          String?                     @db.VarChar(255)
+  informe_atrasado                Int?                        @default(0) @db.TinyInt
+  evaluacion_empresa              evaluacion_empresa[]
+  evaluacion_informe              evaluacion_informe[]
   notificaciones                  notificaciones[]
+  notificaciones_profesor         notificaciones_profesor[]
   observaciones                   seguimiento_observaciones[]
   alumno                          alumnos                     @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_seguimiento_alumno")
   empresa                         empresas?                   @relation(fields: [empresa_id], references: [id], onUpdate: Restrict, map: "fk_seguimiento_empresa")
@@ -455,22 +512,24 @@ model seguimiento_practica {
 }
 
 model usuarios {
-  id           Int          @id @default(autoincrement())
-  username     String       @unique(map: "username") @db.VarChar(100)
-  password     String       @db.VarChar(255)
-  rol          RolUsuario?
-  alumno_id    Int?
-  profesor_id  Int?
-  activo       Int?         @default(1) @db.TinyInt
-  created_at   DateTime     @default(now()) @db.Timestamp(0)
-  nombre       String?      @db.VarChar(100)
-  apellido1    String?      @db.VarChar(100)
-  apellido2    String?      @db.VarChar(100)
-  correo       String?      @db.VarChar(150)
-  empleador_id Int?
-  alumno       alumnos?     @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_usuarios_alumno")
-  empleador    empleadores? @relation(fields: [empleador_id], references: [id], onUpdate: Restrict, map: "fk_usuarios_empleador")
-  profesor     profesores?  @relation(fields: [profesor_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_usuarios_profesores")
+  id                      Int                       @id @default(autoincrement())
+  username                String                    @unique(map: "username") @db.VarChar(100)
+  password                String                    @db.VarChar(255)
+  rol                     RolUsuario?
+  alumno_id               Int?
+  profesor_id             Int?
+  activo                  Int?                      @default(1) @db.TinyInt
+  created_at              DateTime                  @default(now()) @db.Timestamp(0)
+  nombre                  String?                   @db.VarChar(100)
+  apellido1               String?                   @db.VarChar(100)
+  apellido2               String?                   @db.VarChar(100)
+  correo                  String?                   @db.VarChar(150)
+  empleador_id            Int?
+  notificaciones_profesor notificaciones_profesor[]
+  postulaciones_revisadas postulaciones[]           @relation("PostulacionRevisadaPor")
+  alumno                  alumnos?                  @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_usuarios_alumno")
+  empleador               empleadores?              @relation(fields: [empleador_id], references: [id], onUpdate: Restrict, map: "fk_usuarios_empleador")
+  profesor                profesores?               @relation(fields: [profesor_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_usuarios_profesores")
 
   @@index([alumno_id], map: "fk_usuarios_alumno")
   @@index([empleador_id], map: "fk_usuarios_empleador")
@@ -489,6 +548,75 @@ model organigrama {
   perfil_url String? @db.VarChar(500)
 }
 
+model evaluacion_empresa {
+  id                      Int                  @id @default(autoincrement())
+  seguimiento_id          Int
+  criterio_asistencia     String?              @db.Char(1)
+  criterio_cantidad       String?              @db.Char(1)
+  criterio_calidad        String?              @db.Char(1)
+  criterio_normativas     String?              @db.Char(1)
+  criterio_aprendizaje    String?              @db.Char(1)
+  criterio_conocimientos  String?              @db.Char(1)
+  criterio_habilidades    String?              @db.Char(1)
+  criterio_trabajo_equipo String?              @db.Char(1)
+  descripcion_trabajo     String?              @db.Text
+  comentarios             String?              @db.Text
+  utilidad                String?              @db.Text
+  created_at              DateTime             @default(now()) @db.Timestamp(0)
+  seguimiento_practica    seguimiento_practica @relation(fields: [seguimiento_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "evaluacion_empresa_ibfk_1")
+
+  @@index([seguimiento_id], map: "seguimiento_id")
+}
+
+model evaluacion_informe {
+  id                   Int                  @id @default(autoincrement())
+  seguimiento_id       Int
+  criterio1            String?              @db.Char(1)
+  criterio2            String?              @db.Char(1)
+  criterio3            String?              @db.Char(1)
+  criterio4            String?              @db.Char(1)
+  criterio5            String?              @db.Char(1)
+  criterio6            String?              @db.Char(1)
+  observaciones        String?              @db.Text
+  resultado            String               @db.Char(1)
+  archivo_feedback     String?              @db.VarChar(255)
+  created_at           DateTime             @default(now()) @db.Timestamp(0)
+  seguimiento_practica seguimiento_practica @relation(fields: [seguimiento_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "evaluacion_informe_ibfk_1")
+
+  @@index([seguimiento_id], map: "seguimiento_id")
+}
+
+model notificaciones_empleador {
+  id             Int      @id @default(autoincrement())
+  usuario_id     Int
+  seguimiento_id Int
+  alumno_id      Int
+  tipo           String   @default("eval_empresa") @db.VarChar(50)
+  titulo         String   @db.VarChar(255)
+  mensaje        String   @db.MediumText
+  leida          Int?     @default(0) @db.TinyInt
+  created_at     DateTime @default(now()) @db.Timestamp(0)
+}
+
+model notificaciones_profesor {
+  id                   Int                  @id @default(autoincrement())
+  usuario_id           Int
+  seguimiento_id       Int
+  alumno_id            Int
+  tipo                 String               @default("revision_informe") @db.VarChar(50)
+  titulo               String               @db.VarChar(150)
+  mensaje              String?              @db.MediumText
+  leida                Int?                 @default(0) @db.TinyInt
+  created_at           DateTime             @default(now()) @db.Timestamp(0)
+  usuarios             usuarios             @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "notificaciones_profesor_ibfk_1")
+  alumnos              alumnos              @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "notificaciones_profesor_ibfk_2")
+  seguimiento_practica seguimiento_practica @relation(fields: [seguimiento_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "notificaciones_profesor_ibfk_3")
+
+  @@index([alumno_id], map: "alumno_id")
+  @@index([seguimiento_id], map: "seguimiento_id")
+  @@index([usuario_id], map: "usuario_id")
+}
+
 enum TipoAlumno {
   regular
   especial
@@ -501,6 +629,8 @@ enum RolUsuario {
   empleador
   jefe_carrera
   profesor
+  director_departamento
+  secretaria_dici
 }
 
 enum TipoActividad {
@@ -535,21 +665,28 @@ enum ModalidadOferta {
   Hibrida    @map("Híbrida")
 }
 
+enum EstadoOferta {
+  pendiente
+  aprobada
+  rechazada
+}
+
 enum EstadoPostulacion {
   pendiente
   aceptada
   rechazada
 }
 
-enum TipoNotificacionAlumno {
+enum TipoRestriccionMalla {
+  PRE
+  CO
+}
+
+enum notificaciones_alumno_tipo {
   postulacion_pendiente
   postulacion_aceptada
   postulacion_rechazada
   hito_aprobado
   hito_excedido
-}
-
-enum TipoRestriccionMalla {
-  PRE
-  CO
+  informe_recordatorio
 }

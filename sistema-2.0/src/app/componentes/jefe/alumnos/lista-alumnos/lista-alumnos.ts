@@ -5,10 +5,11 @@ import { AlumnoService } from '../../../../servicios/alumno.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../../servicios/auth.service';
+import { RutFormatoPipe } from '../../../../pipes/rut-formato.pipe';
 
 @Component({
   selector: 'app-lista-alumnos',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RutFormatoPipe],
   templateUrl: './lista-alumnos.html',
   styleUrl: './lista-alumnos.css',
 })

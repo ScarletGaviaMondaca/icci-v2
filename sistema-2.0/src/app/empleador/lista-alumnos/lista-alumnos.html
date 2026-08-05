@@ -1,0 +1,50 @@
+<div class="empleador page-container">
+  <div class="page-header">
+    <h1 class="titulo">👥 Lista de Alumnos</h1>
+    <p class="text-muted">Todos los alumnos que han realizado su práctica profesional en tu empresa.</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <div *ngIf="cargando" class="text-center py-4">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div class="table-wrapper" *ngIf="!cargando">
+    <table class="table table-striped table-hover mb-0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nombre</th>
+          <th>Apellidos</th>
+          <th>RUT</th>
+          <th>Práctica</th>
+          <th>Fecha inicio</th>
+          <th>Fecha término</th>
+          <th>Supervisor</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let a of alumnos; let i = index">
+          <td>{{ i + 1 }}</td>
+          <td>{{ a.nombres }}</td>
+          <td>{{ a.apellido1 }} {{ a.apellido2 }}</td>
+          <td>{{ a.rut }}</td>
+          <td>{{ a.practica_num === 1 ? 'Práctica I' : 'Práctica II' }}</td>
+          <td>{{ a.practica1_fecha_inicio | date:'dd/MM/yyyy' }}</td>
+          <td>{{ a.practica1_fecha_termino | date:'dd/MM/yyyy' }}</td>
+          <td>{{ a.practica1_supervisor || '—' }}</td>
+          <td>
+            <span [class]="resultadoClases[a.estado_final_practica] || 'badge bg-secondary'">
+              {{ resultadoLabels[a.estado_final_practica] || '—' }}
+            </span>
+          </td>
+        </tr>
+        <tr *ngIf="alumnos.length === 0">
+          <td colspan="9" class="text-center text-muted">Aún no hay alumnos registrados en tu empresa.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

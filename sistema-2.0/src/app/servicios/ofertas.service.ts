@@ -52,8 +52,8 @@ export class OfertasService {
     return this.http.get<any[]>(`${this.apiUrl}/empleadores/empresas`);
   }
 
-  crearEmpresaPublico(nombre: string) {
-    return this.http.post<any>(`${this.apiUrl}/empleadores/empresas`, { nombre });
+  crearEmpresaPublico(nombre: string, rut: string, descripcion: string = '', localidad: string = '') {
+    return this.http.post<any>(`${this.apiUrl}/empleadores/empresas`, { nombre, rut, descripcion, localidad });
   }
 
   // ── Documento de compromiso ───────────────────────────────────────────────────
@@ -96,6 +96,19 @@ export class OfertasService {
     return this.http.put<any>(`${this.ofertasUrl}/${id}/toggle`, {}, this.auth.getHeaders());
   }
 
+  // Ofertas creadas por empresas, a la espera de aprobación del jefe de carrera
+  listarPendientesAprobacion() {
+    return this.http.get<any[]>(`${this.ofertasUrl}/pendientes-aprobacion`, this.auth.getHeaders());
+  }
+
+  aprobarOferta(id: number, practica_num: number) {
+    return this.http.put<any>(`${this.ofertasUrl}/${id}/aprobar`, { practica_num }, this.auth.getHeaders());
+  }
+
+  rechazarOferta(id: number, motivo: string = '') {
+    return this.http.put<any>(`${this.ofertasUrl}/${id}/rechazar`, { motivo }, this.auth.getHeaders());
+  }
+
   // ── Postulaciones ─────────────────────────────────────────────────────────────
 
   postular(oferta_id: number, alumno_id: number, practica_num: number = 1) {
@@ -119,10 +132,26 @@ export class OfertasService {
     );
   }
 
-  // TODO backend: implementar GET /ofertas/todas-postulaciones en NestJS
+  // Postulaciones pendientes que la secretaria aún no evalúa
   listarTodasPostulaciones() {
     return this.http.get<any[]>(
       `${this.ofertasUrl}/todas-postulaciones`,
+      this.auth.getHeaders()
+    );
+  }
+
+  // Postulaciones ya evaluadas por la secretaria, a la espera de la decisión del jefe de carrera
+  listarPostulacionesEvaluadas() {
+    return this.http.get<any[]>(
+      `${this.ofertasUrl}/postulaciones/evaluadas`,
+      this.auth.getHeaders()
+    );
+  }
+
+  evaluarPostulacion(postulacion_id: number, cumpleRequisitos: boolean, motivo: string = '') {
+    return this.http.put<any>(
+      `${this.ofertasUrl}/postulaciones/${postulacion_id}/evaluar`,
+      { cumple_requisitos: cumpleRequisitos, motivo },
       this.auth.getHeaders()
     );
   }
@@ -133,5 +162,7 @@ export class OfertasService {
       `${this.ofertasUrl}/verificar-candidato?alumno_id=${alumnoId}`,
       this.auth.getHeaders()
     );
-  }
+  } 
+  
+
 }

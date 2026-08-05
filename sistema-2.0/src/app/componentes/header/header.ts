@@ -46,13 +46,13 @@ export class Header {
       if (event instanceof NavigationEnd) {
         this.actualizarSubMenu(event.urlAfterRedirects);
         // Refresca contador al navegar
-        if (this.auth.esSecretaria()) {
+        if (this.auth.esSecretaria() || this.auth.esJefeCarreraEfectivo() || this.auth.esDirectorDepartamentoEfectivo() || this.auth.esSecretariaDici()) {
           this.cargarNoLeidas();
         }
       }
     });
     // Carga inicial
-    if (this.auth.esSecretaria()) {
+    if (this.auth.esSecretaria() || this.auth.esJefeCarreraEfectivo() || this.auth.esDirectorDepartamentoEfectivo() || this.auth.esSecretariaDici()) {
       this.cargarNoLeidas();
       setInterval(() => this.cargarNoLeidas(), 5 * 60 * 1000);
     }
@@ -93,15 +93,13 @@ export class Header {
       this.subMenu = [
         { nombre: 'Alumnos', ruta: '/jefe/listado-alumnos' },
         { nombre: 'Carrera', ruta: '/jefe/carrera' },
-       // { nombre: 'Empleadores', ruta: '/jefe/empleadores' },
-      //  { nombre: 'Disabled', ruta: '/jefe/disabled' }
+       // { nombre: 'Empleadores', ruta: '/jefe/empleadores' }
       ];
     }
     else if (url.startsWith('/organizacion')) {
       this.subMenu = [
         { nombre: 'Organigrama', ruta: '/organizacion/organigrama' },
-        { nombre: 'Academicos', ruta: '/organizacion/academicos' },
-        //{ nombre: 'CEC', ruta: '/organizacion/cec' }
+        { nombre: 'Académicos', ruta: '/organizacion/academicos' }
       ];
 
     }
@@ -129,9 +127,8 @@ export class Header {
         return;
       }
       this.subMenu = [
-        { nombre: 'Practica 1', ruta: '/seguimiento/practica/1' },
-        { nombre: 'Practica 2', ruta: '/seguimiento/practica/2' },
-      //  { nombre: 'Actividad de titulación', ruta: '/seguimiento/actividad' }
+        { nombre: 'Práctica 1', ruta: '/seguimiento/practica/1' },
+        { nombre: 'Práctica 2', ruta: '/seguimiento/practica/2' }
       ];
     }
     else if (url.startsWith('/acreditacion')) {
@@ -144,6 +141,19 @@ export class Header {
         { nombre: 'Informes', ruta: '/acreditacion/alumnos' },
         { nombre: 'Empresas', ruta: '/acreditacion/empresas' }
       ]
+    }
+    else if (url.startsWith('/practicas')) {
+      // Solo jefe de carrera y secretaria ven el menú de practicas
+      if (!this.auth.esJefeCarreraEfectivo() && !this.auth.esSecretaria()) {
+        this.subMenu = [];
+        return;
+      }
+      this.subMenu = [
+        ...(this.auth.esJefeCarreraEfectivo() ? [{ nombre: 'Solicitudes', ruta: '/practicas/solicitudes' }] : []),
+        { nombre: 'Practicantes', ruta: '/practicas/practicantes' },
+        { nombre: 'Evaluacion informes', ruta: '/practicas/evaluacion-informes' },
+        { nombre: 'Informes atrasados', ruta: '/practicas/informes-atrasados' }
+      ];
     }
     else {
       this.subMenu = [];
@@ -172,7 +182,17 @@ export class Header {
       next: () => {
         notif.leida = 1;
         this.noLeidas = Math.max(0, this.noLeidas - 1);
-        this.router.navigate(['/seguimiento/avance', notif.alumno_id, notif.practica_num]);
+        if (notif.hito === 'postulacion_pendiente') {
+          this.router.navigate(['/evaluar']);
+        } else if (notif.hito === 'informe_atrasado') {
+          this.router.navigate(['/practicas/informes-atrasados']);
+        } else if (notif.hito === 'profesor_evaluador_propuesto') {
+          this.router.navigate(['/profesor-evaluador']);
+        } else if (this.auth.esDirectorDepartamentoEfectivo()) {
+          this.router.navigate(['/profesor-evaluador']);
+        } else {
+          this.router.navigate(['/seguimiento/avance', notif.alumno_id, notif.practica_num]);
+        }
         this.mostrarNotificaciones = false;
       }
     });

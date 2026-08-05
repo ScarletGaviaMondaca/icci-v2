@@ -58,6 +58,7 @@ export class MiPerfil implements OnInit {
     }
     if (this.perfil.perfil_empleador) {
       payload.perfil_empleador = { ...this.perfil.perfil_empleador };
+      payload.perfil_empresa = { ...this.perfil.perfil_empleador.empresa };
     }
     this.svc.actualizarPerfil(payload).subscribe({
       next: () => {

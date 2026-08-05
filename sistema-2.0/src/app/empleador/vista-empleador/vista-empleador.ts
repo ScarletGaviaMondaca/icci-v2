@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../servicios/auth.service';
 import { OfertasService } from '../../servicios/ofertas.service';
-import { NotificacionesService } from '../../servicios/notificaciones.service';
 
 @Component({
   selector: 'app-vista-empleador',
@@ -21,46 +20,25 @@ export class VistaEmpleador implements OnInit {
   mostrarFormOferta = false;
   ofertaEditando: any = null;
 
-  // Evaluaciones pendientes
-  notifEvaluaciones: any[] = [];
-  cargandoEval = false;
-
   form = {
     titulo: '', descripcion: '', conocimientos: '', tareas: '',
-    modalidad: 'Presencial', horas_semanales: 0, fecha_inicio: '', nombre_supervisor: '',
+    modalidad: 'Presencial', horas_semanales: 0, fecha_inicio: '', nombre_supervisor: '', turno: '4x3',
   };
 
   formEditar = {
     titulo: '', descripcion: '', conocimientos: '', tareas: '',
-    modalidad: 'Presencial', horas_semanales: 0, fecha_inicio: '', nombre_supervisor: '',
+    modalidad: 'Presencial', horas_semanales: 0, fecha_inicio: '', nombre_supervisor: '', turno: '4x3',
   };
 
   constructor(
     public auth: AuthService,
     private svc: OfertasService,
-    private notifSvc: NotificacionesService,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
     this.cargarOfertas();
-    this.cargarEvaluaciones();
-  }
-
-  cargarEvaluaciones() {
-    const usuarioId = this.auth.getUsuario()?.id;
-    if (!usuarioId) return;
-    this.cargandoEval = true;
-    this.notifSvc.listarEmpleador(usuarioId).subscribe({
-      next: (data) => { this.notifEvaluaciones = data; this.cargandoEval = false; this.cdr.detectChanges(); },
-      error: () => { this.cargandoEval = false; }
-    });
-  }
-
-  irEvaluar(notif: any) {
-    this.notifSvc.marcarLeidaEmpleador(notif.id).subscribe();
-    this.router.navigate(['/evaluar-empresa'], { state: { notif } });
   }
 
   get empleadorId(): number {
@@ -94,7 +72,7 @@ export class VistaEmpleador implements OnInit {
         this.form = {
           titulo: '', descripcion: '', conocimientos: '', tareas: '',
           modalidad: 'Presencial', horas_semanales: 0,
-          fecha_inicio: '', nombre_supervisor: ''
+          fecha_inicio: '', nombre_supervisor: '', turno: '4x3'
         };
         this.cargarOfertas();
         setTimeout(() => this.mensaje = '', 3000);
@@ -116,6 +94,7 @@ export class VistaEmpleador implements OnInit {
       horas_semanales:   o.horas_semanales   ?? 0,
       fecha_inicio:      o.fecha_inicio ? String(o.fecha_inicio).substring(0, 10) : '',
       nombre_supervisor: o.nombre_supervisor ?? '',
+      turno:             o.turno ?? '4x3',
     };
     this.mostrarFormOferta = false;
   }
@@ -148,5 +127,9 @@ export class VistaEmpleador implements OnInit {
       },
       error: () => this.error = '❌ Error al desactivar'
     });
+  }
+
+  verPostulaciones(oferta: any) {
+    this.router.navigate(['/vista-solicitud', oferta.id]);
   }
 }

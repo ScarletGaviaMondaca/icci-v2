@@ -9,19 +9,12 @@
   --ca-borde: #bed1ea;
   --ca-borde-claro: #dbe7fa;
 }
-.titulo {
-  color: #054182;
-  font-family: cursive, system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 2rem;
-  margin-bottom: 3px;
-  letter-spacing: 0.01em;
-}
 .alumno {
   min-height: 100vh;
   background: white;
   border-radius: 15px;
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: flex-start;
   padding: 38px 0;
@@ -40,7 +33,7 @@
   .ca-card { padding: 17px 0 18px 0;}
 }
 /* HEADER */
-.ca-header { display: flex; align-items: flex-end; margin-bottom: 18px;}
+.ca-header { display: flex; flex-wrap: wrap; align-items: flex-end; margin-bottom: 18px;}
 .ca-title {
   color: var(--ca-azul-oscuro);
   font-family: cursive, system-ui, sans-serif;
@@ -86,6 +79,7 @@
 }
 .ca-section-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   margin-bottom: 15px;
@@ -162,6 +156,7 @@
 /* ≡≡≡ TOGGLE GROUP (SEX, GRATUIDAD) ≡≡≡ */
 .ca-toggle-group {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 2px;
 }
@@ -178,6 +173,7 @@
   transition: background .13s, border-color .13s, color .13s, box-shadow .12s;
   outline: none;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 4px;
   letter-spacing: .01em;
@@ -200,6 +196,7 @@
 /* ≡≡≡ ACCIONES ≡≡≡ */
 .ca-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 15px;
   margin-top: 23px;
   justify-content: flex-end;
@@ -216,6 +213,7 @@
   transition: background 0.15s, color 0.16s, box-shadow .13s;
   box-shadow: 0 2px 6px #aac3fd18;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 7px;
   min-width: 130px;

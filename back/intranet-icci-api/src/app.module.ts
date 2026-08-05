@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -19,10 +20,12 @@ import { MapaModule } from './mapa/mapa.module';
 import { GeneradoresModule } from './generadores/generadores.module';
 import { InfoCarreraModule } from './info-carrera/info-carrera.module';
 import { EmpleadoresModule } from './empleadores/empleadores.module';
+import { SubrogantesModule } from './subrogancias/subrogancias.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     UsuariosModule,
@@ -40,6 +43,7 @@ import { EmpleadoresModule } from './empleadores/empleadores.module';
     GeneradoresModule,
     InfoCarreraModule,
     EmpleadoresModule,
+    SubrogantesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -4,11 +4,10 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../servicios/auth.service';
 import { OfertasService } from '../../servicios/ofertas.service';
 import { NotificacionesService } from '../../servicios/notificaciones.service';
-import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-noticias',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   templateUrl: './noticias.html',
   styleUrl: './noticias.css',
 })
@@ -22,13 +21,6 @@ export class Noticias implements OnInit {
   practicaNumAlumno = 1;
   mostrarModalPostular = false;
   ofertaSeleccionada: any = null;
-  // para el jefe de carrera
-  postulaciones: any[] = [];
-  cargandoPostulaciones = false;
-  resolviendoId: number | null = null;
-  motivoRechazo = '';
-  mostrarModalRechazo = false;
-  postulacionSeleccionada: any = null;
 
   // para el profesor
   notifProfesor: any[] = [];
@@ -47,9 +39,6 @@ export class Noticias implements OnInit {
   ngOnInit() {
     if (this.auth.esAlumno()) {
       this.verificarSiEsCandidato();
-    }
-    if (this.auth.esJefeCarrera() || this.auth.esAdmin()) {
-      this.cargarPostulaciones();
     }
     if (this.auth.esProfesor()) {
       this.cargarNotifProfesor();
@@ -84,30 +73,13 @@ export class Noticias implements OnInit {
       }
     });
   }
-  postular(oferta: any) {
-    if (!confirm(`¿Postular a "${oferta.titulo}" en ${oferta.empresa_nombre}?`)) return;
-    this.postulando = oferta.id;
-    this.svc.postular(oferta.id, this.auth.getUsuario()?.alumno_id).subscribe({
-      next: () => {
-        this.mensaje = '✅ Postulación enviada correctamente';
-        this.postulando = null;
-        this.cargarOfertas();
-        setTimeout(() => this.mensaje = '', 3000);
-      },
-      error: (err) => {
-        this.error = err.error?.error ?? '❌ Error al postular';
-        this.postulando = null;
-        setTimeout(() => this.error = '', 3000);
-      }
-    });
-  }
+
   parsearConocimientos(texto: string): string[] {
     if (!texto) return [];
     return texto.split('\n').map(t => t.trim()).filter(t => t !== '');
   }
-  abrirModalPostular(oferta: any) {
-    this.ofertaSeleccionada = oferta;
-    this.mostrarModalPostular = true;
+  masInformacion(oferta: any) {
+    this.router.navigate([`/vista-solicitud/${oferta.id}`]);
   }
 
   confirmarPostulacion() {
@@ -129,59 +101,6 @@ export class Noticias implements OnInit {
         this.error = err.error?.error ?? '❌ Error al postular';
         this.postulando = null;
         setTimeout(() => this.error = '', 3000);
-      }
-    });
-  }
-
-  // para el jefe de carrera
-  cargarPostulaciones() {
-    this.cargandoPostulaciones = true;
-    this.svc.listarTodasPostulaciones().subscribe({
-      next: (data) => {
-        this.postulaciones = data;
-        this.cargandoPostulaciones = false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.cargandoPostulaciones = false;
-      }
-    });
-  }
-  aceptar(postulacion: any) {
-    if (!confirm(`¿Aceptar la postulación de ${postulacion.nombres} ${postulacion.apellido1}?`)) return;
-    this.resolviendoId = postulacion.id;
-    this.svc.resolver(postulacion.id, 'aceptada').subscribe({
-      next: () => {
-        this.mensaje = `✅ Práctica aceptada para ${postulacion.nombres}`;
-        this.resolviendoId = null;
-        this.cargarPostulaciones();
-        setTimeout(() => this.mensaje = '', 3000);
-      },
-      error: () => {
-        this.error = '❌ Error al aceptar';
-        this.resolviendoId = null;
-      }
-    });
-  }
-  abrirModalRechazo(postulacion: any) {
-    this.postulacionSeleccionada = postulacion;
-    this.motivoRechazo = '';
-    this.mostrarModalRechazo = true;
-  }
-  rechazar() {
-    if (!this.postulacionSeleccionada) return;
-    this.resolviendoId = this.postulacionSeleccionada.id;
-    this.svc.resolver(this.postulacionSeleccionada.id, 'rechazada', this.motivoRechazo).subscribe({
-      next: () => {
-        this.mensaje = `❌ Postulación rechazada`;
-        this.resolviendoId = null;
-        this.mostrarModalRechazo = false;
-        this.cargarPostulaciones();
-        setTimeout(() => this.mensaje = '', 3000);
-      },
-      error: () => {
-        this.error = '❌ Error al rechazar';
-        this.resolviendoId = null;
       }
     });
   }

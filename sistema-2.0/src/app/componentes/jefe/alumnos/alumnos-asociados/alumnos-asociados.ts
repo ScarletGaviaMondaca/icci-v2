@@ -3,6 +3,7 @@ import { AlumnoService } from '../../../../servicios/alumno.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RutFormatoPipe } from '../../../../pipes/rut-formato.pipe';
 
 
 type AlumnoRow = {
@@ -18,7 +19,7 @@ type AlumnoRow = {
 @Component({
   selector: 'app-alumnos-asociados',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RutFormatoPipe],
   templateUrl: './alumnos-asociados.html',
   styleUrls: ['./alumnos-asociados.css'],
 })

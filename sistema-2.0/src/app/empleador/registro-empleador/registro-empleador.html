@@ -31,7 +31,7 @@
     </div>
 
     <!-- Formulario -->
-    <form *ngIf="tokenValido && !registrado" (ngSubmit)="registrar()">
+    <form *ngIf="tokenValido && !registrado" (ngSubmit)="abrirModalCompromiso()">
 
       <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
 
@@ -79,11 +79,19 @@
 
       <div class="mb-3">
         <label class="form-label">Selecciona tu empresa *</label>
-        <select class="form-select" [(ngModel)]="form.empresa_id" 
+        <select class="form-select" [(ngModel)]="form.empresa_id"
                 name="empresa_id">
           <option [ngValue]="0">-- Selecciona --</option>
           <option *ngFor="let e of empresas" [ngValue]="e.id">{{ e.nombre }}</option>
         </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Dirección / Ubicación de la empresa</label>
+        <input type="text" class="form-control"
+               [(ngModel)]="form.empresa_direccion" name="empresa_direccion"
+               placeholder="Ej: Av. General Velásquez 1775, Arica">
+        <small class="text-muted">Se utilizará en los documentos oficiales de práctica.</small>
       </div>
 
       <!-- Agregar nueva empresa -->
@@ -94,16 +102,31 @@
         </button>
         <div *ngIf="mostrarNuevaEmpresa" class="mt-2 p-3 border rounded">
           <label class="form-label">Nombre de la empresa *</label>
-          <div class="d-flex gap-2">
-            <input type="text" class="form-control form-control-sm"
-                  [(ngModel)]="nuevaEmpresaNombre" name="nuevaEmpresaNombre"
-                  placeholder="Ej: Empresa Acotango">
-            <button type="button" class="btn btn-sm btn-success"
-                    [disabled]="!nuevaEmpresaNombre || creandoEmpresa"
-                    (click)="crearEmpresa()">
-              {{ creandoEmpresa ? '...' : '✅ Agregar' }}
-            </button>
-          </div>
+          <input type="text" class="form-control form-control-sm mb-2"
+                [(ngModel)]="nuevaEmpresa.nombre" name="nuevaEmpresaNombre"
+                placeholder="Ej: Empresa Acotango">
+
+          <label class="form-label">RUT de la empresa *</label>
+          <input type="text" class="form-control form-control-sm mb-2"
+                [(ngModel)]="nuevaEmpresa.rut" name="nuevaEmpresaRut"
+                placeholder="Ej: 76.123.456-7">
+          <small class="text-muted d-block mb-2">Se usa para identificar la empresa y evitar registros duplicados.</small>
+
+          <label class="form-label">Descripción de la empresa</label>
+          <textarea class="form-control form-control-sm mb-2" rows="2"
+                    [(ngModel)]="nuevaEmpresa.descripcion" name="nuevaEmpresaDescripcion"
+                    placeholder="Breve descripción de la empresa..."></textarea>
+
+          <label class="form-label">Localidad</label>
+          <input type="text" class="form-control form-control-sm mb-2"
+                [(ngModel)]="nuevaEmpresa.localidad" name="nuevaEmpresaLocalidad"
+                placeholder="Ej: Arica">
+
+          <button type="button" class="btn btn-sm btn-success"
+                  [disabled]="!nuevaEmpresa.nombre || !nuevaEmpresa.rut || creandoEmpresa"
+                  (click)="crearEmpresa()">
+            {{ creandoEmpresa ? '...' : '✅ Agregar' }}
+          </button>
         </div>
       </div>
       <h6 class="seccion-titulo">🔒 Contraseña</h6>
@@ -167,29 +190,52 @@
           </small>
         </div>
       </div>
-      <!-- Documento de compromiso -->
-      <div *ngIf="compromisoUrl" class="mb-4">
-        <h6 class="seccion-titulo">📄 Documento de Compromiso</h6>
-        <p class="text-muted small mb-2">Lee el documento antes de crear tu cuenta:</p>
-        <iframe [src]="compromisoUrlSafe" width="100%" height="400"
-                style="border:1px solid #dee2e6; border-radius:6px;"></iframe>
-        <div class="form-check mt-3">
-          <input class="form-check-input" type="checkbox" id="chkCompromiso"
-                 [(ngModel)]="aceptaCompromiso" name="aceptaCompromiso">
-          <label class="form-check-label fw-semibold" for="chkCompromiso">
-            He leído y acepto el documento de compromiso
-          </label>
-        </div>
-        <div *ngIf="!aceptaCompromiso" class="text-danger small mt-1">
-          Debes aceptar el documento para continuar.
-        </div>
-      </div>
-
       <button type="submit" class="btn btn-primary w-100"
-              [disabled]="cargando || !passwordValida || form.password !== form.confirmar_password || (!!compromisoUrl && !aceptaCompromiso)">
+              [disabled]="cargando || !passwordValida || form.password !== form.confirmar_password">
         {{ cargando ? 'Registrando...' : '✅ Crear cuenta' }}
       </button>
 
     </form>
+  </div>
+</div>
+
+<!-- Modal: Documento de Compromiso -->
+<div class="modal-overlay" *ngIf="mostrarModalCompromiso"
+     style="position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1050;">
+  <div class="card" style="max-width:650px; width:92%; max-height:90vh; overflow-y:auto;">
+    <div class="card-body">
+      <h5 class="card-title">📄 Documento de Compromiso</h5>
+
+      <ng-container *ngIf="compromisoUrl; else sinDocumento">
+        <p class="text-muted small mb-2">Lee el documento antes de crear tu cuenta:</p>
+        <iframe [src]="compromisoUrlSafe" width="100%" height="400"
+                style="border:1px solid #dee2e6; border-radius:6px;"></iframe>
+      </ng-container>
+      <ng-template #sinDocumento>
+        <div class="alert alert-warning small mb-0">
+          📄 El documento de compromiso aún está en preparación por parte de la secretaría.
+          Aun así, debes aceptar los términos y condiciones para continuar con la creación de tu cuenta.
+        </div>
+      </ng-template>
+
+      <div class="form-check mt-3">
+        <input class="form-check-input" type="checkbox" id="chkCompromiso"
+               [(ngModel)]="aceptaCompromiso" name="aceptaCompromiso" [ngModelOptions]="{standalone: true}">
+        <label class="form-check-label fw-semibold" for="chkCompromiso">
+          He leído y acepto los términos y condiciones
+        </label>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" class="btn btn-outline-secondary" (click)="cerrarModalCompromiso()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary"
+                [disabled]="!aceptaCompromiso || cargando"
+                (click)="confirmarCrearCuenta()">
+          {{ cargando ? 'Registrando...' : '✅ Confirmar y crear cuenta' }}
+        </button>
+      </div>
+    </div>
   </div>
 </div>

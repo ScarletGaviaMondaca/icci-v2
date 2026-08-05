@@ -3,14 +3,6 @@
   border-radius: 15px;
   padding: 20px;
 }
-.titulo {
-  color: #054182;
-  font-family: cursive, system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 2rem;
-  margin-bottom: 3px;
-  letter-spacing: 0.01em;
-}
 .form-card {
   background: var(--blanco);
   border-radius: 17px;
@@ -25,6 +17,7 @@
 
 .card-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 16px;
   margin-bottom: 14px;
@@ -37,6 +30,7 @@
   color: var(--azul-oscuro);
   border-radius: 50%;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   box-shadow: 0 3px 13px #05418222;
@@ -62,6 +56,7 @@
   padding-left: 8px;
   letter-spacing: 0.02em;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
@@ -146,6 +141,7 @@ textarea.field-textarea {
 /* Mensajes de feedback */
 .alert {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 7px;
   border-radius: 7px;
@@ -177,6 +173,7 @@ textarea.field-textarea {
 /* Botones */
 .form-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 17px;
   margin-top: 18px;
   justify-content: flex-end;
@@ -193,6 +190,7 @@ textarea.field-textarea {
   transition: background 0.16s, color 0.16s, box-shadow .12s;
   box-shadow: 0 1.7px 6px #aac3fd16;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 7px;
   min-width: 120px;

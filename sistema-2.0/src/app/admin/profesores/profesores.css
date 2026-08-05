@@ -3,14 +3,6 @@
   border-radius: 15px;
   padding: 20px;
 }
-.titulo {
-  color: #054182;
-  font-family: cursive, system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 2rem;
-  margin-bottom: 3px;
-  letter-spacing: 0.01em;
-}
 .nuevo {
     background-color: white ;
     color: #054182 ;
@@ -36,6 +28,7 @@
   inset: 0; /* reemplaza top/left/width/height */
   background-color: rgba(0, 0, 0, 0.774);
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
   padding: 14px;           /* importante para móviles */

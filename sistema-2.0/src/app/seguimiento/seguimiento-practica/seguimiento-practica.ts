@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SeguimientoService } from '../../servicios/seguimiento.service';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -65,7 +65,7 @@ export class SeguimientoPractica implements OnInit {
       },
       {
         key: 'envioreg_estado',
-        label: 'Hito 6: Envío a Registraduria',
+        label: 'Hito 6: Envío a Registraduría',
         fechaInicio: 'envioreg_fecha_inicio',
         fechaTermino: 'envioreg_fecha_termino'
       }
@@ -98,14 +98,8 @@ export class SeguimientoPractica implements OnInit {
   fechasObservacion: any[] = [];
   guardandoObs = false;
   fechaFinPendiente: string = '';
-  subiendoInforme = false;
-  archivoSeleccionado: File | null = null;
   subiendoEvalEmpresa = false;
   archivoEvalEmpresa: File | null = null;
-  profesores: any[] = [];
-  profesorIdHito3: number = 0;
-  cartaPeticion: string = '';
-  cartaAsignacion: string = '';
   hitosDesbloqueados: number[] = [];
   mostrarModalActa = false;
   calificacion = 'APROBADO';
@@ -171,21 +165,26 @@ export class SeguimientoPractica implements OnInit {
   generandoFormulario = false;
   generandoInformeConf = false;
 
- ngOnInit() {
+ private calcularSemestreAnterior(): string {
+    const mes = new Date().getMonth() + 1;
+    const anio = new Date().getFullYear();
+    return mes <= 7 ? `II SEM/${anio - 1}` : `I SEM/${anio}`;
+  }
+
+  ngOnInit() {
     this.route.params.subscribe(params => {
       const id = +params['id'];
       const anioActual = new Date().getFullYear();
-      this.aniosDisponibles = [anioActual - 1, anioActual];
       this.aniosDisponibles = [anioActual - 1, anioActual];
       this.semestresDisponibles = ['I SEM', 'II SEM'];
       this.aniosDisponibles.forEach(a => {
         this.semestresDisponibles.push(`I SEM/${a}`);
         this.semestresDisponibles.push(`II SEM/${a}`);
       });
+      this.semestre = this.calcularSemestreAnterior();
       this.alumno_id_actual = id;
       this.practicaNum = +params['practica_num'];
       this.cargarAlumnoActual();
-      this.seg.getProfesores().subscribe(profArr => this.profesores = profArr);
       this.cargarDuraciones();
       this.cdr.detectChanges();
     });
@@ -210,6 +209,7 @@ export class SeguimientoPractica implements OnInit {
         ...seg,
         alumno_id: seg.alumno_id ?? seg.id,
       };
+      this.calificacion = Number(seg.comite_carrera_estado) === 3 ? 'REPROBADO' : 'APROBADO';
       const camposFecha = [
         'practica1_fecha_inicio', 'practica1_fecha_termino',
         'informe_elab_fecha_inicio', 'informe_elab_fecha_termino',
@@ -261,11 +261,6 @@ export class SeguimientoPractica implements OnInit {
         correo:       this.alumno['practica1_correo'] ?? '',
         telefono:     this.alumno['practica1_telefono'] ?? '',
         herramientas: this.alumno['herramientas'] ?? '',
-      } : {}),
-      ...(idx === 2 ? {
-        informe_rev_profesor_id:       this.alumno['informe_rev_profesor_id'] ?? null,
-        informe_rev_carta_peticion:    this.alumno['informe_rev_carta_peticion'] ?? '',
-        informe_rev_carta_asignacion:  this.alumno['informe_rev_carta_asignacion'] ?? '',
       } : {}),
     }));
     this.cargarFechasObservacion();
@@ -417,14 +412,6 @@ export class SeguimientoPractica implements OnInit {
     );
   }
   
-  if (i === 2) {
-    this.seg.actualizaHito3({
-      seguimiento_id: this.alumno.seguimiento_id,
-      profesor_id: this.tempDatos[2].informe_rev_profesor_id ?? null,
-      carta_peticion: this.tempDatos[2].informe_rev_carta_peticion ?? '',
-      carta_asignacion: this.tempDatos[2].informe_rev_carta_asignacion ?? '',
-    }).subscribe();
-  }
   if (i === 4) {
     updates.push(
       { campo: 'practica_semestre_aprobacion', valor: this.semestre },
@@ -523,45 +510,6 @@ console.log('Updates:', updates);
       }
     });
   }
-// Informe final
-  onArchivoSeleccionado(event: any) {
-    this.archivoSeleccionado = event.target.files[0] ?? null;
-  }
-  subirInforme() { 
-    if (!this.archivoSeleccionado) {
-      this.mensajeGlobal = '🚫 Selecciona un archivo PDF primero.';
-      return;
-    }
-    this.subiendoInforme = true;
-    const fd = new FormData();
-    fd.append('accion', 'subir_informe');
-    fd.append('seguimiento_id', String(this.alumno.seguimiento_id));
-    fd.append('alumno_id', String(this.alumno.alumno_id));
-    fd.append('plan', this.alumno.plan);
-    fd.append('practica_num', String(this.practicaNum));
-    fd.append('informe', this.archivoSeleccionado);
-
-    this.seg.subirInforme(fd).pipe(
-      finalize(() => {
-        this.subiendoInforme = false
-        this.cdr.detectChanges();
-      })
-    ).subscribe({
-      next: (res) => {
-        this.mensajeGlobal = '✅ Informe subido correctamente';
-        this.alumno.informe_final = res.ruta;
-        this.archivoSeleccionado = null;
-        this.subiendoInforme = false;
-        this.fileInput.nativeElement.value = '';
-        setTimeout(() => this.mensajeGlobal = null, 2000);
-      },
-      error: () => {
-        this.mensajeGlobal = '❌ Error al subir el informe.';
-        this.subiendoInforme = false;
-      }
-    });
-  }
-  @ViewChild('fileInput') fileInput!: ElementRef;
 // Evaluacion empresa
   onArchivoEvalEmpresa(event: any) {
     this.archivoEvalEmpresa = event.target.files[0] ?? null;

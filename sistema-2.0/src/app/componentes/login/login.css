@@ -1,6 +1,7 @@
 .login-container {
   min-height: 100vh;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
    background: linear-gradient(135deg, #01084fc1 10%, #ab5504ad 100%);

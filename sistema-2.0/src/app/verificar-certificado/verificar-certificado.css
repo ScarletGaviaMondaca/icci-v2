@@ -164,6 +164,12 @@
   margin-bottom: 20px;
 }
 
+@media (max-width: 576px) {
+  .resultado-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .resultado-campo label {
   display: block;
   font-size: 0.75rem;

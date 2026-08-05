@@ -1,0 +1,99 @@
+<div class="fondo">
+  <h1 class="titulo">Solicitudes de empresa</h1>
+  <p class="text-muted">Ofertas de práctica publicadas por empresas, pendientes de aprobación.</p>
+
+  <div *ngIf="mensaje" class="alert alert-success">{{ mensaje }}</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <div *ngIf="cargando" class="text-center py-4">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div class="row" *ngIf="!cargando">
+    <div class="col-md-12">
+      <div class="table-wrapper">
+        <table class="table table-striped table-hover mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Empresa</th>
+              <th>Detalle de la práctica</th>
+              <th>Publicada</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let o of ofertas; let i = index">
+              <td>{{ i + 1 }}</td>
+              <td>{{ o.empresa_nombre || 'No especificada' }}</td>
+              <td>
+                <strong>{{ o.titulo }}</strong>
+                <div class="small text-muted">{{ o.modalidad }} · {{ o.horas_semanales }}h semanales</div>
+              </td>
+              <td>{{ o.created_at | date:'dd/MM/yyyy' }}</td>
+              <td>
+                <button class="btn btn-sm" (click)="verMas(o)">Ver más</button>
+              </td>
+            </tr>
+            <tr *ngIf="ofertas.length === 0">
+              <td colspan="5" class="text-center text-muted">No hay solicitudes de empresas pendientes de aprobación.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal detalle / aprobación -->
+<div class="modal-overlay" *ngIf="mostrarDetalle" (click)="cerrarDetalle()"
+     style="position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1050;">
+  <div class="card" style="max-width:560px; width:92%; max-height:88vh; overflow-y:auto;" (click)="$event.stopPropagation()">
+    <div class="card-body" *ngIf="ofertaSeleccionada as o">
+      <h5 class="card-title mb-1">{{ o.titulo }}</h5>
+      <p class="text-muted small mb-3">{{ o.empresa_nombre }} · {{ o.modalidad }} · {{ o.horas_semanales }}h semanales</p>
+
+      <p class="small mb-2" *ngIf="o.descripcion"><strong>Descripción:</strong> {{ o.descripcion }}</p>
+      <p class="small mb-2" *ngIf="o.tareas"><strong>Tareas:</strong> {{ o.tareas }}</p>
+      <div class="small mb-2" *ngIf="o.conocimientos">
+        <strong>Conocimientos requeridos:</strong>
+        <ul class="mb-0">
+          <li *ngFor="let c of parsearConocimientos(o.conocimientos)">{{ c }}</li>
+        </ul>
+      </div>
+      <div class="d-flex gap-3 small text-muted mb-2">
+        <span>📅 Inicio: {{ o.fecha_inicio | date:'dd/MM/yyyy' }}</span>
+        <span>👤 Supervisor: {{ o.nombre_supervisor }}</span>
+      </div>
+      <div class="small text-muted mb-3" *ngIf="o.empleador">
+        Contacto: {{ o.empleador.nombres }} {{ o.empleador.apellido1 }} · {{ o.empleador.correo }}
+        <span *ngIf="o.empleador.telefono"> · {{ o.empleador.telefono }}</span>
+      </div>
+
+      <hr>
+
+      <div class="mb-3">
+        <label class="form-label">Definir práctica para esta oferta</label>
+        <select class="form-select" [(ngModel)]="practicaNumSeleccionada">
+          <option [ngValue]="1">Práctica 1</option>
+          <option [ngValue]="2">Práctica 2</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Motivo de rechazo (opcional, solo si vas a rechazar)</label>
+        <textarea class="form-control form-control-sm" rows="2"
+                  [(ngModel)]="motivoRechazo"
+                  placeholder="Indica el motivo si vas a rechazar la oferta..."></textarea>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <button class="btn btn-sm btn-outline-secondary" (click)="cerrarDetalle()">Cerrar</button>
+        <button class="btn btn-sm btn-danger" [disabled]="resolviendoId !== null" (click)="rechazar()">❌ Rechazar</button>
+        <button class="btn btn-sm btn-success" [disabled]="resolviendoId !== null" (click)="aprobar()">
+          {{ resolviendoId === o.id ? '⏳...' : '✅ Aprobar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

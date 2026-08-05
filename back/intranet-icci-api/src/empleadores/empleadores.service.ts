@@ -21,11 +21,28 @@ export class EmpleadoresService {
     });
   }
 
-  async crearEmpresa(nombre: string) {
+  async crearEmpresa(nombre: string, rut: string, descripcion?: string, localidad?: string) {
     if (!nombre?.trim()) throw new BadRequestException('Nombre requerido');
-    const existing = await this.prisma.empresas.findFirst({ where: { nombre: nombre.trim() } });
-    if (existing) throw new BadRequestException('Ya existe una empresa con ese nombre');
-    return this.prisma.empresas.create({ data: { nombre: nombre.trim() } });
+
+    const rutNormalizado = rut?.trim().toUpperCase().replace(/[.\s]/g, '');
+    if (!rutNormalizado || !/^\d{7,8}-[\dK]$/.test(rutNormalizado)) {
+      throw new BadRequestException('RUT de empresa inválido. Formato esperado: 12345678-9');
+    }
+
+    const existingNombre = await this.prisma.empresas.findFirst({ where: { nombre: nombre.trim() } });
+    if (existingNombre) throw new BadRequestException('Ya existe una empresa con ese nombre');
+
+    const existingRut = await this.prisma.empresas.findFirst({ where: { rut: rutNormalizado } });
+    if (existingRut) throw new BadRequestException('Ya existe una empresa registrada con ese RUT');
+
+    return this.prisma.empresas.create({
+      data: {
+        nombre: nombre.trim(),
+        rut: rutNormalizado,
+        descripcion: descripcion?.trim() || null,
+        localidad: localidad?.trim() || null,
+      },
+    });
   }
 
   // ── Documento de compromiso ───────────────────────────────────────
@@ -71,6 +88,7 @@ export class EmpleadoresService {
   async registrar(data: {
     token: string;
     empresa_id: number;
+    empresa_direccion?: string;
     nombres: string;
     apellido1: string;
     apellido2?: string;
@@ -85,6 +103,9 @@ export class EmpleadoresService {
     const empresa = await this.prisma.empresas.findUnique({ where: { id: +data.empresa_id } });
     if (!empresa) throw new BadRequestException('Empresa no encontrada');
 
+    const correoExistente = await this.prisma.empleadores.findUnique({ where: { correo: data.correo } });
+    if (correoExistente) throw new BadRequestException('Ya existe un empleador registrado con ese correo. Si es tu cuenta, inicia sesión o recupera tu contraseña en vez de registrarte de nuevo.');
+
     const empleador = await this.prisma.empleadores.create({
       data: {
         empresa_id: +data.empresa_id,
@@ -96,6 +117,13 @@ export class EmpleadoresService {
         telefono:  data.telefono ?? null,
       },
     });
+
+    if (data.empresa_direccion?.trim()) {
+      await this.prisma.empresas.update({
+        where: { id: +data.empresa_id },
+        data: { direccion: data.empresa_direccion.trim() },
+      });
+    }
 
     const base = (data.nombres.split(' ')[0] + data.apellido1)
       .toLowerCase()

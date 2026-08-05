@@ -93,6 +93,7 @@
 
     <!-- Tabla de restricciones existentes -->
     <div *ngIf="restricciones.length > 0" class="mt-3">
+      <div class="table-wrapper">
       <table class="table table-sm table-bordered">
         <thead class="table-dark">
           <tr><th>Ramo</th><th>Tipo</th><th>Requisito</th><th></th></tr>
@@ -112,9 +113,10 @@
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
   </div>
-  
+
 
   <!-- GRID (si hay semestres) -->
   <div class="malla-viewport"> 

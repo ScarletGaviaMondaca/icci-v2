@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, Res, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Res, Req, UseGuards, BadRequestException } from '@nestjs/common';
 import type { Response } from 'express';
 import { GeneradoresService } from './generadores.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -26,6 +26,56 @@ export class GeneradoresController {
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="Acta_P${seguimiento_id}.docx"`);
     res.send(buffer);
+  }
+
+  @Get('lista-profesor-evaluador')
+  @Roles('admin', 'secretaria', 'jefe_carrera')
+  async generarListaProfesorEvaluador(
+    @Query('seguimiento_ids') seguimientoIds: string,
+    @Query('numero_carta') numeroCarta: string,
+    @Req() req: any,
+    @Res() res: Response,
+  ) {
+    const ids = (seguimientoIds ?? '').split(',').map(id => +id).filter(id => !isNaN(id));
+    if (ids.length === 0) throw new BadRequestException('Debes seleccionar al menos un alumno');
+    if (!numeroCarta?.trim()) throw new BadRequestException('Debes ingresar el N° de carta');
+
+    const { buffer, codigo } = await this.generadoresService.generarListaProfesorEvaluador(
+      ids, req.user.username ?? 'sistema', numeroCarta.trim(),
+    );
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="Solicitud_Profesor_Evaluador.docx"`);
+    res.setHeader('X-Verificacion-Codigo', codigo);
+    res.send(buffer);
+  }
+
+  @Get('acta-academico-evaluador')
+  @Roles('admin', 'director_departamento', 'secretaria_dici')
+  async generarActaAcademicoEvaluador(
+    @Query('seguimiento_ids') seguimientoIds: string,
+    @Query('dici_numero') diciNumero: string,
+    @Req() req: any,
+    @Res() res: Response,
+  ) {
+    const ids = (seguimientoIds ?? '').split(',').map(id => +id).filter(id => !isNaN(id));
+    if (ids.length === 0) throw new BadRequestException('Debes seleccionar al menos un alumno');
+    if (!diciNumero?.trim()) throw new BadRequestException('Debes ingresar el N° DICI');
+
+    const { buffer, codigo } = await this.generadoresService.generarActaAcademicoEvaluador(
+      ids, req.user.username ?? 'sistema', diciNumero.trim(),
+    );
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="Acta_Academico_Evaluador.docx"`);
+    res.setHeader('X-Verificacion-Codigo', codigo);
+    res.send(buffer);
+  }
+
+  @Get('solicitudes-icci')
+  @Roles('admin', 'director_departamento', 'secretaria_dici')
+  async listarSolicitudesIcci(@Query('seguimiento_ids') seguimientoIds: string) {
+    const ids = (seguimientoIds ?? '').split(',').map(id => +id).filter(id => !isNaN(id));
+    if (ids.length === 0) return [];
+    return this.generadoresService.listarSolicitudesIcci(ids);
   }
 
   @Post('certificado')

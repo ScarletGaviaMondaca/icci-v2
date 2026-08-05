@@ -11,7 +11,10 @@ export const rolGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
     router.navigate(['/login']);
     return false;
   }
-  if (roles.length && !roles.includes(auth.getRol()!)) {
+  const ROLES_SUPLIBLES = ['jefe_carrera', 'director_departamento'];
+  const rolPedido = ROLES_SUPLIBLES.find(r => roles.includes(r));
+  const esSubrogante = !!rolPedido && auth.esProfesor() && auth.esSubroganteDe(rolPedido);
+  if (roles.length && !roles.includes(auth.getRol()!) && !esSubrogante) {
     router.navigate(['/sin-permiso']);
     return false;
   }

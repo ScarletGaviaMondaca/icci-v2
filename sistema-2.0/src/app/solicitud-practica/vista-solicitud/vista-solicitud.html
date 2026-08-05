@@ -1,0 +1,83 @@
+
+ <div class="fondo"> 
+
+  <h1 class="titulo">Detalles de la Práctica </h1>
+  
+    <div class="container py-4" *ngIf="!cargando">
+    <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+    <button class="btn" (click)="volver()">Volver</button>
+
+    <div class="card shadow-sm" *ngIf="oferta">
+        <div class="card-header">
+        <h4 class="mb-0">{{ oferta.titulo }}</h4>
+        </div>
+
+        <div class="card-body">
+            <h3> {{ oferta.empleador?.empresa?.nombre ?? 'No especificada' }}, {{ oferta.empleador?.empresa?.descripcion ?? 'No especificado' }}
+            </h3>
+            <h3> Tus desafios diarios:</h3>
+            <p>{{ oferta.tareas ?? 'No especificada' }}</p>
+        <dl class="row mb-0">
+            <dt class="col-sm-4"> Jornada laboral:</dt>
+            <dd class="col-sm-8">{{ oferta.turno ?? 'No especificada' }}</dd>
+            <dt class="col-sm-4"> Localidad:</dt>
+            <dd class="col-sm-8">{{ oferta.empleador?.empresa?.localidad ?? 'No especificada' }}</dd>
+            
+            <dt class="col-sm-4">Horas semanales</dt>
+            <dd class="col-sm-8">{{ oferta.horas_semanales ?? 'No especificado' }}</dd>
+
+            <dt class="col-sm-4">Fecha de inicio</dt>
+            <dd class="col-sm-8">{{ oferta.fecha_inicio ? (oferta.fecha_inicio | date:'dd/MM/yyyy') : 'No especificada' }}</dd>
+
+            <dt class="col-sm-4"> Descripción</dt>
+            <dd class="col-sm-8">{{ oferta.descripcion ?? 'No especificada' }}</dd>
+
+            <dt class="col-sm-4">Conocimientos requeridos</dt>
+            <dd class="col-sm-8">{{ oferta.conocimientos ?? 'No especificado' }}</dd>
+
+            <dt class="col-sm-4">Supervisor asignado</dt>
+            <dd class="col-sm-8">{{ oferta.nombre_supervisor ?? 'No especificado' }}</dd>
+
+            <dt class="col-sm-4">Estado</dt>
+            <dd class="col-sm-8">
+            <span class="badge" [ngClass]="oferta.activo === 1 ? 'bg-success' : 'bg-secondary'">
+                {{ oferta.activo === 1 ? 'Activa' : 'Cerrada' }}
+            </span>
+            </dd>
+        </dl>
+        </div>
+
+        <div class="card-footer bg-white">
+
+        <!-- Solo alumnos candidatos ven este botón -->
+        <button
+            *ngIf="puedeVerBotonPostular"
+            class="btn text-white"
+            style="background-color:#054182;"
+            [disabled]="postulando"
+            (click)="postular()">
+            {{ postulando ? 'Enviando...' : 'Postular' }}
+        </button>
+
+        <!-- Mensajes de estado -->
+        <div class="mt-2" *ngIf="yaPostulo && !mensajePostulacion">
+            <span class="text-muted">Ya has postulado a esta oferta.</span>
+        </div>
+        <div class="mt-2 alert alert-info py-2" *ngIf="mensajePostulacion">
+            {{ mensajePostulacion }}
+        </div>
+
+        <!-- Si es alumno pero no es candidato, explicamos por qué no puede postular -->
+        <div class="mt-2 text-muted" *ngIf="auth.esAlumno() && !esCandidato && !yaPostulo">
+            No cumples actualmente los requisitos para postular a esta práctica.
+        </div>
+
+        </div>
+    </div>
+
+    </div>
+
+    <div class="text-center py-5" *ngIf="cargando">
+    <div class="spinner-border" style="color:#054182;" role="status"></div>
+    </div>
+</div>

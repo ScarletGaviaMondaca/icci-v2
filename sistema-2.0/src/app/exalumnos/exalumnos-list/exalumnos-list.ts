@@ -5,10 +5,11 @@ import { ExalumnosService } from '../../servicios/exalumnos.service';
 import { Router } from '@angular/router';
 import { AuthService } from '../../servicios/auth.service';
 import { FormsModule } from '@angular/forms';
+import { RutFormatoPipe } from '../../pipes/rut-formato.pipe';
 
 @Component({
   selector: 'app-exalumnos-list',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RutFormatoPipe],
   templateUrl: './exalumnos-list.html',
   styleUrl: './exalumnos-list.css',
 })

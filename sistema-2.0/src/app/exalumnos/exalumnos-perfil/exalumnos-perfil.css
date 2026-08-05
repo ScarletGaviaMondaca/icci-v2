@@ -1,13 +1,3 @@
-
-.titulo {
-  color: #054182;
-  font-family: cursive, system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 2rem;
-  margin-bottom: 3px;
-  letter-spacing: 0.01em;
-}
-
 .exalumno{
     background-color: white;
     border-radius: 15px;
@@ -38,6 +28,7 @@ button:hover {
 }
 .perfil-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 20px;
   margin-bottom: 20px;

@@ -69,6 +69,90 @@ export class SeguimientoController {
   getCandidatos() {
     return this.seguimientoService.getCandidatos();
   }
+
+  @Get('en-curso')
+  @Roles('admin', 'secretaria', 'jefe_carrera')
+  getEnCurso() {
+    return this.seguimientoService.getEnCurso();
+  }
+
+  @Get('evaluacion-informes')
+  @Roles('admin', 'secretaria', 'jefe_carrera', 'director_departamento')
+  getEvaluacionInformes() {
+    return this.seguimientoService.getEvaluacionInformes();
+  }
+
+  @Get('pendientes-asignacion-academico')
+  @Roles('admin', 'director_departamento', 'secretaria_dici')
+  getPendientesAsignacionAcademico() {
+    return this.seguimientoService.getPendientesAsignacionAcademico();
+  }
+
+  @Put('proponer-profesores')
+  @Roles('admin', 'director_departamento')
+  proponerProfesoresEvaluadores(@Body() body: { asignaciones: { seguimiento_id: number; profesor_id: number }[] }) {
+    return this.seguimientoService.proponerProfesoresEvaluadores(body.asignaciones ?? []);
+  }
+
+  @Get('listos-para-acta')
+  @Roles('admin', 'secretaria_dici')
+  getListosParaActa() {
+    return this.seguimientoService.getListosParaActa();
+  }
+
+  @Get('resumen-profesor-evaluador')
+  @Roles('admin', 'director_departamento')
+  getResumenProfesorEvaluador() {
+    return this.seguimientoService.getResumenProfesorEvaluador();
+  }
+
+  @Get('alumnos-evaluados')
+  @Roles('admin', 'profesor', 'director_departamento')
+  getAlumnosEvaluados() {
+    return this.seguimientoService.getAlumnosEvaluados();
+  }
+
+  @Get('comite-pendientes')
+  @Roles('admin', 'jefe_carrera', 'secretaria')
+  getComitePendientes() {
+    return this.seguimientoService.getComitePendientes();
+  }
+
+  @Get('comite-rechazados')
+  @Roles('admin', 'secretaria')
+  getComiteRechazados() {
+    return this.seguimientoService.getComiteRechazados();
+  }
+
+  @Put(':id/comite')
+  @Roles('admin', 'jefe_carrera')
+  decidirComite(@Param('id') id: string, @Body() body: { decision: 'aprobado' | 'rechazado' }) {
+    return this.seguimientoService.decidirComite(+id, body.decision);
+  }
+
+  @Get('informes-atrasados')
+  @Roles('admin', 'secretaria')
+  getInformesAtrasados() {
+    return this.seguimientoService.getInformesAtrasados();
+  }
+
+  @Put(':id/enviar-comite-atrasado')
+  @Roles('admin', 'secretaria')
+  enviarComiteAtrasado(@Param('id') id: string) {
+    return this.seguimientoService.enviarComiteAtrasado(+id);
+  }
+
+  @Delete(':id')
+  @Roles('admin', 'secretaria')
+  eliminarSeguimiento(@Param('id') id: string) {
+    return this.seguimientoService.eliminarSeguimiento(+id);
+  }
+
+  @Post('evaluacion-informes/solicitar')
+  @Roles('admin', 'secretaria', 'jefe_carrera')
+  solicitarProfesorEvaluadorBulk(@Body() body: { seguimiento_ids: number[] }) {
+    return this.seguimientoService.solicitarProfesorEvaluadorBulk((body.seguimiento_ids ?? []).map(Number));
+  }
   @Get('aprobados')
   @Roles('admin', 'secretaria', 'jefe_carrera')
   getAprobados() {
@@ -93,10 +177,22 @@ export class SeguimientoController {
     return this.seguimientoService.verificarDocumento(codigo ?? '');
   }
 
+  @Get('verificar-certificado')
+  @Public()
+  verificarCertificado(@Query('codigo') codigo: string) {
+    return this.seguimientoService.verificarCertificado(codigo ?? '');
+  }
+
   @Get('evaluaciones-empleador')
   @Roles('admin', 'secretaria', 'empleador')
   getEvaluacionesEmpleador(@Query('usuario_id') usuario_id: string) {
     return this.seguimientoService.getEvaluacionesEmpleador(+usuario_id);
+  }
+
+  @Get('alumnos-empresa')
+  @Roles('admin', 'secretaria', 'empleador')
+  getAlumnosEmpresa(@Query('usuario_id') usuario_id: string) {
+    return this.seguimientoService.getAlumnosEmpresa(+usuario_id);
   }
 
   @Get(':id/evaluacion')
@@ -192,6 +288,18 @@ export class SeguimientoController {
   @Roles('admin', 'secretaria')
   exceder(@Param('id') id: string, @Param('hito') hito: string) {
     return this.seguimientoService.marcarExcedido(+id, hito);
+  }
+
+  @Post(':id/solicitar-profesor')
+  @Roles('admin', 'secretaria')
+  solicitarProfesorEvaluador(@Param('id') id: string) {
+    return this.seguimientoService.solicitarProfesorEvaluador(+id);
+  }
+
+  @Put(':id/asignar-profesor')
+  @Roles('admin', 'secretaria', 'jefe_carrera', 'director_departamento', 'secretaria_dici')
+  asignarProfesorEvaluador(@Param('id') id: string, @Body() body: { profesor_id: number }) {
+    return this.seguimientoService.asignarProfesorEvaluador(+id, +body.profesor_id);
   }
 
   @Post(':id/observacion')

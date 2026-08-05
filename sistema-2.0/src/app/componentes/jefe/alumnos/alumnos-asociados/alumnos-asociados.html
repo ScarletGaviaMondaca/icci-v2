@@ -44,7 +44,7 @@
         <tbody>
           <tr *ngFor="let a of alumnosPaginados(); let i = index">
             <td>{{  (paginaActual - 1) * elementosPorPagina + i + 1 }}</td>
-            <td>{{ a.rut }}</td>
+            <td>{{ a.rut | rutFormato }}</td>
             <td>{{ a.nombres }}</td>
             <td>{{a.apellido1}} {{ a.apellido2 || '' }}</td>
             <td>{{ a.anio_ingreso || '-' }}</td>

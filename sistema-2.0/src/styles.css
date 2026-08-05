@@ -1,1 +1,52 @@
 /* You can add global styles to this file, and also import other style files */
+
+/* Estilo unificado de títulos de vista. Antes estaba duplicado (con variaciones)
+   en decenas de archivos .css por componente; ahora vive en un solo lugar.
+   No se declara aquí en .layout-principal.css (navbar) ni en .datos-acreditacion.css
+   (título blanco sobre banner azul) porque esos dos casos son intencionalmente
+   distintos: no son encabezados de página sobre fondo blanco. */
+.titulo {
+  color: #054182;
+  font-family: cursive, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 3px;
+  letter-spacing: 0.01em;
+}
+
+.titulo2 {
+  color: #054182;
+  font-family: cursive, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-bottom: 3px;
+  letter-spacing: 0.01em;
+}
+
+/* Responsive: antes cada vista definía su propio breakpoint/tamaño para achicar
+   el título en pantallas angostas (o no lo hacía). Se centraliza acá, cubriendo
+   también el rango de pantalla dividida (~650-900px) que antes quedaba sin cubrir. */
+@media (max-width: 900px) {
+  .titulo {
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .titulo {
+    font-size: 1.3rem;
+  }
+  .titulo2 {
+    font-size: 1.1rem;
+  }
+}
+
+/* Red de seguridad responsive general: evita que tablas e imágenes se desborden
+   y rompan el layout en pantallas angostas (p.ej. al dividir la ventana). */
+.table-wrapper {
+  overflow-x: auto;
+}
+
+img {
+  max-width: 100%;
+}

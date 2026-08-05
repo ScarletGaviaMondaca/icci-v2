@@ -6,7 +6,7 @@
 <header class="main-header">
   <div class="top-nav">
     <div class="logo">
-      <img src="https://sgc.aici.uta.cl/themes/mitema/logo-sistema.png" alt="Logo">
+      <img src="images/imgSistema.png" alt="Logo">
     </div>
 
     <!-- El botón ahora tiene una clase para darle color oscuro -->
@@ -16,8 +16,8 @@
     
     
     <nav class="nav-links" [class.show]="menuAbierto">
-      <!-- Campanita — solo secretaria -->
-      <div class="notif-wrapper" *ngIf="auth.esSecretaria()">
+      <!-- Campanita — secretaria, jefe de carrera y director de departamento -->
+      <div class="notif-wrapper" *ngIf="auth.esSecretaria() || auth.esJefeCarreraEfectivo() || auth.esDirectorDepartamentoEfectivo() || auth.esSecretariaDici()">
         <button class="notif-btn" (click)="abrirNotificaciones()">
           🔔
           <span *ngIf="noLeidas > 0" class="notif-badge">{{ noLeidas }}</span>
@@ -43,11 +43,12 @@
               [class.notif-no-leida]="n.leida == 0"
               (click)="irASeguimiento(n)">
             <div class="notif-texto">
-              <strong>{{ n.nombres }} {{ n.apellido1 }}</strong> venció su fecha límite
-              del hito <strong>{{ n.hito_label }}</strong>
+              <strong>{{ n.hito_label }}</strong>
             </div>
             <small class="text-muted">
-              📅 {{ n.fecha_vencimiento | date:'dd/MM/yyyy' }} · RUT: {{ n.rut }}
+              {{ n.nombres }} {{ n.apellido1 }} {{ n.apellido2 }} · RUT: {{ n.rut }}
+              <span *ngIf="n.practica_num"> · Práctica {{ n.practica_num }}</span>
+              · {{ n.created_at | date:'dd/MM/yyyy' }}
             </small>
           </div>
         </div>
@@ -130,8 +131,10 @@
           <a *ngIf="auth.esAlumno()" routerLink="/alumno/perfil">Mi Cuenta</a>
           <!--- Todos excepto alumno -->
           <a *ngIf="!auth.esAlumno()" routerLink="/mi-perfil">Mi Perfil</a>
-          <!--- Admin -->
-          <a *ngIf="auth.esAdmin()" routerLink="/subir-certificado">Subir certificado</a>
+          <!-- Secretaria / Secretaria DICI -->
+           <a *ngIf="auth.esSecretaria() || auth.esSecretariaDici()" routerLink="/secretaria/subrogante">Subrogante</a>
+          <!-- Admin -->
+        <!--  <a *ngIf="auth.esAdmin()" routerLink="/subir-certificado">Subir certificado</a> -->
           <a *ngIf="auth.esAdmin()" routerLink="/profesores">Profesores</a>
           <a *ngIf="auth.esAdmin()" routerLink="/usuarios">Gestión Usuarios</a>
           <hr>
@@ -146,20 +149,33 @@
   <div class="container-fluid">
     <!-- Vista para todos -->
     <a class="navbar-brand" routerLink="/noticias">Inicio</a>
-    <a class="navbar-brand" routerLink="/organizacion">Organización</a> 
+   <!--  <a class="navbar-brand" routerLink="/organizacion">Organización</a> -->
     <!-- Vista para Secretaria y Admin -->
-    <a class="navbar-brand" *ngIf="auth.esSecretaria() || auth.esAdmin() || auth.esJefeCarrera()" routerLink="/jefe">Jefe Carrera</a>
+   <!--<a class="navbar-brand" *ngIf="auth.esSecretaria() || auth.esAdmin() || auth.esJefeCarrera()" routerLink="/jefe">Jefe Carrera</a>-->
     <a class="navbar-brand" *ngIf="auth.esAdmin()" routerLink="/certificados">Certificados</a>
-    <a class="navbar-brand" *ngIf="auth.esSecretaria() || auth.esAdmin()" routerLink="/seguimiento">Seguimiento</a>
-    <a class="navbar-brand" *ngIf="auth.esSecretaria() || auth.esAdmin()" routerLink="/exalumnos">Exalumnos</a> 
-    <a class="navbar-brand" *ngIf="auth.esSecretaria() || auth.esAdmin()" routerLink="/acreditacion">Acreditación</a>
+    <a class="navbar-brand" *ngIf="auth.esSecretaria()" routerLink="/evaluar">Evaluar Postulaciones</a>
+    <a class="navbar-brand" *ngIf="auth.esSecretaria()" routerLink="/seguimiento">Seguimiento</a>
+    <!--<a class="navbar-brand" *ngIf="auth.esSecretaria() || auth.esAdmin()" routerLink="/exalumnos">Exalumnos</a>  -->
+    <a class="navbar-brand" *ngIf="auth.esSecretaria() " routerLink="/acreditacion">Acreditación</a>
+   
     <!-- Vista para Alumnos-->
-    <a class="navbar-brand" *ngIf="auth.esAlumno()" routerLink="jefe/carrera">Carrera</a>
-    <a class="navbar-brand" *ngIf="auth.esAlumno() || auth.esAdmin()" routerLink="/alumno">Alumno</a>  
+  <!-- 
+    <a class="navbar-brand" *ngIf="auth.esAlumno()" routerLink="jefe/carrera">Carrera</a> 
+    <a class="navbar-brand" *ngIf="auth.esAlumno() || auth.esAdmin()" routerLink="/alumno">Alumno</a>  -->
     <a class="navbar-brand" *ngIf="auth.esAlumno()" routerLink="/miseguimiento">Mi Seguimiento</a>
     <a class="navbar-brand" *ngIf="auth.esAlumno()" routerLink="/miscertificados">Mis Certificados</a>
     <!-- Vista para Empleador y admin -->
-    <a class="navbar-brand" *ngIf="auth.esEmpleador() || auth.esAdmin()" routerLink="/empleador">Empleadores</a>
+    <a class="navbar-brand" *ngIf="auth.esEmpleador() " routerLink="/empleador">Prácticas</a>
+    <a class="navbar-brand" *ngIf="auth.esEmpleador() " routerLink="/evaluaciones">Evaluaciones</a>
+    <a class="navbar-brand" *ngIf="auth.esEmpleador() " routerLink="/lista-alumnos">Lista de alumnos</a>
+    <!-- Vistas Jefe de carrera-->
+     <a class="navbar-brand" *ngIf="auth.esJefeCarreraEfectivo() || auth.esSecretaria()" routerLink="/practicas">Prácticas</a>
+     <a class="navbar-brand" *ngIf="auth.esJefeCarreraEfectivo() " routerLink="/solicitudes-empresa">Solicitudes empresas</a>
+     <a class="navbar-brand" *ngIf="auth.esJefeCarreraEfectivo() || auth.esSecretaria()" routerLink="/comite">Comité de carrera</a>
+    <!-- Vista Director de Departamento -->
+     <a class="navbar-brand" *ngIf="auth.esDirectorDepartamentoEfectivo() || auth.esSecretariaDici()" routerLink="/profesor-evaluador">Profesor Evaluador</a>
+    <!-- Vista Profesores y Director de Departamento -->
+     <a class="navbar-brand" *ngIf="auth.esProfesor() || auth.esDirectorDepartamentoEfectivo()" routerLink="/alumnos-evaluados">Alumnos Evaluados</a>
   </div>
 </nav>
 <!-- SUBMENÚ DINÁMICO -->

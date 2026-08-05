@@ -3,14 +3,6 @@
     border-radius: 15px;
     padding: 20px;
 }
-.titulo {
-  color: #054182;
-  font-family: cursive, system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 2rem;
-  margin-bottom: 3px;
-  letter-spacing: 0.01em;
-}
 
 .texto-justificado {
   background: #f3f8fb;
@@ -44,6 +36,9 @@
   padding: 8px;
   background-color: #eef2f785;
 }
+.table-wrapper {
+  overflow-x: auto;
+}
 .form-control {
   border-radius: 5px !important;
   border: 1px solid #bed1ea !important;
@@ -69,6 +64,5 @@ textarea.form-control {
 @media (max-width: 576px){
   .panel-contenido{ padding: 8px; border-radius: 10px; }
   .table-wrapper{ border-radius: 4px; font-size: .94rem; }
-  .titulo{ font-size: 1.2rem; }
   .form-control{ font-size: .97rem; }
 }

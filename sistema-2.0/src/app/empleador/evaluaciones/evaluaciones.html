@@ -1,0 +1,43 @@
+<div class="empleador page-container">
+  <div class="page-header">
+    <h1 class="titulo">📋 Evaluaciones</h1>
+    <p class="text-muted">Evaluaciones de práctica de tus alumnos, pendientes y ya realizadas.</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <div *ngIf="cargando" class="text-center py-4">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div *ngIf="!cargando">
+    <h5 class="fw-bold mb-3">
+      Pendientes de evaluar
+      <span class="badge bg-danger ms-1" *ngIf="pendientes.length > 0">{{ pendientes.length }}</span>
+    </h5>
+    <div *ngIf="pendientes.length === 0" class="text-muted small mb-4">No tienes evaluaciones pendientes.</div>
+    <div *ngFor="let a of pendientes" class="card mb-2 border-warning">
+      <div class="card-body d-flex justify-content-between align-items-center py-2">
+        <div>
+          <strong>{{ a.nombres }} {{ a.apellido1 }}</strong>
+          <small class="text-muted ms-2">RUT: {{ a.rut }} · Práctica {{ a.practica_num }}</small>
+        </div>
+        <button class="btn btn-sm btn-warning ms-3" (click)="irEvaluar(a)">
+          📝 Evaluar alumno
+        </button>
+      </div>
+    </div>
+
+    <h5 class="fw-bold mb-3 mt-4">Ya evaluados</h5>
+    <div *ngIf="evaluados.length === 0" class="text-muted small">Aún no has evaluado a ningún alumno.</div>
+    <div *ngFor="let a of evaluados" class="card mb-2 border-success">
+      <div class="card-body d-flex justify-content-between align-items-center py-2">
+        <div>
+          <strong>{{ a.nombres }} {{ a.apellido1 }}</strong>
+          <small class="text-muted ms-2">RUT: {{ a.rut }} · Práctica {{ a.practica_num }}</small>
+        </div>
+        <span class="badge bg-success">✅ Evaluada</span>
+      </div>
+    </div>
+  </div>
+</div>

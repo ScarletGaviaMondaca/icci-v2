@@ -1,0 +1,23 @@
+.card-header h4 {
+  font-weight: 500;
+  background-color: #054182;
+  color: white;
+}
+.card-header {
+  background-color: #054182;
+  color: white;
+}
+
+dt {
+  color: #054182;
+  font-weight: 500;
+}
+.fondo{
+    background-color: white;
+    border-radius: 15px;
+    margin: 20px 0;
+}
+.btn{
+    background-color: #054182;
+    color: white;
+}

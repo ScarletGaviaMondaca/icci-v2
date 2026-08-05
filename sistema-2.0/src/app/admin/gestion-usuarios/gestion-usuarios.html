@@ -17,6 +17,7 @@
 
   <div class="card mb-4">
     <div class="card-body p-0">
+      <div class="table-wrapper">
       <table class="table table-hover mb-0">
         <thead class="table-light">
           <tr>
@@ -35,8 +36,9 @@
               <span class="badge"
                     [class.bg-danger]="u.rol === 'admin'"
                     [class.bg-info]="u.rol === 'secretaria'"
-                    [class.bg-secondary]="u.rol === 'jefe_carrera'">
-                {{ u.rol === 'jefe_carrera' ? 'Jefe Carrera' : u.rol }}
+                    [class.bg-secondary]="u.rol === 'jefe_carrera'"
+                    [class.bg-primary]="u.rol === 'secretaria_dici'">
+                {{ u.rol === 'jefe_carrera' ? 'Jefe Carrera' : (u.rol === 'secretaria_dici' ? 'Secretaria DICI' : u.rol) }}
               </span>
             </td>
             <td>
@@ -80,6 +82,7 @@
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 
@@ -95,6 +98,7 @@
 
   <div class="card mb-4">
     <div class="card-body p-0">
+      <div class="table-wrapper">
       <table class="table table-hover mb-0">
         <thead class="table-light">
           <tr>
@@ -113,8 +117,9 @@
             <td>
               <span class="badge"
                     [class.bg-warning]="u.rol === 'jefe_carrera'"
+                    [class.bg-info]="u.rol === 'director_departamento'"
                     [class.bg-primary]="u.rol === 'profesor'">
-                {{ u.rol === 'jefe_carrera' ? 'Jefe Carrera' : 'Profesor' }}
+                {{ u.rol === 'jefe_carrera' ? 'Jefe Carrera' : (u.rol === 'director_departamento' ? 'Director Depto.' : 'Profesor') }}
               </span>
             </td>
             <td>
@@ -135,10 +140,19 @@
               <button class="btn btn-sm me-1"
                       [class.btn-outline-warning]="u.rol !== 'jefe_carrera'"
                       [class.btn-outline-secondary]="u.rol === 'jefe_carrera'"
-                      [disabled]="togglingJefeCarrera === u.id"
+                      [disabled]="togglingJefeCarrera === u.id || togglingDirector === u.id"
                       (click)="toggleJefeCarrera(u)"
                       title="{{ u.rol === 'jefe_carrera' ? 'Quitar como Jefe de Carrera' : 'Asignar como Jefe de Carrera' }}">
                 {{ togglingJefeCarrera === u.id ? '...' : (u.rol === 'jefe_carrera' ? '↩ Quitar JC' : '⭐ Jefe Carrera') }}
+              </button>
+              <!-- Toggle Director de Departamento -->
+              <button class="btn btn-sm me-1"
+                      [class.btn-outline-info]="u.rol !== 'director_departamento'"
+                      [class.btn-outline-secondary]="u.rol === 'director_departamento'"
+                      [disabled]="togglingJefeCarrera === u.id || togglingDirector === u.id"
+                      (click)="toggleDirectorDepartamento(u)"
+                      title="{{ u.rol === 'director_departamento' ? 'Quitar como Director de Departamento' : 'Asignar como Director de Departamento' }}">
+                {{ togglingDirector === u.id ? '...' : (u.rol === 'director_departamento' ? '↩ Quitar Director' : '🏛 Director Depto.') }}
               </button>
             </td>
             <td>
@@ -162,6 +176,7 @@
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 
@@ -182,6 +197,7 @@
 
   <div class="card mb-4">
     <div class="card-body p-0">
+      <div class="table-wrapper">
       <table class="table table-hover mb-0">
         <thead class="table-light">
           <tr>
@@ -242,6 +258,7 @@
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 
@@ -289,8 +306,10 @@
           <label class="form-label">Rol</label>
           <select class="form-select form-select-sm" [(ngModel)]="nuevoUsuario.rol">
             <option value="secretaria">Secretaria</option>
+            <option value="secretaria_dici">Secretaria DICI</option>
             <option value="admin">Administrador</option>
             <option value="jefe_carrera">Jefe de Carrera</option>
+            <option value="director_departamento">Director de Departamento</option>
           </select>
         </div>
       </div>
@@ -367,10 +386,12 @@
           <label class="form-label">Rol</label>
           <select class="form-select form-select-sm" [(ngModel)]="editForm.rol">
             <option value="secretaria">Secretaria</option>
+            <option value="secretaria_dici">Secretaria DICI</option>
             <option value="admin">Administrador</option>
             <option value="jefe_carrera">Jefe de Carrera</option>
             <option value="profesor">Profesor</option>
             <option value="empleador">Empleador</option>
+            <option value="director_departamento">Director de Departamento</option>
           </select>
         </div>
         <div class="col-sm-4">

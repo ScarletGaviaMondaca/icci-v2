@@ -69,20 +69,20 @@
               <p>{{ pe.empresa?.nombre || '—' }}</p>
             </div>
             <div class="col-12">
-              <label class="form-label text-muted">Nombre</label>
-              <p>{{ pe.nombres }} {{ pe.apellido1 }} {{ pe.apellido2 || '' }}</p>
+              <label class="form-label text-muted">RUT</label>
+              <p>{{ pe.empresa?.rut || '—' }}</p>
             </div>
             <div class="col-12">
-              <label class="form-label text-muted">Cargo</label>
-              <p>{{ pe.cargo || '—' }}</p>
+              <label class="form-label text-muted">Dirección</label>
+              <p>{{ pe.empresa?.direccion || '—' }}</p>
             </div>
             <div class="col-12">
-              <label class="form-label text-muted">Correo</label>
-              <p>{{ pe.correo || '—' }}</p>
+              <label class="form-label text-muted">Ubicación</label>
+              <p>{{ pe.empresa?.localidad || '—' }}</p>
             </div>
             <div class="col-12">
-              <label class="form-label text-muted">Teléfono</label>
-              <p>{{ pe.telefono || '—' }}</p>
+              <label class="form-label text-muted">Descripción</label>
+              <p>{{ pe.empresa?.descripcion || '—' }}</p>
             </div>
           </ng-container>
         </ng-container>
@@ -146,34 +146,26 @@
               <p class="small text-muted mb-0">Empresa: <strong>{{ perfil.perfil_empleador.empresa?.nombre }}</strong></p>
             </div>
             <div class="col-12">
-              <label class="form-label">Nombre</label>
-              <input type="text" class="form-control form-control-sm"
-                     [(ngModel)]="perfil.perfil_empleador.nombres">
+              <label class="form-label text-muted">RUT</label>
+              <p class="mb-0">{{ perfil.perfil_empleador.empresa.rut || '—' }}</p>
             </div>
             <div class="col-sm-6">
-              <label class="form-label">Apellido Paterno</label>
+              <label class="form-label">Dirección</label>
               <input type="text" class="form-control form-control-sm"
-                     [(ngModel)]="perfil.perfil_empleador.apellido1">
+                     [(ngModel)]="perfil.perfil_empleador.empresa.direccion"
+                     placeholder="Ej: Av. General Velásquez 1775, Arica">
             </div>
             <div class="col-sm-6">
-              <label class="form-label">Apellido Materno</label>
+              <label class="form-label">Ubicación</label>
               <input type="text" class="form-control form-control-sm"
-                     [(ngModel)]="perfil.perfil_empleador.apellido2">
+                     [(ngModel)]="perfil.perfil_empleador.empresa.localidad"
+                     placeholder="Ej: Arica">
             </div>
             <div class="col-12">
-              <label class="form-label">Cargo</label>
-              <input type="text" class="form-control form-control-sm"
-                     [(ngModel)]="perfil.perfil_empleador.cargo">
-            </div>
-            <div class="col-sm-6">
-              <label class="form-label">Correo</label>
-              <input type="email" class="form-control form-control-sm"
-                     [(ngModel)]="perfil.perfil_empleador.correo">
-            </div>
-            <div class="col-sm-6">
-              <label class="form-label">Teléfono</label>
-              <input type="text" class="form-control form-control-sm"
-                     [(ngModel)]="perfil.perfil_empleador.telefono">
+              <label class="form-label">Descripción</label>
+              <textarea class="form-control form-control-sm" rows="2"
+                        [(ngModel)]="perfil.perfil_empleador.empresa.descripcion"
+                        placeholder="Breve descripción de la empresa..."></textarea>
             </div>
           </ng-container>
 

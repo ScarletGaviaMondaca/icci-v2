@@ -3,14 +3,6 @@
     background-color: white;
     padding: 15px;
 }
-.titulo {
-  color: #054182;
-  font-family: cursive, system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 2rem;
-  margin-bottom: 3px;
-  letter-spacing: 0.01em;
-}
 .campus-map-wrapper {
   display: block;
   font-family: 'Segoe UI', Arial, sans-serif;
@@ -58,6 +50,7 @@
 
 .pin__dot {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   width: 22px;
@@ -122,6 +115,7 @@
  
 .group-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
@@ -151,6 +145,7 @@
  
 .list-item {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   padding: 9px 14px;
@@ -177,6 +172,7 @@
  
 .list-item__badge {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   min-width: 24px;
@@ -240,6 +236,7 @@
 }
 .info-panel__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
@@ -298,6 +295,7 @@
   color: #666;
   margin: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: 6px;
 }
@@ -326,6 +324,7 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   z-index: 1000;
@@ -346,6 +345,7 @@
 
 .modal-update__header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
 }
@@ -390,6 +390,7 @@
 
 .modal-update__actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
 }

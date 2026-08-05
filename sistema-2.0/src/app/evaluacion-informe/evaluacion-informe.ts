@@ -17,6 +17,7 @@ export class EvaluacionInforme implements OnInit {
   guardando = false;
   error = '';
   mensaje = '';
+  mostrarDetallePractica = false;
 
   criterios: Record<string, string> = {
     criterio1: '',

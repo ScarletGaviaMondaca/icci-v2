@@ -1,8 +1,8 @@
 <div class="tabla">
     <button class="carga" onclick="window.history.back();"> ← Volver</button>
-    <h1 class="titulo">Seguimiento de Practica {{practicaNum}}</h1>
+    <h1 class="titulo">Seguimiento de Práctica {{practicaNum}}</h1>
     <div class="leyenda-estados mb-3">
-        <h4 class="titulo">Lista de alumnos en practica</h4>
+        <h4 class="titulo">Lista de alumnos en práctica</h4>
     
         <div class="leyenda-item">
             <span class="estado-dot estado-2"></span>
@@ -129,7 +129,7 @@
             <tbody>
                 <tr *ngFor="let alu of alumnosPaginados(); trackBy: trackById; let i = index">
                     <td>{{ numeroFila(i) }}</td>
-                    <td>{{ alu.rut }}</td>
+                    <td>{{ alu.rut | rutFormato }}</td>
                     <td>{{ alu.nombres }} {{ alu.apellido1 }} {{ alu.apellido2 }}</td>
                     <td>{{ alu.plan }}</td>
                     <td class="estado-cell"><span class="estado-dot" [ngClass]="'estado-' + (+alu.practica1_estado)"></span></td>

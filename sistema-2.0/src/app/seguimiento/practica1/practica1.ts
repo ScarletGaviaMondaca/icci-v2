@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { SeguimientoService } from '../../servicios/seguimiento.service';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { AuthService } from '../../servicios/auth.service';
+import { RutFormatoPipe } from '../../pipes/rut-formato.pipe';
 
 /** Estados de hitos */
 export type Estado = 0 | 1 | 2 | 3;
@@ -40,7 +41,7 @@ export type EtapaKey =
 @Component({
   selector: 'app-practica1',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, RutFormatoPipe],
   templateUrl: './practica1.html',
   styleUrls: ['./practica1.css'],
 })

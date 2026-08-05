@@ -1,3 +1,4 @@
+<div class="evaluacion"> 
 <div class="container mt-4 mb-5" style="max-width:720px">
 
   <div *ngIf="cargando" class="text-center py-5">
@@ -11,7 +12,7 @@
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
-        <h3 class="fw-bold mb-0">📋 Informe Confidencial de Práctica</h3>
+        <h3 class="titulo fw-bold mb-0">📋 Informe Confidencial de Práctica</h3>
         <small class="text-muted">Evaluación del alumno practicante</small>
       </div>
       <button class="btn btn-outline-secondary btn-sm" (click)="volver()">← Volver</button>
@@ -46,6 +47,20 @@
             <small class="text-muted d-block">Horas totales</small>
             <span>{{ notif.practica1_horas_tot || '—' }}</span>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección 2: Jefe del alumno -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h6 class="card-title mb-3">2. Datos del jefe directo del alumno</h6>
+        <div class="mb-2">
+          <label class="form-label small fw-bold">Nombre del jefe / supervisor del practicante</label>
+          <input type="text" class="form-control"
+                 [(ngModel)]="nombre_supervisor"
+                 placeholder="Nombre completo del supervisor">
+          <small class="text-muted">Este dato aparecerá en el informe confidencial.</small>
         </div>
       </div>
     </div>
@@ -113,4 +128,5 @@
     </div>
 
   </ng-container>
+</div>
 </div>

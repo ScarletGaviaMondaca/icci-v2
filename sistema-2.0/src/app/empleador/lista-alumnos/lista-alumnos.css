@@ -1,0 +1,28 @@
+.empleador{
+    background-color: white;
+    padding: 20px;
+    border-radius: 15px;
+}
+
+/* tabla*/
+.table-wrapper {
+  border-radius: 10px;
+  overflow-x: auto;
+  border: 1px solid #c8d8ec;
+  margin-bottom: 25px;
+  background: #f9fbfe;
+}
+.table th {
+  border: 1px solid #2f5a99;
+  padding: 8px;
+  color: white;
+  background-color: #054182;
+  font-weight: 500;
+  border: 2px solid white;
+}
+.table td {
+  border: 1px solid #c8d8ec;
+  padding: 8px;
+  background-color: #eef2f785;
+  border: 2px solid #054182;
+}

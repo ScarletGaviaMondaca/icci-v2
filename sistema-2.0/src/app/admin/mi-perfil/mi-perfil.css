@@ -17,16 +17,6 @@
   margin: 40px auto 28px auto;
 }
 
-/* ========== TÍTULO ========== */
-.titulo {
-  color: #054182;
-  font-family: cursive, system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 2rem;
-  margin-bottom: 3px;
-  letter-spacing: 0.01em;
-}
-
 h5 {
   color: var(--perfil-azul);
   font-weight: 500;
@@ -133,11 +123,10 @@ input[type="email"].form-control:invalid {border-color: #e65336;}
 .col-12, .col-sm-6 { margin-bottom: 6px; }
 @media (max-width: 600px){
   .perfil.container { padding: 12px 4px 8px 4px; }
-  .titulo { font-size: 1.08rem;}
   .card-body { padding:10px 0 0 0;}
 }
 
-.input-group {display: flex;align-items: stretch;}
+.input-group {display: flex;flex-wrap: wrap;align-items: stretch;}
 .input-group input {border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important;}
 .input-group button {border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important;}
 

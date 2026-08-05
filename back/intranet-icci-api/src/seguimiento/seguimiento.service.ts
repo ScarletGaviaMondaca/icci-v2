@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeneradoresService } from '../generadores/generadores.service';
-import { Roles } from 'src/auth/decorators/roles.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -57,6 +58,88 @@ export class SeguimientoService {
     `;
   }
 
+  // Alumnos con algún hito actualmente "cursando" (pendiente = 1)
+  async getEnCurso() {
+    return this.prisma.$queryRaw`
+      SELECT
+        a.id,
+        a.rut,
+        a.nombres,
+        a.apellido1,
+        a.apellido2,
+        sp.practica_num,
+        sp.practica1_empresa AS empresa_nombre,
+        CASE
+          WHEN sp.practica1_estado = 1      THEN 'practica1_estado'
+          WHEN sp.informe_elab_estado = 1   THEN 'informe_elab_estado'
+          WHEN sp.informe_rev_estado = 1    THEN 'informe_rev_estado'
+          WHEN sp.eval_empresa_estado = 1   THEN 'eval_empresa_estado'
+          WHEN sp.comite_carrera_estado = 1 THEN 'comite_carrera_estado'
+          WHEN sp.envioreg_estado = 1       THEN 'envioreg_estado'
+        END AS hito_actual,
+        CASE
+          WHEN sp.practica1_estado = 1      THEN sp.practica1_fecha_termino
+          WHEN sp.informe_elab_estado = 1   THEN sp.informe_elab_fecha_termino
+          WHEN sp.informe_rev_estado = 1    THEN sp.informe_rev_fecha_termino
+          WHEN sp.eval_empresa_estado = 1   THEN sp.eval_empresa_fecha_termino
+          WHEN sp.comite_carrera_estado = 1 THEN sp.comite_carrera_fecha_termino
+          WHEN sp.envioreg_estado = 1       THEN sp.envioreg_fecha_termino
+        END AS fecha_vencimiento
+      FROM alumnos a
+      INNER JOIN seguimiento_practica sp ON sp.alumno_id = a.id
+      WHERE sp.practica1_estado = 1
+         OR sp.informe_elab_estado = 1
+         OR sp.informe_rev_estado = 1
+         OR sp.eval_empresa_estado = 1
+         OR sp.comite_carrera_estado = 1
+         OR sp.envioreg_estado = 1
+      ORDER BY a.apellido1, a.apellido2, a.nombres
+    `;
+  }
+
+  private async notificarSecretaria(alumno_id: number, seguimiento_id: number, hito: string, hito_label: string) {
+    await this.prisma.$executeRawUnsafe(
+      `INSERT INTO notificaciones (alumno_id, seguimiento_id, hito, hito_label, fecha_vencimiento)
+       SELECT ?, ?, ?, ?, CURDATE()
+       WHERE NOT EXISTS (
+         SELECT 1 FROM notificaciones
+         WHERE alumno_id = ? AND seguimiento_id = ? AND hito = ? AND leida = 0
+       )`,
+      alumno_id, seguimiento_id, hito, hito_label,
+      alumno_id, seguimiento_id, hito,
+    );
+  }
+
+  private async checkPracticaProxima(alumno_id: number, practica_num: number, seg: any) {
+    if (!seg || Number(seg.practica1_estado) !== 1) return;
+    const fechaTermino = seg.practica1_fecha_termino ? new Date(seg.practica1_fecha_termino) : null;
+    if (!fechaTermino) return;
+
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const termino = new Date(fechaTermino); termino.setHours(0, 0, 0, 0);
+    if (termino <= hoy) return;
+
+    const diasRestantes = Math.ceil((termino.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+    if (diasRestantes > 7) return;
+
+    const existing = await this.prisma.$queryRaw<any[]>`
+      SELECT id FROM notificaciones_alumno
+      WHERE alumno_id = ${alumno_id}
+        AND tipo = 'informe_recordatorio'
+        AND titulo = '⏳ Tu práctica está por terminar'
+      LIMIT 1
+    `;
+    if (existing.length === 0) {
+      const fechaStr = termino.toISOString().split('T')[0];
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO notificaciones_alumno (alumno_id, tipo, titulo, mensaje)
+         VALUES (?, 'informe_recordatorio', '⏳ Tu práctica está por terminar', ?)`,
+        alumno_id,
+        `Tu práctica termina el ${fechaStr} (en ${diasRestantes} día(s)). Prepárate para comenzar la elaboración de tu informe de práctica.`,
+      );
+    }
+  }
+
   private async checkInformeDeadline(alumno_id: number, practica_num: number, seg: any) {
     if (!seg || Number(seg.informe_elab_estado) !== 1) return;
     const fechaTermino = seg.informe_elab_fecha_termino ? new Date(seg.informe_elab_fecha_termino) : null;
@@ -73,11 +156,7 @@ export class SeguimientoService {
         nuevoEstado, alumno_id, practica_num
       );
       if (tieneInforme) {
-        await this.prisma.$executeRawUnsafe(
-          `UPDATE seguimiento_practica SET informe_rev_estado = 1
-           WHERE alumno_id = ? AND practica_num = ? AND informe_rev_estado = 0`,
-          alumno_id, practica_num
-        );
+        await this.activarSiguienteHito(Number(seg.seguimiento_id), practica_num, 'informe_elab_estado');
       } else {
         await this.prisma.$executeRawUnsafe(
           `INSERT INTO notificaciones_alumno (alumno_id, tipo, titulo, mensaje)
@@ -98,7 +177,9 @@ export class SeguimientoService {
     if (diasRestantes <= 5) {
       const existing = await this.prisma.$queryRaw<any[]>`
         SELECT id FROM notificaciones_alumno
-        WHERE alumno_id = ${alumno_id} AND tipo = 'informe_recordatorio'
+        WHERE alumno_id = ${alumno_id}
+          AND tipo = 'informe_recordatorio'
+          AND titulo = '⏰ Recuerda subir tu informe'
         LIMIT 1
       `;
       if (existing.length === 0) {
@@ -110,6 +191,51 @@ export class SeguimientoService {
           `Tienes ${diasRestantes} día(s) para subir tu informe antes del ${fechaStr}. No olvides subirlo a tiempo.`
         );
       }
+    }
+  }
+
+  // Cron diario: escala a secretaría los informes que llevan 2 meses vencidos
+  // (el plazo normal de elaboración del informe, configurado en hito_duraciones,
+  // ya venció y el alumno sigue sin subirlo). Cubre tanto al alumno que nunca
+  // volvió a abrir su seguimiento (informe_elab_estado quedó en 1/PENDIENTE)
+  // como al que sí lo hizo y checkInformeDeadline ya lo marcó 3/EXCEDIDO.
+  @Cron(CronExpression.EVERY_DAY_AT_6AM)
+  async revisarInformesAtrasados() {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT sp.id AS seguimiento_id, sp.alumno_id,
+             a.nombres, a.apellido1, a.apellido2
+      FROM seguimiento_practica sp
+      JOIN alumnos a ON a.id = sp.alumno_id
+      WHERE sp.informe_elab_estado IN (1, 3)
+        AND sp.informe_final IS NULL
+        AND COALESCE(sp.informe_atrasado, 0) = 0
+        AND sp.informe_elab_fecha_termino IS NOT NULL
+        AND sp.informe_elab_fecha_termino <= DATE_SUB(CURDATE(), INTERVAL 2 MONTH)
+    `;
+
+    for (const r of rows) {
+      const seguimientoId = Number(r.seguimiento_id);
+      const alumnoId = Number(r.alumno_id);
+      const nombreAlumno = `${r.nombres} ${r.apellido1}${r.apellido2 ? ' ' + r.apellido2 : ''}`.trim();
+
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE seguimiento_practica SET informe_atrasado = 1 WHERE id = ?`,
+        seguimientoId,
+      );
+
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO notificaciones_alumno (alumno_id, tipo, titulo, mensaje)
+         VALUES (?, 'informe_atrasado', '🚨 Informe muy atrasado', ?)`,
+        alumnoId,
+        'Han pasado más de 2 meses desde el vencimiento del plazo para entregar tu informe de práctica y aún no lo has subido. Contacta a la secretaría a la brevedad.',
+      );
+
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO notificaciones (alumno_id, seguimiento_id, hito, hito_label, fecha_vencimiento)
+         VALUES (?, ?, 'informe_atrasado', ?, CURDATE())`,
+        alumnoId, seguimientoId,
+        `🚨 Informe atrasado (2+ meses): ${nombreAlumno}`.slice(0, 100),
+      );
     }
   }
 
@@ -186,9 +312,65 @@ export class SeguimientoService {
     ` as any[];
     const seg = Array.isArray(rows) ? rows[0] : null;
     if (seg?.seguimiento_id) {
+      await this.checkPracticaProxima(alumno_id, practica_num, seg).catch(() => {});
       await this.checkInformeDeadline(alumno_id, practica_num, seg).catch(() => {});
     }
     return rows;
+  }
+
+  // Al aprobarse un hito, activa el siguiente ("en proceso") y calcula sus fechas
+  // de inicio/término según la duración configurada en hito_duraciones (por hito y práctica).
+  private async activarSiguienteHito(seguimientoId: number, practicaNum: number, hitoActual: string) {
+    const idx = HITOS.indexOf(hitoActual);
+    if (idx < 0 || idx === HITOS.length - 1) return; // no hay hito siguiente
+
+    const siguiente = HITOS[idx + 1];
+    const hitoNumSiguiente = idx + 2; // HITOS[0] = hito_num 1
+
+    await this.prisma.$executeRawUnsafe(
+      `UPDATE seguimiento_practica SET \`${siguiente}\` = ${ESTADO.PENDIENTE}
+       WHERE id = ? AND COALESCE(\`${siguiente}\`, 0) = ${ESTADO.NO_INICIADO}`,
+      seguimientoId,
+    );
+
+    const duracion = await this.prisma.hito_duraciones.findUnique({
+      where: { hito_num_practica_num: { hito_num: hitoNumSiguiente, practica_num: practicaNum } },
+    });
+    const dias = duracion?.duracion_dias;
+    if (!dias) return; // hito medido en horas u otro caso sin duración en días
+
+    const fechaInicio  = siguiente.replace('_estado', '_fecha_inicio');
+    const fechaTermino = siguiente.replace('_estado', '_fecha_termino');
+
+    const hoy     = new Date();
+    const inicio  = new Date(hoy); inicio.setDate(hoy.getDate() + 1);
+    const termino = new Date(inicio); termino.setDate(inicio.getDate() + dias);
+    const fmt = (d: Date) => d.toISOString().split('T')[0];
+
+    await this.prisma.$executeRawUnsafe(
+      `UPDATE seguimiento_practica
+       SET \`${fechaInicio}\`  = COALESCE(\`${fechaInicio}\`,  ?),
+           \`${fechaTermino}\` = COALESCE(\`${fechaTermino}\`, ?)
+       WHERE id = ?`,
+      fmt(inicio), fmt(termino), seguimientoId,
+    );
+  }
+
+  private async recomputarEstadoFinalPractica(alumno_id: number, practica_num: number) {
+    await this.prisma.$executeRawUnsafe(
+      `UPDATE seguimiento_practica SET estado_final_practica =
+        CASE
+          WHEN practica1_estado=3 OR informe_elab_estado=3 OR informe_rev_estado=3
+            OR eval_empresa_estado=3 OR comite_carrera_estado=3 OR envioreg_estado=3 THEN 3
+          WHEN practica1_estado=2 AND informe_elab_estado=2 AND informe_rev_estado=2
+            AND eval_empresa_estado=2 AND comite_carrera_estado=2 AND envioreg_estado=2 THEN 2
+          WHEN practica1_estado>0 OR informe_elab_estado>0 OR informe_rev_estado>0
+            OR eval_empresa_estado>0 OR comite_carrera_estado>0 OR envioreg_estado>0 THEN 1
+          ELSE 0
+        END
+      WHERE alumno_id = ? AND practica_num = ?`,
+      alumno_id, practica_num
+    );
   }
 
   async updateCampo(payload: { alumno_id: number; plan: string; practica_num: number; campo: string; valor: any }) {
@@ -252,83 +434,25 @@ export class SeguimientoService {
       );
     }
 
-    // Si se aprueba un hito (valor = 2), avanzar el siguiente a pendiente
+    // Si se aprueba un hito (valor = 2), avanzar el siguiente a pendiente y calcular sus fechas
     if (campo.includes('_estado') && Number(valor) === 2) {
-      const secuencia: Record<string, string> = {
-        'practica1_estado':      'informe_elab_estado',
-        'informe_elab_estado':   'informe_rev_estado',
-        'informe_rev_estado':    'eval_empresa_estado',
-        'eval_empresa_estado':   'comite_carrera_estado',
-        'comite_carrera_estado': 'envioreg_estado',
-      };
-
-      if (secuencia[campo]) {
-        const siguienteHito = secuencia[campo];
-        await this.prisma.$executeRawUnsafe(
-          `UPDATE seguimiento_practica SET \`${siguienteHito}\` = 1
-          WHERE alumno_id = ? AND practica_num = ?
-          AND \`${siguienteHito}\` = 0`,
-          alumno_id, practica_num
-        );
-      }
-
-      // ── Auto-relleno de fechas ─────────────────────────────────────────────
       const fmtDate = (d: Date) => d.toISOString().split('T')[0];
       const hoy     = new Date();
-      const manana  = new Date(hoy); manana.setDate(hoy.getDate() + 1);
 
-      // Días estimados de duración para cada hito siguiente
-      const duracionSiguiente: Record<string, number> = {
-        'practica1_estado':      30,  // informe_elab: 30 días
-        'informe_elab_estado':   15,  // informe_rev:  15 días
-        'informe_rev_estado':     7,  // eval_empresa:  7 días
-        'eval_empresa_estado':   15,  // comite:        15 días
-        'comite_carrera_estado':  7,  // envioreg:       7 días
-      };
+      // Marcar fecha_termino del hito actual como hoy (solo si aún no está seteada)
+      const terminoActual = campo.replace('_estado', '_fecha_termino');
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE seguimiento_practica SET \`${terminoActual}\` = COALESCE(\`${terminoActual}\`, ?)
+         WHERE alumno_id = ? AND practica_num = ?`,
+        fmtDate(hoy), alumno_id, practica_num
+      );
 
-      // Campos de fecha del hito actual
-      const fechasHitoActual: Record<string, string> = {
-        'practica1_estado':      'practica1_fecha_termino',
-        'informe_elab_estado':   'informe_elab_fecha_termino',
-        'informe_rev_estado':    'informe_rev_fecha_termino',
-        'eval_empresa_estado':   'eval_empresa_fecha_termino',
-        'comite_carrera_estado': 'comite_carrera_fecha_termino',
-        'envioreg_estado':       'envioreg_fecha_termino',
-      };
+      const seg = await this.prisma.seguimiento_practica.findFirst({
+        where: { alumno_id, practica_num },
+        select: { id: true },
+      });
+      if (seg) await this.activarSiguienteHito(seg.id, practica_num, campo);
 
-      // Campos de fecha del hito siguiente
-      const fechasSiguienteHito: Record<string, { inicio: string; termino: string }> = {
-        'practica1_estado':      { inicio: 'informe_elab_fecha_inicio',   termino: 'informe_elab_fecha_termino'   },
-        'informe_elab_estado':   { inicio: 'informe_rev_fecha_inicio',    termino: 'informe_rev_fecha_termino'    },
-        'informe_rev_estado':    { inicio: 'eval_empresa_fecha_inicio',   termino: 'eval_empresa_fecha_termino'   },
-        'eval_empresa_estado':   { inicio: 'comite_carrera_fecha_inicio', termino: 'comite_carrera_fecha_termino' },
-        'comite_carrera_estado': { inicio: 'envioreg_fecha_inicio',       termino: 'envioreg_fecha_termino'       },
-      };
-
-      // 1. Marcar fecha_termino del hito actual como hoy (solo si aún no está seteada)
-      const terminoActual = fechasHitoActual[campo];
-      if (terminoActual) {
-        await this.prisma.$executeRawUnsafe(
-          `UPDATE seguimiento_practica SET \`${terminoActual}\` = COALESCE(\`${terminoActual}\`, ?)
-           WHERE alumno_id = ? AND practica_num = ?`,
-          fmtDate(hoy), alumno_id, practica_num
-        );
-      }
-
-      // 2. Rellenar inicio y termino del siguiente hito (mañana + duración estimada)
-      const sigFechas = fechasSiguienteHito[campo];
-      if (sigFechas && duracionSiguiente[campo]) {
-        const fechaTerminoSig = new Date(manana);
-        fechaTerminoSig.setDate(manana.getDate() + duracionSiguiente[campo]);
-        await this.prisma.$executeRawUnsafe(
-          `UPDATE seguimiento_practica
-           SET \`${sigFechas.inicio}\`  = COALESCE(\`${sigFechas.inicio}\`,  ?),
-               \`${sigFechas.termino}\` = COALESCE(\`${sigFechas.termino}\`, ?)
-           WHERE alumno_id = ? AND practica_num = ?`,
-          fmtDate(manana), fmtDate(fechaTerminoSig), alumno_id, practica_num
-        );
-      }
-      // ── Fin auto-relleno ───────────────────────────────────────────────────
       const campoAprobacion: Record<string, string> = {
         'practica1_estado':      'practica1_fecha_aprobacion',
         'informe_elab_estado':   'informe_elab_fecha_aprobacion',
@@ -347,20 +471,7 @@ export class SeguimientoService {
         );
       }
       // Actualizar estado_final_practica automáticamente
-      await this.prisma.$executeRawUnsafe(
-        `UPDATE seguimiento_practica SET estado_final_practica =
-          CASE
-            WHEN practica1_estado=3 OR informe_elab_estado=3 OR informe_rev_estado=3
-              OR eval_empresa_estado=3 OR comite_carrera_estado=3 OR envioreg_estado=3 THEN 3
-            WHEN practica1_estado=2 AND informe_elab_estado=2 AND informe_rev_estado=2
-              AND eval_empresa_estado=2 AND comite_carrera_estado=2 AND envioreg_estado=2 THEN 2
-            WHEN practica1_estado>0 OR informe_elab_estado>0 OR informe_rev_estado>0
-              OR eval_empresa_estado>0 OR comite_carrera_estado>0 OR envioreg_estado>0 THEN 1
-            ELSE 0
-          END
-        WHERE alumno_id = ? AND practica_num = ?`,
-        alumno_id, practica_num
-      );
+      await this.recomputarEstadoFinalPractica(alumno_id, practica_num);
       // Insertar notificación al alumno según el nuevo estado
       const hitoLabels: Record<string, string> = {
         'practica1_estado':      'Estudiante en Práctica',
@@ -372,15 +483,24 @@ export class SeguimientoService {
       };
       if (hitoLabels[campo] && (valor === 2 || valor === 3)) {
         const tipo    = valor === 2 ? 'hito_aprobado' : 'hito_excedido';
-        const titulo  = valor === 2 ? '✅ Hito aprobado' : '❌ Hito no aprobado';
+        const esPractica = campo === 'practica1_estado';
+        const titulo  = valor === 2
+          ? (esPractica ? '📝 Práctica aprobada — inicia tu informe' : '✅ Hito aprobado')
+          : '❌ Hito no aprobado';
         const mensaje = valor === 2
-          ? `Tu hito "${hitoLabels[campo]}" fue aprobado. ¡Sigue adelante!`
+          ? (esPractica
+              ? 'Tu práctica profesional fue aprobada. Ya puedes comenzar la elaboración de tu informe dentro de los plazos indicados en tu seguimiento.'
+              : `Tu hito "${hitoLabels[campo]}" fue aprobado. ¡Sigue adelante!`)
           : `Tu hito "${hitoLabels[campo]}" fue marcado como reprobado/excedido.`;
         await this.prisma.$executeRawUnsafe(
           `INSERT INTO notificaciones_alumno (alumno_id, tipo, titulo, mensaje) VALUES (?, ?, ?, ?)`,
           alumno_id, tipo, titulo, mensaje,
         );
       }
+    } else if (campo.includes('_estado') && Number(valor) === 3) {
+      // Hito rechazado/excedido: no se activa el siguiente hito, pero igual debe
+      // reflejarse en el estado final de la práctica.
+      await this.recomputarEstadoFinalPractica(alumno_id, practica_num);
     }
     return { ok: true, campo, valor };
   }
@@ -466,7 +586,114 @@ export class SeguimientoService {
       }
     }
 
+    // Solicitud de profesor evaluador (código persistido, agrupa varios alumnos)
+    const solicitud = await this.prisma.solicitudes_profesor_evaluador.findUnique({
+      where: { codigo: codigoLimpio },
+    });
+    if (solicitud) {
+      return {
+        valido: true,
+        tipo: 'solicitud_profesor_evaluador',
+        nombre: 'Solicitud de Profesor Evaluador',
+        alumno_nombre: solicitud.alumnos_resumen,
+        alumno_rut: '—',
+        empresa: solicitud.empresas_resumen ?? '—',
+        fecha_emision: solicitud.created_at,
+        creado_por: solicitud.creado_por,
+        pdf_url: solicitud.ruta_archivo ?? null,
+      };
+    }
+
+    // Acta de designación de académico evaluador (DICI → jefe de carrera)
+    const acta = await this.prisma.actas_academico_evaluador.findUnique({
+      where: { codigo: codigoLimpio },
+    });
+    if (acta) {
+      return {
+        valido: true,
+        tipo: 'acta_academico_evaluador',
+        nombre: 'Acta de Designación de Académico Evaluador',
+        alumno_nombre: acta.alumnos_resumen,
+        alumno_rut: '—',
+        fecha_emision: acta.created_at,
+        creado_por: acta.creado_por,
+        pdf_url: acta.ruta_archivo ?? null,
+      };
+    }
+
     return { valido: false, mensaje: 'El código no corresponde a ningún documento registrado.' };
+  }
+
+  async verificarCertificado(codigo: string) {
+    const crypto = require('crypto');
+    const codigoLimpio = codigo.replace(/-/g, '');
+
+    // Certificados de práctica (código calculado, igual lógica que generarCertificado)
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT a.id AS alumno_id, a.rut, a.nombres, a.apellido1,
+             sp.practica_num, sp.practica1_fecha_inicio, sp.practica1_fecha_termino,
+             sp.practica1_horas_tot,
+             COALESCE(e.nombre, sp.practica1_empresa) AS empresa_nombre
+      FROM alumnos a
+      INNER JOIN seguimiento_practica sp ON sp.alumno_id = a.id
+      LEFT JOIN empresas e ON e.id = sp.empresa_id
+      WHERE sp.estado_final_practica = 2
+    `;
+
+    for (const row of rows) {
+      const alumnoId      = Number(row.alumno_id);
+      const practica_num  = Number(row.practica_num);
+      const rutDigits     = String(row.rut).replace(/[^0-9]/g, '');
+      const semilla       = `${alumnoId}${practica_num}${rutDigits}`;
+      const hashHex       = crypto.createHash('md5').update(semilla).digest('hex');
+      const crcNum        = Math.abs(parseInt(hashHex.substring(0, 8), 16)) % 1000000000;
+      const codigoGen     = String(crcNum).padStart(9, '0');
+
+      if (codigoGen === codigoLimpio) {
+        const cert = await this.prisma.certificados.findFirst({
+          where: { alumno_rut: row.rut, practica_num },
+          orderBy: { id: 'desc' },
+        });
+        return {
+          valido: true,
+          tipo: 'practica',
+          nombre: 'Certificado de Práctica Profesional',
+          alumno_nombre: `${row.nombres} ${row.apellido1}`,
+          alumno_rut: row.rut,
+          empresa: row.empresa_nombre ?? '—',
+          practica_num,
+          fecha_inicio:  row.practica1_fecha_inicio ?? null,
+          fecha_termino: row.practica1_fecha_termino ?? null,
+          horas_totales: row.practica1_horas_tot ?? null,
+          fecha_emision: cert?.fecha_creacion ?? null,
+          pdf_url: cert?.ruta_archivo ?? null,
+        };
+      }
+    }
+
+    // Certificados externos (código almacenado directamente al subirlos)
+    const externo = await this.prisma.certificados_externos.findFirst({
+      where: { codigo: codigoLimpio },
+    });
+    if (externo) {
+      const alumno = await this.prisma.alumnos.findUnique({
+        where: { id: externo.alumno_id },
+        select: { nombres: true, apellido1: true, apellido2: true },
+      });
+      return {
+        valido: true,
+        tipo: 'certificado_externo',
+        nombre: externo.nombre,
+        alumno_nombre: alumno
+          ? `${alumno.nombres} ${alumno.apellido1} ${alumno.apellido2 ?? ''}`.trim()
+          : '—',
+        alumno_rut: externo.alumno_rut,
+        fecha_emision: externo.fecha_emision,
+        pdf_url: externo.ruta_final,
+      };
+    }
+
+    return { valido: false, mensaje: 'El código no corresponde a ningún certificado registrado.' };
   }
 
   async getAniosAprobacion() {
@@ -582,7 +809,7 @@ export class SeguimientoService {
   }
 
   async aprobarHito(id: number, hito: string, datos?: any) {
-    await this.findOne(id);
+    const seg = await this.findOne(id);
 
     if (!HITOS.includes(hito)) {
       throw new BadRequestException('Hito inválido');
@@ -590,7 +817,7 @@ export class SeguimientoService {
 
     const esUltimoHito = hito === HITOS[HITOS.length - 1];
 
-    return this.prisma.seguimiento_practica.update({
+    const result = await this.prisma.seguimiento_practica.update({
       where: { id },
       data: {
         [hito]: ESTADO.APROBADO,
@@ -598,6 +825,26 @@ export class SeguimientoService {
         ...datos,
       },
     });
+
+    if (hito === 'practica1_estado') {
+      try {
+        await this.notificarSecretaria(
+          seg.alumno_id, id,
+          'practica_aprobada_jefe',
+          '✅ Práctica aprobada por Jefe de Carrera',
+        );
+      } catch (e) {}
+      try {
+        await this.prisma.$executeRawUnsafe(
+          `INSERT INTO notificaciones_alumno (alumno_id, tipo, titulo, mensaje)
+           VALUES (?, 'hito_aprobado', '📝 Práctica aprobada — inicia tu informe', ?)`,
+          seg.alumno_id,
+          'Tu práctica profesional fue aprobada. Ya puedes comenzar la elaboración de tu informe dentro de los plazos indicados en tu seguimiento.',
+        );
+      } catch (e) {}
+    }
+
+    return result;
   }
 
   async marcarExcedido(id: number, hito: string) {
@@ -613,6 +860,40 @@ export class SeguimientoService {
     });
   }
 
+  private async notificarProfesorAsignado(seguimientoId: number, profesorId: number) {
+    try {
+      // usuarios.profesor_id → profesores.id (la relación va de usuarios hacia profesores)
+      const rows = await this.prisma.$queryRaw<any[]>`
+        SELECT u.id AS usuario_id, al.nombres, al.apellido1, al.rut
+        FROM profesores p
+        JOIN usuarios u  ON u.profesor_id  = p.id
+        JOIN seguimiento_practica sp ON sp.id = ${seguimientoId}
+        JOIN alumnos al ON al.id = sp.alumno_id
+        WHERE p.id = ${profesorId}
+        LIMIT 1
+      `;
+      if (rows.length > 0) {
+        const { usuario_id, nombres, apellido1, rut } = rows[0];
+        await this.prisma.$executeRawUnsafe(
+          `INSERT INTO notificaciones_profesor (usuario_id, seguimiento_id, alumno_id, tipo, titulo, mensaje)
+           SELECT ?, ?, sp.alumno_id, 'revision_informe',
+                  '📄 Informe asignado para revisión', ?
+           FROM seguimiento_practica sp
+           WHERE sp.id = ?
+             AND NOT EXISTS (
+               SELECT 1 FROM notificaciones_profesor
+               WHERE seguimiento_id = ? AND usuario_id = ?
+             )`,
+          usuario_id, seguimientoId,
+          `Debes revisar el informe de ${nombres} ${apellido1} (RUT: ${rut})`,
+          seguimientoId, seguimientoId, usuario_id
+        );
+      }
+    } catch (e) {
+      console.error('[notificarProfesorAsignado] Error al crear notificación de profesor:', e);
+    }
+  }
+
   async update(id: number, data: any) {
     await this.findOne(id);
     const result = await this.prisma.seguimiento_practica.update({
@@ -621,38 +902,7 @@ export class SeguimientoService {
     });
 
     if (data.informe_rev_profesor_id) {
-      try {
-        const profesorId = Number(data.informe_rev_profesor_id);
-        // usuarios.profesor_id → profesores.id (la relación va de usuarios hacia profesores)
-        const rows = await this.prisma.$queryRaw<any[]>`
-          SELECT u.id AS usuario_id, al.nombres, al.apellido1, al.rut
-          FROM profesores p
-          JOIN usuarios u  ON u.profesor_id  = p.id
-          JOIN seguimiento_practica sp ON sp.id = ${id}
-          JOIN alumnos al ON al.id = sp.alumno_id
-          WHERE p.id = ${profesorId}
-          LIMIT 1
-        `;
-        if (rows.length > 0) {
-          const { usuario_id, nombres, apellido1, rut } = rows[0];
-          await this.prisma.$executeRawUnsafe(
-            `INSERT INTO notificaciones_profesor (usuario_id, seguimiento_id, alumno_id, tipo, titulo, mensaje)
-             SELECT ?, ?, sp.alumno_id, 'revision_informe',
-                    '📄 Informe asignado para revisión', ?
-             FROM seguimiento_practica sp
-             WHERE sp.id = ?
-               AND NOT EXISTS (
-                 SELECT 1 FROM notificaciones_profesor
-                 WHERE seguimiento_id = ? AND usuario_id = ?
-               )`,
-            usuario_id, id,
-            `Debes revisar el informe de ${nombres} ${apellido1} (RUT: ${rut})`,
-            id, id, usuario_id
-          );
-        }
-      } catch (e) {
-        console.error('[update] Error al crear notificación de profesor:', e);
-      }
+      await this.notificarProfesorAsignado(id, Number(data.informe_rev_profesor_id));
     }
 
     return result;
@@ -717,9 +967,7 @@ export class SeguimientoService {
          SET informe_elab_estado = 2, informe_rev_estado = 2,
              informe_rev_fecha_termino = COALESCE(informe_rev_fecha_termino, ?)
          WHERE id = ?`, hoy, seguimientoId);
-      await this.prisma.$executeRawUnsafe(
-        `UPDATE seguimiento_practica SET eval_empresa_estado = 1
-         WHERE id = ? AND eval_empresa_estado = 0`, seguimientoId);
+      await this.activarSiguienteHito(seguimientoId, seg.practica_num, 'informe_rev_estado');
 
       if (r === 'b' && body.observaciones?.trim()) {
         await this.prisma.$executeRawUnsafe(
@@ -739,6 +987,17 @@ export class SeguimientoService {
       // Eliminar notificaciones del profesor para este seguimiento
       await this.prisma.$executeRawUnsafe(
         `DELETE FROM notificaciones_profesor WHERE seguimiento_id = ?`, seguimientoId);
+
+      // Notificar a la secretaria que el profesor evaluó el informe
+      try {
+        await this.notificarSecretaria(
+          alumno_id, seguimientoId,
+          'profesor_evaluo_informe',
+          r === 'a'
+            ? '👨‍🏫 Profesor aprobó el informe (sin observaciones)'
+            : '👨‍🏫 Profesor aprobó el informe (con observaciones)',
+        );
+      } catch (e) {}
 
       // Notificar al empleador de la empresa para que evalúe al alumno
       try {
@@ -798,6 +1057,14 @@ export class SeguimientoService {
          VALUES (?, 'hito_excedido', '❌ Informe rechazado', ?)`,
         alumno_id,
         `Tu informe fue rechazado. Debes realizar nuevamente la práctica profesional.`);
+      // Notificar a la secretaria del rechazo
+      try {
+        await this.notificarSecretaria(
+          alumno_id, seguimientoId,
+          'profesor_rechazo_informe',
+          '❌ Profesor rechazó el informe — alumno debe repetir práctica',
+        );
+      } catch (e) {}
     }
 
     return { ok: true };
@@ -836,6 +1103,39 @@ export class SeguimientoService {
     }));
   }
 
+  // Empleador: listado histórico de todos los alumnos que han hecho práctica en
+  // su empresa (sin filtrar por estado, a diferencia de getEvaluacionesEmpleador).
+  async getAlumnosEmpresa(usuario_id: number) {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT
+        al.nombres, al.apellido1, al.apellido2, al.rut,
+        sp.id               AS seguimiento_id,
+        sp.practica_num,
+        COALESCE(sp.eval_empresa_estado, 0)    AS eval_empresa_estado,
+        COALESCE(sp.estado_final_practica, 0)  AS estado_final_practica,
+        sp.practica1_fecha_inicio,
+        sp.practica1_fecha_termino,
+        sp.practica1_horas_sem,
+        sp.practica1_horas_tot,
+        sp.practica1_supervisor,
+        sp.practica1_jefe
+      FROM seguimiento_practica sp
+      JOIN alumnos al   ON al.id  = sp.alumno_id
+      JOIN empresas e   ON e.id   = sp.empresa_id
+      JOIN empleadores em ON em.empresa_id = e.id
+      JOIN usuarios u   ON u.empleador_id  = em.id
+      WHERE u.id = ${usuario_id}
+      ORDER BY sp.practica1_fecha_inicio DESC
+    `;
+    return rows.map(r => ({
+      ...r,
+      seguimiento_id:        Number(r.seguimiento_id),
+      practica_num:          Number(r.practica_num),
+      eval_empresa_estado:   Number(r.eval_empresa_estado),
+      estado_final_practica: Number(r.estado_final_practica),
+    }));
+  }
+
   async getEvaluacionEmpresa(seguimientoId: number) {
     const rows = await this.prisma.$queryRaw<any[]>`
       SELECT * FROM evaluacion_empresa
@@ -865,6 +1165,14 @@ export class SeguimientoService {
       body.descripcion_trabajo ?? '', body.comentarios ?? '', body.utilidad ?? ''
     );
 
+    // Actualizar supervisor si el empleador lo informó
+    if (body.nombre_supervisor?.trim()) {
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE seguimiento_practica SET practica1_supervisor = ? WHERE id = ?`,
+        body.nombre_supervisor.trim(), seguimientoId
+      );
+    }
+
     // Aprobar hito 4 automáticamente
     await this.prisma.$executeRawUnsafe(
       `UPDATE seguimiento_practica
@@ -872,10 +1180,8 @@ export class SeguimientoService {
            eval_empresa_fecha_termino = COALESCE(eval_empresa_fecha_termino, ?)
        WHERE id = ?`, hoy, seguimientoId);
 
-    // Avanzar hito 5 (comité de carrera) a pendiente
-    await this.prisma.$executeRawUnsafe(
-      `UPDATE seguimiento_practica SET comite_carrera_estado = 1
-       WHERE id = ? AND COALESCE(comite_carrera_estado, 0) = 0`, seguimientoId);
+    // Avanzar hito 5 (comité de carrera) a pendiente, con fechas según hito_duraciones
+    await this.activarSiguienteHito(seguimientoId, seg.practica_num, 'eval_empresa_estado');
 
     // Generar y guardar el informe confidencial automáticamente
     this.generadoresSvc.generarInformeConfidencial(seguimientoId).catch(e =>
@@ -892,6 +1198,15 @@ export class SeguimientoService {
        VALUES (?, 'hito_aprobado', '✅ Evaluación empresa completada',
                'La empresa completó tu evaluación de práctica. Consulta tu seguimiento.')`,
       seg.alumno_id);
+
+    // Notificar a la secretaria que el empleador completó la evaluación
+    try {
+      await this.notificarSecretaria(
+        seg.alumno_id, seguimientoId,
+        'empresa_evaluo',
+        '🏢 Empleador completó la evaluación de práctica',
+      );
+    } catch (e) {}
 
     return { ok: true };
   }
@@ -954,10 +1269,20 @@ export class SeguimientoService {
       `UPDATE seguimiento_practica SET informe_final = ?, informe_fecha_subida = CURRENT_TIMESTAMP, informe_elab_estado = 2 WHERE id = ?`,
       rutaBD, seguimiento_id
     );
-    // Avanzar hito 3 (revisión informe) a pendiente si aún no está activo
-    await this.prisma.$executeRawUnsafe(
-      `UPDATE seguimiento_practica SET informe_rev_estado = 1
-       WHERE id = ? AND COALESCE(informe_rev_estado, 0) = 0`, seguimiento_id);
+    // Avanzar hito 3 (revisión informe) a pendiente, con fechas según hito_duraciones
+    await this.activarSiguienteHito(seguimiento_id, practica_num, 'informe_elab_estado');
+    // Notificar a la secretaria que el alumno subió su informe
+    try {
+      await this.prisma.$executeRawUnsafe(
+        `DELETE FROM notificaciones WHERE alumno_id = ? AND seguimiento_id = ? AND hito = 'informe_subido'`,
+        alumno_id, seguimiento_id,
+      );
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO notificaciones (alumno_id, seguimiento_id, hito, hito_label, fecha_vencimiento)
+         VALUES (?, ?, 'informe_subido', '📄 Alumno subió su informe de práctica', CURDATE())`,
+        alumno_id, seguimiento_id,
+      );
+    } catch (e) {}
     if (obs_id) {
       await this.prisma.$executeRawUnsafe(
         `UPDATE seguimiento_observaciones SET fecha_fin_recepcion = CURDATE() WHERE id = ?`,
@@ -1153,7 +1478,15 @@ export class SeguimientoService {
       const rut = cols[idxRut]?.trim();
       if (!rut) { omitidos++; continue; }
 
-      const alumno = await this.prisma.alumnos.findFirst({ where: { rut } });
+      // Compara ignorando puntos/guion/mayúsculas: el RUT del CSV puede no calzar
+      // exactamente con el formato almacenado (ver alumnos.service.ts).
+      const rutNorm = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+      const coincidencias = await this.prisma.$queryRaw<{ id: number }[]>`
+        SELECT id FROM alumnos
+        WHERE UPPER(REPLACE(REPLACE(rut, '.', ''), '-', '')) = ${rutNorm}
+        LIMIT 1
+      `;
+      const alumno = coincidencias[0] ?? null;
       if (!alumno) { no_existen_en_bd++; continue; }
 
       const sp = await this.prisma.seguimiento_practica.findFirst({
@@ -1177,5 +1510,320 @@ export class SeguimientoService {
     }
 
     return { importados, omitidos, no_existen_en_bd };
+  }
+
+  // ── Hito 3: solicitud de profesor evaluador ────────────────────────
+
+  private async crearNotifSolicitudProfesor(seguimientoId: number) {
+    const seg = await this.prisma.seguimiento_practica.findUnique({ where: { id: seguimientoId } });
+    if (!seg) throw new NotFoundException('Seguimiento no encontrado');
+
+    await this.prisma.$executeRawUnsafe(
+      `INSERT INTO notificaciones (alumno_id, seguimiento_id, hito, hito_label, fecha_vencimiento)
+       VALUES (?, ?, 'profesor_evaluador', ?, CURDATE())`,
+      seg.alumno_id, seguimientoId, '📋 Se solicita profesor evaluador',
+    );
+  }
+
+  async solicitarProfesorEvaluador(seguimientoId: number) {
+    await this.crearNotifSolicitudProfesor(seguimientoId);
+    return { ok: true };
+  }
+
+  async solicitarProfesorEvaluadorBulk(seguimientoIds: number[]) {
+    for (const id of seguimientoIds) {
+      await this.crearNotifSolicitudProfesor(id);
+    }
+    return { ok: true, total: seguimientoIds.length };
+  }
+
+  // Alumnos con Hito 2 (elaboración informe) aprobado y Hito 3 (revisión informe) en curso
+  private async evaluacionInformesBase() {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT
+        a.id AS alumno_id,
+        a.rut,
+        a.nombres,
+        a.apellido1,
+        a.apellido2,
+        sp.id AS seguimiento_id,
+        sp.practica_num,
+        sp.informe_rev_profesor_id,
+        sp.informe_rev_profesor_propuesto_id,
+        COALESCE(e.nombre, sp.practica1_empresa) AS empresa
+      FROM alumnos a
+      INNER JOIN seguimiento_practica sp ON sp.alumno_id = a.id
+      LEFT JOIN empresas e ON e.id = sp.empresa_id
+      WHERE sp.informe_elab_estado = 2 AND sp.informe_rev_estado = 1
+      ORDER BY a.apellido1, a.apellido2, a.nombres
+    `;
+    return rows.map(r => ({
+      ...r,
+      alumno_id: Number(r.alumno_id),
+      seguimiento_id: Number(r.seguimiento_id),
+      informe_rev_profesor_id: r.informe_rev_profesor_id != null ? Number(r.informe_rev_profesor_id) : null,
+      informe_rev_profesor_propuesto_id: r.informe_rev_profesor_propuesto_id != null ? Number(r.informe_rev_profesor_propuesto_id) : null,
+    }));
+  }
+
+  // Jefe de carrera / secretaria: oculta a los alumnos para los que ya se envió una solicitud ICCI
+  async getEvaluacionInformes() {
+    const [rows, solicitudes] = await Promise.all([
+      this.evaluacionInformesBase(),
+      this.prisma.solicitudes_profesor_evaluador.findMany({ select: { seguimiento_ids: true } }),
+    ]);
+    const yaSolicitados = new Set<number>();
+    solicitudes.forEach(s => s.seguimiento_ids.split(',').forEach(id => yaSolicitados.add(Number(id))));
+    return rows.filter(r => !yaSolicitados.has(r.seguimiento_id));
+  }
+
+  // Director de departamento: oculta a los alumnos que ya tienen académico evaluador asignado
+  async getPendientesAsignacionAcademico() {
+    const rows = await this.evaluacionInformesBase();
+    return rows.filter(r => !r.informe_rev_profesor_id);
+  }
+
+  // Director de departamento: guarda una propuesta de académico evaluador por
+  // alumno (sin oficializarla todavía) y notifica a secretaría, que es quien
+  // genera el acta y con eso deja la asignación oficial (ver asignarProfesorEvaluador).
+  async proponerProfesoresEvaluadores(asignaciones: { seguimiento_id: number; profesor_id: number }[]) {
+    for (const a of asignaciones) {
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE seguimiento_practica SET informe_rev_profesor_propuesto_id = ? WHERE id = ?`,
+        a.profesor_id, a.seguimiento_id,
+      );
+
+      const seg = await this.prisma.seguimiento_practica.findUnique({
+        where: { id: a.seguimiento_id },
+        select: { alumno_id: true },
+      });
+      if (!seg) continue;
+      const alumno = await this.prisma.alumnos.findUnique({
+        where: { id: seg.alumno_id },
+        select: { nombres: true, apellido1: true },
+      });
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO notificaciones (alumno_id, seguimiento_id, hito, hito_label, fecha_vencimiento)
+         VALUES (?, ?, 'profesor_evaluador_propuesto', ?, CURDATE())`,
+        seg.alumno_id, a.seguimiento_id,
+        `📝 Evaluador propuesto: ${alumno?.nombres ?? ''} ${alumno?.apellido1 ?? ''} — listo para generar acta`.slice(0, 100),
+      );
+    }
+    return { ok: true, actualizados: asignaciones.length };
+  }
+
+  // Secretaría DICI: alumnos con evaluador propuesto por el director, pendientes
+  // de que ella genere el acta (lo que oficializa la asignación).
+  async getListosParaActa() {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT
+        a.nombres, a.apellido1, a.apellido2, a.rut,
+        sp.id AS seguimiento_id, sp.practica_num,
+        sp.informe_rev_profesor_propuesto_id AS profesor_propuesto_id,
+        CONCAT(p.nombre, ' ', p.apellido1, ' ', COALESCE(p.apellido2, '')) AS profesor_propuesto_nombre
+      FROM seguimiento_practica sp
+      JOIN alumnos a ON a.id = sp.alumno_id
+      JOIN profesores p ON p.id = sp.informe_rev_profesor_propuesto_id
+      WHERE sp.informe_rev_profesor_propuesto_id IS NOT NULL AND sp.informe_rev_profesor_id IS NULL
+      ORDER BY a.apellido1, a.apellido2, a.nombres
+    `;
+    return rows.map(r => ({
+      ...r,
+      seguimiento_id: Number(r.seguimiento_id),
+      profesor_propuesto_id: Number(r.profesor_propuesto_id),
+    }));
+  }
+
+  // Director de departamento: cantidad de informes que cada académico evaluador
+  // está evaluando (asignado, aún sin resolución) y ya evaluó. Un informe cuenta
+  // como evaluado si tiene un registro en evaluacion_informe o si el hito quedó
+  // aprobado (informe_rev_estado >= 2) aunque el formulario no se haya llenado
+  // -por ejemplo, cuando el estado se ajusta manualmente con los datos oficiales-.
+  async getResumenProfesorEvaluador() {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT
+        p.id AS profesor_id,
+        CONCAT(p.nombre, ' ', p.apellido1, ' ', COALESCE(p.apellido2, '')) AS profesor_nombre,
+        SUM(CASE WHEN sp.id IS NOT NULL AND ei.seguimiento_id IS NULL AND sp.informe_rev_estado < 2 THEN 1 ELSE 0 END) AS evaluando,
+        SUM(CASE WHEN ei.seguimiento_id IS NOT NULL OR sp.informe_rev_estado >= 2 THEN 1 ELSE 0 END) AS evaluados
+      FROM profesores p
+      LEFT JOIN seguimiento_practica sp ON sp.informe_rev_profesor_id = p.id
+      LEFT JOIN (SELECT DISTINCT seguimiento_id FROM evaluacion_informe) ei ON ei.seguimiento_id = sp.id
+      WHERE p.activo = 1
+      GROUP BY p.id, profesor_nombre
+      ORDER BY profesor_nombre
+    `;
+    return rows.map(r => ({
+      profesor_id: Number(r.profesor_id),
+      profesor_nombre: r.profesor_nombre,
+      evaluando: Number(r.evaluando),
+      evaluados: Number(r.evaluados),
+    }));
+  }
+
+  // Profesores / director de departamento: alumnos cuyo informe ya fue evaluado, con el
+  // académico que hizo la evaluación (última evaluación registrada por seguimiento).
+  // Incluye también los hitos marcados como aprobados (informe_rev_estado >= 2) con
+  // académico asignado aunque no tengan formulario registrado (p.ej. estado ajustado
+  // manualmente con los datos oficiales). No incluye prácticas antiguas migradas sin
+  // académico evaluador asignado.
+  async getAlumnosEvaluados() {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT
+        a.nombres, a.apellido1, a.apellido2, a.rut,
+        sp.id AS seguimiento_id, sp.practica_num,
+        CONCAT(p.nombre, ' ', p.apellido1, ' ', COALESCE(p.apellido2, '')) AS profesor_nombre,
+        ei.resultado,
+        COALESCE(ei.created_at, sp.informe_rev_fecha_aprobacion, sp.informe_rev_fecha_termino) AS fecha_evaluacion
+      FROM seguimiento_practica sp
+      JOIN alumnos a ON a.id = sp.alumno_id
+      LEFT JOIN profesores p ON p.id = sp.informe_rev_profesor_id
+      LEFT JOIN evaluacion_informe ei ON ei.id = (
+        SELECT MAX(id) FROM evaluacion_informe e2 WHERE e2.seguimiento_id = sp.id
+      )
+      WHERE ei.id IS NOT NULL
+         OR (sp.informe_rev_estado >= 2 AND sp.informe_rev_profesor_id IS NOT NULL)
+      ORDER BY fecha_evaluacion DESC
+    `;
+    return rows.map(r => ({ ...r, seguimiento_id: Number(r.seguimiento_id) }));
+  }
+
+  // Jefe de carrera / secretaría (solo lectura): alumnos con Hito 4 (Evaluación
+  // Empresa) aprobado, o enviados manualmente por secretaría por informe atrasado
+  // (informe_atrasado = 2), con Hito 5 (Comité de Carrera) pendiente de decisión.
+  // Una vez aprobados o rechazados dejan de aparecer en esta lista.
+  async getComitePendientes() {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT
+        a.nombres, a.apellido1, a.apellido2, a.rut,
+        sp.id AS seguimiento_id, sp.practica_num,
+        COALESCE(e.nombre, sp.practica1_empresa) AS empresa,
+        sp.eval_empresa_archivo,
+        COALESCE(sp.comite_carrera_estado, 0) AS comite_carrera_estado,
+        COALESCE(sp.informe_atrasado, 0) AS informe_atrasado
+      FROM seguimiento_practica sp
+      JOIN alumnos a ON a.id = sp.alumno_id
+      LEFT JOIN empresas e ON e.id = sp.empresa_id
+      WHERE (sp.eval_empresa_estado = 2 OR sp.informe_atrasado = 2) AND sp.comite_carrera_estado = 1
+      ORDER BY a.apellido1, a.apellido2, a.nombres
+    `;
+    return rows.map(r => ({
+      ...r,
+      seguimiento_id: Number(r.seguimiento_id),
+      comite_carrera_estado: Number(r.comite_carrera_estado),
+      informe_atrasado: Number(r.informe_atrasado),
+    }));
+  }
+
+  // Secretaría (solo lectura): alumnos rechazados por el comité, todavía sin
+  // reiniciar. Desaparecen de esta lista en cuanto secretaría elimina el
+  // seguimiento (ver eliminarSeguimiento).
+  async getComiteRechazados() {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT
+        a.nombres, a.apellido1, a.apellido2, a.rut,
+        sp.id AS seguimiento_id, sp.practica_num,
+        COALESCE(e.nombre, sp.practica1_empresa) AS empresa,
+        COALESCE(sp.informe_atrasado, 0) AS informe_atrasado
+      FROM seguimiento_practica sp
+      JOIN alumnos a ON a.id = sp.alumno_id
+      LEFT JOIN empresas e ON e.id = sp.empresa_id
+      WHERE sp.comite_carrera_estado = 3
+      ORDER BY a.apellido1, a.apellido2, a.nombres
+    `;
+    return rows.map(r => ({
+      ...r,
+      seguimiento_id: Number(r.seguimiento_id),
+      informe_atrasado: Number(r.informe_atrasado),
+    }));
+  }
+
+  // Secretaría: alumnos flageados por el cron (informe_atrasado = 1), pendientes
+  // de que ella decida enviarlos a la cola de decisión del comité de carrera.
+  async getInformesAtrasados() {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT
+        a.nombres, a.apellido1, a.apellido2, a.rut,
+        sp.id AS seguimiento_id, sp.practica_num,
+        sp.informe_elab_fecha_termino,
+        DATEDIFF(CURDATE(), sp.informe_elab_fecha_termino) AS dias_atraso
+      FROM seguimiento_practica sp
+      JOIN alumnos a ON a.id = sp.alumno_id
+      WHERE sp.informe_atrasado = 1
+      ORDER BY sp.informe_elab_fecha_termino ASC
+    `;
+    return rows.map(r => ({
+      ...r,
+      seguimiento_id: Number(r.seguimiento_id),
+      dias_atraso: Number(r.dias_atraso),
+    }));
+  }
+
+  // Secretaría: envía manualmente a un alumno con informe atrasado a la cola de
+  // decisión del comité de carrera, saltándose el filtro normal de evaluación
+  // de empresa (que nunca se alcanzó porque el alumno se quedó atascado antes).
+  async enviarComiteAtrasado(seguimientoId: number) {
+    const seg = await this.prisma.seguimiento_practica.findUnique({ where: { id: seguimientoId } });
+    if (!seg) throw new NotFoundException('Seguimiento no encontrado');
+    if (seg.informe_atrasado !== 1) {
+      throw new BadRequestException('Este alumno no está marcado como informe atrasado pendiente de envío');
+    }
+    return this.prisma.seguimiento_practica.update({
+      where: { id: seguimientoId },
+      data: { informe_atrasado: 2, comite_carrera_estado: ESTADO.PENDIENTE },
+    });
+  }
+
+  async decidirComite(seguimientoId: number, decision: 'aprobado' | 'rechazado') {
+    const seg = await this.prisma.seguimiento_practica.findUnique({ where: { id: seguimientoId } });
+    if (!seg) throw new NotFoundException('Seguimiento no encontrado');
+
+    if (decision === 'aprobado' && seg.informe_atrasado === 2) {
+      // El alumno llegó a comité por la vía de "informe atrasado", saltándose
+      // los hitos 2-4. Si el comité igual lo aprueba, hay que cerrar esos hitos
+      // ahora para que recomputarEstadoFinalPractica no quede atascado en
+      // "rechazado" por culpa de un informe_elab_estado en 1 o 3.
+      const hoy = new Date().toISOString().split('T')[0];
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE seguimiento_practica
+         SET informe_elab_estado = 2, informe_elab_fecha_aprobacion = COALESCE(informe_elab_fecha_aprobacion, ?),
+             informe_rev_estado = 2, informe_rev_fecha_aprobacion = COALESCE(informe_rev_fecha_aprobacion, ?),
+             eval_empresa_estado = 2, eval_empresa_fecha_aprobacion = COALESCE(eval_empresa_fecha_aprobacion, ?)
+         WHERE id = ?`,
+        hoy, hoy, hoy, seguimientoId,
+      );
+    }
+
+    const valor = decision === 'aprobado' ? ESTADO.APROBADO : ESTADO.EXCEDIDO;
+    return this.updateCampo({
+      alumno_id: seg.alumno_id,
+      plan: seg.plan,
+      practica_num: seg.practica_num,
+      campo: 'comite_carrera_estado',
+      valor,
+    });
+  }
+
+  // Secretaría: elimina por completo el seguimiento de una práctica rechazada
+  // por el comité, para que el alumno vuelva a ser candidato desde cero.
+  async eliminarSeguimiento(seguimientoId: number) {
+    const seg = await this.prisma.seguimiento_practica.findUnique({ where: { id: seguimientoId } });
+    if (!seg) throw new NotFoundException('Seguimiento no encontrado');
+    if (seg.comite_carrera_estado !== ESTADO.EXCEDIDO) {
+      throw new BadRequestException('Solo se puede eliminar el seguimiento de una práctica rechazada por el comité');
+    }
+    await this.prisma.seguimiento_practica.delete({ where: { id: seguimientoId } });
+    return { ok: true };
+  }
+
+  async asignarProfesorEvaluador(seguimientoId: number, profesorId: number) {
+    const seg = await this.prisma.seguimiento_practica.findUnique({ where: { id: seguimientoId } });
+    if (!seg) throw new NotFoundException('Seguimiento no encontrado');
+    const result = await this.prisma.seguimiento_practica.update({
+      where: { id: seguimientoId },
+      data: { informe_rev_profesor_id: profesorId },
+    });
+    await this.notificarProfesorAsignado(seguimientoId, profesorId);
+    return result;
   }
 }

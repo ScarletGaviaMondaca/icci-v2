@@ -1,0 +1,89 @@
+<div class="fondo">
+  <h1 class="titulo">Solicitudes de práctica evaluadas</h1>
+
+  <div *ngIf="mensaje" class="alert alert-success">{{ mensaje }}</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <div *ngIf="cargando" class="text-center py-4">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div class="row" *ngIf="!cargando">
+    <div class="col-md-12">
+      <div class="table-wrapper">
+        <table class="table table-striped table-hover mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Apellidos</th>
+              <th>RUT</th>
+              <th>Empresa</th>
+              <th>Información Práctica</th>
+              <th>Comentarios secretaria</th>
+              <th>Aprobar / rechazar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let s of solicitudes; let i = index" style="cursor: pointer;">
+              <td>{{ i + 1 }}</td>
+              <td>{{ s.nombres }}</td>
+              <td>{{ s.apellidos }}</td>
+              <td>{{ s.rut }}</td>
+              <td>{{ s.empresa_nombre || 'No especificada' }}</td>
+              <td>
+                <button class="btn btn-sm" (click)="verPractica(s)">Ver práctica</button>
+              </td>
+              <td>
+                <span *ngIf="s.cumple_requisitos" class="badge bg-success">✅ Cumple requisitos</span>
+                <span *ngIf="!s.cumple_requisitos" class="badge bg-warning text-dark">⚠️ No cumple</span>
+                <div *ngIf="s.motivo_no_cumple" class="small text-muted mt-1">{{ s.motivo_no_cumple }}</div>
+              </td>
+              <td>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-success"
+                          [disabled]="resolviendoId !== null"
+                          (click)="aprobar(s)">
+                    {{ resolviendoId === s.id ? '⏳...' : '✅ Aprobar' }}
+                  </button>
+                  <button class="btn btn-sm btn-danger"
+                          [disabled]="resolviendoId !== null"
+                          (click)="abrirModalRechazo(s)">
+                    ❌ Rechazar
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="solicitudes.length === 0">
+              <td colspan="8" class="text-center text-muted">No hay solicitudes evaluadas pendientes de decisión.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal rechazo -->
+<div class="modal-overlay" *ngIf="mostrarModalRechazo" (click)="mostrarModalRechazo = false"
+     style="position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1050;">
+  <div class="card" style="max-width:450px; width:90%;" (click)="$event.stopPropagation()">
+    <div class="card-body">
+      <h5 class="card-title">❌ Rechazar solicitud</h5>
+      <p class="text-muted small mb-3">
+        ¿Estás seguro de rechazar la solicitud de
+        <strong>{{ solicitudSeleccionada?.nombres }} {{ solicitudSeleccionada?.apellido1 }}</strong>?
+      </p>
+      <div class="mb-3">
+        <label class="form-label">Motivo del rechazo (opcional)</label>
+        <textarea class="form-control form-control-sm" rows="3"
+                  [(ngModel)]="motivoRechazo"
+                  placeholder="Indica el motivo..."></textarea>
+      </div>
+      <div class="d-flex justify-content-end gap-2">
+        <button class="btn btn-sm btn-outline-secondary" (click)="mostrarModalRechazo = false">Cancelar</button>
+        <button class="btn btn-sm btn-danger" (click)="rechazar()">❌ Confirmar rechazo</button>
+      </div>
+    </div>
+  </div>
+</div>

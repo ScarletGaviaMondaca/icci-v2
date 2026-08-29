@@ -75,11 +75,6 @@ export class ProfesorEvaluador implements OnInit {
         this.cargando = false;
         this.cdr.detectChanges();
 
-        if (this.auth.esSecretariaDici()) {
-          this.solicitudesIcci = [];
-          return;
-        }
-
         const ids = this.alumnos.map(a => a.seguimiento_id);
         if (ids.length > 0) {
           this.seg.listarSolicitudesIcci(ids).subscribe({

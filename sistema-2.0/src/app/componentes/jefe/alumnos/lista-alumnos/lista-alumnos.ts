@@ -27,9 +27,6 @@ export class ListaAlumnos {
   filtroAnio = '';
 
   tipoExport = 'csv';
-  nombreArchivo = '';
-  estadoSubida = '';
-  subiendo = false;
   paginaActual = 1;
   elementosPorPagina = 20;
 
@@ -37,7 +34,11 @@ export class ListaAlumnos {
   planSeleccionado: string = '';
   mostrarConfirmacion = false;
   alumnoAEliminar:{ id: number, nombre: string } | null = null;
-  mostrarCarga: boolean = false;
+
+  mostrarCarga = false;
+  nombreArchivo = '';
+  estadoSubida = '';
+  subiendo = false;
 
   constructor(
     private http: HttpClient,
@@ -115,6 +116,18 @@ export class ListaAlumnos {
       error: (err: any) => { console.error(err); alert('No se pudo exportar'); },
     });
   }
+
+  toggleCarga() {
+    this.mostrarCarga = !this.mostrarCarga;
+  }
+
+  descargarPlantilla() {
+    this.alumnoService.descargarPlantilla().subscribe({
+      next: (blob: Blob) => this.descargarBlob(blob, 'plantilla_alumnos.csv'),
+      error: () => alert('No se pudo descargar la plantilla'),
+    });
+  }
+
   importarCSV(event: any) {
     const archivo = event.target.files[0];
     if (!archivo) return;
@@ -126,6 +139,7 @@ export class ListaAlumnos {
     }
     this.nombreArchivo = archivo.name;
     this.estadoSubida = 'Subiendo archivo...';
+    this.subiendo = true;
 
     const formData = new FormData();
     formData.append('archivo_csv', archivo);
@@ -134,52 +148,43 @@ export class ListaAlumnos {
       next: (res: any) => {
         this.subiendo = false;
 
-        // ❌ ERROR DESDE BACKEND
         if (res.estado === 'error') {
           this.estadoSubida = '❌ ' + res.mensaje;
-
-          // Si hay columnas faltantes
           if (res.faltantes) {
             this.estadoSubida += ' | Faltan: ' + res.faltantes.join(', ');
           }
-
           return;
         }
 
-        // ✅ ÉXITO
         if (res.estado === 'ok') {
           this.estadoSubida =
             `✅ ${res.mensaje} | Importados: ${res.insertados} | Duplicados: ${res.duplicados} | Actualizados: ${res.actualizados}`;
-          // Si hubo errores por fila
           if (res.errores && res.errores.length > 0) {
             console.warn('Errores en filas:', res.errores);
           }
-          setTimeout(() => this.estadoSubida = '', 5000); 
+          setTimeout(() => this.estadoSubida = '', 5000);
           this.recargarTabla();
           this.cdr.detectChanges();
           this.mostrarCarga = false;
         }
       },
-
       error: (err) => {
         this.subiendo = false;
-
         console.error('ERROR COMPLETO:', err);
-        console.error('ERROR BODY:', err?.error);
-
         this.estadoSubida = '❌ ' + (err?.error?.mensaje ?? 'Error al conectar con el servidor');
       }
     });
   }
+
   /* acciones de los botones laterales  */
   verAlumno(alumno: any) {
-    this.router.navigate(['/jefe/listado-alumnos/ver-alumno', alumno.id]);
+    this.router.navigate(['/lista-alumnos/ver-alumno', alumno.id]);
   }
   crearAlumno() {
-    this.router.navigate(['/jefe/listado-alumnos/crear-alumno']);
+    this.router.navigate(['/lista-alumnos/crear-alumno']);
   }
   editarAlumno(alumno: any) {
-    this.router.navigate(['/jefe/listado-alumnos/editar-alumno', alumno.id]);
+    this.router.navigate(['/lista-alumnos/editar-alumno', alumno.id]);
   }
   eliminarAlumno(id: number, nombre: string) {
     this.alumnoAEliminar = { id, nombre };
@@ -213,13 +218,6 @@ export class ListaAlumnos {
   }
   numeroFila(index: number): number {
     return (this.paginaActual - 1) * this.elementosPorPagina + index + 1;
-  }
-  descargarPlantilla(tipo: string) {
-    const url = this.alumnoService.getPlantillaUrl(tipo);
-    window.open(url, '_blank');
-  }
-  toggleCarga() {
-    this.mostrarCarga = !this.mostrarCarga;
   }
   totalPaginas(): number {
     const total = this.filtrarDatos().length;

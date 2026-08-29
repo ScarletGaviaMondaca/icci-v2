@@ -1,9 +1,8 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { PlanService } from '../../../../servicios/plan.service';
 import { AlumnoService } from '../../../../servicios/alumno.service';
 
 @Component({
@@ -13,12 +12,11 @@ import { AlumnoService } from '../../../../servicios/alumno.service';
   templateUrl: './crear-alumno.html',
   styleUrl: './crear-alumno.css'
 })
-export class CrearAlumno implements OnInit {
+export class CrearAlumno {
   form: FormGroup;
   enviando = false;
   exito = false;
   errorMsg = '';
-  planes: any[] = [];
 
   readonly sexoOpciones = ['Femenino', 'Masculino', 'Otro'];
 
@@ -42,10 +40,8 @@ export class CrearAlumno implements OnInit {
   constructor(
     private fb: FormBuilder,
     private http: HttpClient,
-    private planService: PlanService,
     private alumnoService: AlumnoService,
     private router: Router,
-    private cdr: ChangeDetectorRef
   ) {
     this.form = this.fb.group({
       // Identidad
@@ -64,7 +60,7 @@ export class CrearAlumno implements OnInit {
       correo_personal:      ['', [Validators.email, Validators.maxLength(100)]],
       correo_institucional: ['', [Validators.email, Validators.maxLength(100)]],
       // Académico
-      plan:                 [''],
+      plan_texto:           ['', Validators.maxLength(50)],
       colegio:              ['', Validators.maxLength(255)],
       anio_ingreso:         [''],
       fecha_matricula:      [''],
@@ -72,17 +68,7 @@ export class CrearAlumno implements OnInit {
       puntaje_ingreso:      ['', [Validators.min(0), Validators.max(1000)]],
       nem:                  ['', [Validators.min(0), Validators.max(700)]],
       gratuidad:            [''],
-    });
-  }
-
-  ngOnInit(): void {
-    this.planService.listarPlanes().subscribe({
-      next: (data) => {
-        console.log('Planes:', data);
-        this.planes = data;
-        this.cdr.detectChanges();
-      },
-      error: (err) => console.error('Error planes:', err)
+      avance:               ['', [Validators.required, Validators.min(0), Validators.max(100)]],
     });
   }
 
@@ -104,16 +90,16 @@ export class CrearAlumno implements OnInit {
       next: () => {
         this.enviando = false;
         this.exito = true;
-        setTimeout(() => this.router.navigate(['/jefe/listado-alumnos']), 1800);
+        setTimeout(() => this.router.navigate(['/lista-alumnos']), 1800);
       },
       error: (err) => {
         this.enviando = false;
-        this.errorMsg = err?.error?.error || 'Error al crear el alumno.';
+        this.errorMsg = err?.error?.message || err?.error?.error || 'Error al crear el alumno.';
       }
     });
   }
 
   cancelar(): void {
-    this.router.navigate(['/jefe/listado-alumnos']);
+    this.router.navigate(['/lista-alumnos']);
   }
 }

@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
@@ -9,7 +10,10 @@ const COMPROMISO_PATH = path.join(process.cwd(), 'uploads', 'compromisos', 'comp
 
 @Injectable()
 export class EmpleadoresService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+  ) {}
 
   // ── Empresas (públicos para registro) ────────────────────────────
 
@@ -76,6 +80,7 @@ export class EmpleadoresService {
     const token = crypto.randomBytes(32).toString('hex');
     await this.prisma.empleador_tokens.create({ data: { token, correo } });
     const link = `http://localhost:4200/registro-empleador?token=${token}`;
+    await this.mailService.enviarBienvenidaEmpleador(correo, link);
     return { token, link };
   }
 

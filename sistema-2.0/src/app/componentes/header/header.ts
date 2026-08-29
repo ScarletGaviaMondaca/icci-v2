@@ -84,32 +84,7 @@ export class Header {
     this.menuAbierto = !this.menuAbierto;
   }
   actualizarSubMenu(url: string) {
-    if (url.startsWith('/jefe')) {
-      // Solo admin y secretaria ven el menú de jefe
-      if (!this.auth.esAdmin() && !this.auth.esSecretaria()) {
-        this.subMenu = [];
-        return;
-      }
-      this.subMenu = [
-        { nombre: 'Alumnos', ruta: '/jefe/listado-alumnos' },
-        { nombre: 'Carrera', ruta: '/jefe/carrera' },
-       // { nombre: 'Empleadores', ruta: '/jefe/empleadores' }
-      ];
-    }
-    else if (url.startsWith('/organizacion')) {
-      this.subMenu = [
-        { nombre: 'Organigrama', ruta: '/organizacion/organigrama' },
-        { nombre: 'Académicos', ruta: '/organizacion/academicos' }
-      ];
-
-    }
-    else if (url.startsWith('/carrera')) {
-      this.subMenu = [
-        { nombre: 'Información', ruta: '/carrera/informacion' },
-        { nombre: 'Reglamentos', ruta: '/carrera/reglamentos' },
-      ];
-    }
-    else if (url.startsWith('/alumno')) {
+    if (url.startsWith('/alumno')) {
       // Solo alumno ve su submenú
       if (!this.auth.esAlumno() && !this.auth.esAdmin()) {
         this.subMenu = [];
@@ -117,7 +92,6 @@ export class Header {
       }
       this.subMenu = [
         { nombre: 'Mapas UTA', ruta: '/alumno/mapa' },
-      //  { nombre: 'Procesos comunes', ruta: '/alumno/procesos' },
       ];
     }
     else if (url.startsWith('/seguimiento')) {

@@ -74,6 +74,14 @@ model alumnos {
   @@index([plan], map: "idx_alumnos_plan")
 }
 
+model configuracion_correo {
+  id                   Int      @id @default(1)
+  correo               String   @db.VarChar(150)
+  app_password_cifrada String   @db.VarChar(500)
+  actualizado_por      Int?
+  updated_at           DateTime @default(now()) @updatedAt
+}
+
 model campus_buildings {
   id          String  @id @db.VarChar(10)
   label       String  @db.VarChar(10)
@@ -114,15 +122,6 @@ model certificados_externos {
   codigo        String   @db.VarChar(9)
 
   @@index([alumno_id], map: "alumno_id")
-}
-
-model documentos {
-  id         Int      @id @default(autoincrement())
-  nombre     String   @db.VarChar(255)
-  categoria  String   @db.VarChar(100)
-  archivo    String   @db.VarChar(255)
-  activo     Int?     @default(1) @db.TinyInt
-  created_at DateTime @default(now()) @db.Timestamp(0)
 }
 
 model empleadores {
@@ -174,53 +173,6 @@ model empresas {
   seguimientos    seguimiento_practica[]
 }
 
-model exalumnos {
-  id              Int                  @id @default(autoincrement())
-  rut             String               @unique(map: "rut") @db.VarChar(20)
-  paterno         String?              @db.VarChar(100)
-  materno         String?              @db.VarChar(100)
-  nombres         String?              @db.VarChar(150)
-  anio_ingreso    Int?
-  anio_titulacion Int?
-  nombre_carrera  String?              @db.VarChar(255)
-  facultad        String?              @db.VarChar(255)
-  nombre_titulo   String?              @db.VarChar(255)
-  created_at      DateTime             @default(now()) @db.Timestamp(0)
-  emails          exalumno_emails[]
-  telefonos       exalumno_telefonos[]
-  trabajos        exalumno_trabajos[]
-}
-
-model exalumno_emails {
-  id          Int        @id @default(autoincrement())
-  exalumno_id Int?
-  email       String?    @db.VarChar(255)
-  exalumno    exalumnos? @relation(fields: [exalumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "exalumno_emails_ibfk_1")
-
-  @@index([exalumno_id], map: "exalumno_id")
-}
-
-model exalumno_telefonos {
-  id          Int        @id @default(autoincrement())
-  exalumno_id Int?
-  telefono    String?    @db.VarChar(50)
-  exalumno    exalumnos? @relation(fields: [exalumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "exalumno_telefonos_ibfk_1")
-
-  @@index([exalumno_id], map: "exalumno_id")
-}
-
-model exalumno_trabajos {
-  id                Int        @id @default(autoincrement())
-  exalumno_id       Int?
-  empresa           String?    @db.VarChar(255)
-  cargo             String?    @db.VarChar(255)
-  sueldo_aproximado Int?
-  actual            Boolean?   @default(false)
-  exalumno          exalumnos? @relation(fields: [exalumno_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "exalumno_trabajos_ibfk_1")
-
-  @@index([exalumno_id], map: "exalumno_id")
-}
-
 model hito_duraciones {
   id             Int  @id @default(autoincrement())
   hito_num       Int
@@ -229,60 +181,6 @@ model hito_duraciones {
   duracion_horas Int?
 
   @@unique([hito_num, practica_num], map: "uk_hito")
-}
-
-model info_carrera {
-  id                Int     @id @default(autoincrement())
-  nombre            String  @db.VarChar(255)
-  codigo_demre      String? @db.VarChar(50)
-  grado_titulo      String? @db.VarChar(255)
-  facultad          String? @db.VarChar(120)
-  departamento      String? @db.VarChar(120)
-  director          String? @db.VarChar(120)
-  duracion          String? @db.VarChar(30)
-  modalidad         String? @db.VarChar(50)
-  jornada           String? @db.VarChar(30)
-  sede              String? @db.VarChar(50)
-  anio_creacion     String? @db.VarChar(10)
-  ultima_modif_plan String? @db.VarChar(15)
-  perfil_egreso     String? @db.Text
-}
-
-model malla {
-  id       Int     @id @default(autoincrement())
-  plan_id  Int?
-  nro      String? @db.VarChar(10)
-  nombre   String? @db.VarChar(255)
-  tipo     String? @db.VarChar(50)
-  pm       Int?
-  creditos Int?
-  hc       Int?
-  ht       Int?
-  hl       Int?
-  codigo   String? @db.VarChar(20)
-  plan     plan?   @relation(fields: [plan_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_malla_plan")
-
-  @@unique([plan_id, codigo], map: "uq_malla_plan_codigo")
-  @@index([codigo], map: "idx_malla_codigo")
-  @@index([plan_id], map: "idx_malla_plan")
-}
-
-model malla_restriccion {
-  id          Int                  @id @default(autoincrement())
-  plan_id     Int
-  ramo_codigo String               @db.VarChar(20)
-  req_codigo  String               @db.VarChar(20)
-  tipo        TipoRestriccionMalla @default(PRE)
-  created_at  DateTime             @default(now()) @db.Timestamp(0)
-  plan        plan                 @relation(fields: [plan_id], references: [id], onDelete: Cascade, map: "fk_mr_plan")
-
-  @@unique([plan_id, ramo_codigo, req_codigo, tipo], map: "uq_mr")
-  @@unique([plan_id, ramo_codigo, req_codigo], map: "uq_plan_ramo_req")
-  @@index([plan_id], map: "idx_mr_plan")
-  @@index([plan_id, ramo_codigo], map: "idx_mr_ramo")
-  @@index([plan_id, req_codigo], map: "idx_mr_req")
-  @@index([plan_id, ramo_codigo], map: "idx_plan_ramo")
-  @@index([plan_id, req_codigo], map: "idx_plan_req")
 }
 
 model notificaciones {
@@ -359,34 +257,6 @@ model postulaciones {
   @@index([alumno_id], map: "alumno_id")
   @@index([oferta_id], map: "oferta_id")
   @@index([revisado_por], map: "revisado_por")
-}
-
-model practica {
-  id      Int    @id @default(autoincrement())
-  plan_id Int
-  codigo  String @db.VarChar(20)
-  nombre  String @db.VarChar(100)
-  orden   Int
-  plan    plan   @relation(fields: [plan_id], references: [id], onUpdate: Restrict, map: "practica_ibfk_1")
-
-  @@unique([plan_id, codigo], map: "uq_practica_plan_codigo")
-}
-
-model plan {
-  id                   Int                 @id @default(autoincrement())
-  titulo               String?             @db.VarChar(150)
-  anio                 Int?
-  version              String?             @db.VarChar(20)
-  duracion             Int?
-  fecha_oficializacion DateTime?           @db.Date
-  fecha_inicio         DateTime?           @db.Date
-  fecha_cierre         DateTime?           @db.Date
-  enfoque              String?             @db.Text
-  perfil_egreso        String?             @db.Text
-  proposito_formativo  String?             @db.Text
-  malla                malla[]
-  malla_restriccion    malla_restriccion[]
-  practicas            practica[]
 }
 
 model profesores {
@@ -494,6 +364,7 @@ model seguimiento_practica {
   envioreg_fecha_aprobacion       DateTime?                   @db.Date
   informe_rev_formulario          String?                     @db.VarChar(255)
   informe_atrasado                Int?                        @default(0) @db.TinyInt
+  practica1_atrasada              Int?                        @default(0) @db.TinyInt
   evaluacion_empresa              evaluacion_empresa[]
   evaluacion_informe              evaluacion_informe[]
   notificaciones                  notificaciones[]
@@ -534,18 +405,6 @@ model usuarios {
   @@index([alumno_id], map: "fk_usuarios_alumno")
   @@index([empleador_id], map: "fk_usuarios_empleador")
   @@index([profesor_id], map: "fk_usuarios_profesores")
-}
-
-model organigrama {
-  id         Int     @id @default(autoincrement())
-  nombre     String  @db.VarChar(100)
-  correo     String? @db.VarChar(100)
-  rol        String  @db.VarChar(50)
-  lugar      String? @db.VarChar(100)
-  ruta_foto  String? @default("uploads/default.jpg") @db.VarChar(100)
-  dpto       String  @default("") @db.VarChar(100)
-  telefono   String? @db.VarChar(20)
-  perfil_url String? @db.VarChar(500)
 }
 
 model evaluacion_empresa {
@@ -675,11 +534,6 @@ enum EstadoPostulacion {
   pendiente
   aceptada
   rechazada
-}
-
-enum TipoRestriccionMalla {
-  PRE
-  CO
 }
 
 enum notificaciones_alumno_tipo {

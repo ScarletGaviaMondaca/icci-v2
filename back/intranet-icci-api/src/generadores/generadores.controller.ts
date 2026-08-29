@@ -78,6 +78,12 @@ export class GeneradoresController {
     return this.generadoresService.listarSolicitudesIcci(ids);
   }
 
+  @Get('historial-evaluador')
+  @Roles('admin', 'secretaria', 'jefe_carrera')
+  async listarHistorialEvaluador() {
+    return this.generadoresService.listarHistorialEvaluador();
+  }
+
   @Post('certificado')
   @Roles('admin', 'secretaria')
   async generarCertificado(

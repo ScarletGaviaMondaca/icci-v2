@@ -172,13 +172,9 @@
         <div class="ca-grid">
           <!-- Plan de estudios -->
           <div class="ca-field ca-col-2">
-            <label class="ca-label" for="plan">Plan de Estudios</label>
-            <select id="plan" formControlName="plan" class="ca-input ca-select">
-              <option value="">— Sin asignar —</option>
-              <option *ngFor="let p of planes" [value]="p.id">
-                {{ p.anio }}
-              </option>
-            </select>
+            <label class="ca-label" for="plan_texto">Plan de Estudios</label>
+            <input type="text" id="plan_texto" formControlName="plan_texto" class="ca-input"
+                   placeholder="Ej: 1995, 2003">
           </div>
 
           <!-- Colegio de origen -->
@@ -229,6 +225,17 @@
               placeholder="0 – 700" min="0" max="700"/>
             <span class="ca-err" *ngIf="f['nem'].invalid && f['nem'].touched">
               Valor entre 0 y 700.
+            </span>
+          </div>
+
+          <!-- Avance curricular -->
+          <div class="ca-field">
+            <label class="ca-label" for="avance">Avance Curricular (%) *</label>
+            <input id="avance" type="number" formControlName="avance" class="ca-input"
+              [class.ca-input-err]="f['avance'].invalid && f['avance'].touched"
+              placeholder="0 – 100" min="0" max="100"/>
+            <span class="ca-err" *ngIf="f['avance'].invalid && f['avance'].touched">
+              Ingresa el % de avance curricular (0 a 100). Es obligatorio: sin él el alumno no aparecerá como candidato a práctica.
             </span>
           </div>
 

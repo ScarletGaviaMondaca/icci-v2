@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as fs from 'fs';
 
@@ -51,6 +51,13 @@ async findByRut(rut: string) {
   }
 
   async create(data: any) {
+    // El avance curricular es lo que determina si un alumno regular puede
+    // postular a práctica (getCandidatos en seguimiento.service.ts); sin él
+    // el alumno queda cargado pero nunca aparece como candidato. No aplica a
+    // alumnos especiales (siempre son candidatos, sin importar el avance).
+    if ((data.tipo ?? 'regular') !== 'especial' && (data.avance === undefined || data.avance === null || data.avance === '')) {
+      throw new BadRequestException('El avance curricular es obligatorio');
+    }
     const sanitized = this.sanitizar(data);
     return this.prisma.alumnos.create({ data: sanitized });
   }
@@ -96,6 +103,7 @@ async findByRut(rut: string) {
       gratuidad:            toStr(data.gratuidad),
       tipo:                 data.tipo ?? 'regular',
       anio_reingreso:       toInt(data.anio_reingreso),
+      avance:               toInt(data.avance),
     };
   }
 
@@ -285,6 +293,12 @@ async findByRut(rut: string) {
             await this.prisma.alumnos.update({ where: { id: existing.id }, data: update });
             result.actualizados++;
           } else {
+            // El avance curricular es obligatorio para alumnos nuevos: es lo que
+            // determina si aparecen como candidatos a práctica (getCandidatos).
+            if (optional.avance == null) {
+              result.errores.push(`Fila ${lineNum}: falta el avance curricular (columna "avance")`);
+              continue;
+            }
             await this.prisma.alumnos.create({ data: { rut, nombres: nombres ?? '', apellido1: apellido1 ?? '', apellido2, plan, anio_ingreso, ...optional } });
             result.insertados++;
           }
@@ -411,5 +425,29 @@ async findByRut(rut: string) {
       ].map(esc).join(','));
     }
     return lines.join('\r\n');
+  }
+
+  // Plantilla de importación: usa el mismo set de columnas que el formato
+  // "esSistema" de importarCSV() (el más directo, sin combinar nombre/apellidos
+  // en una sola columna), en el orden en que se deben llenar. Obligatorios:
+  // rut, nombres, apellido1 y avance (este último requerido por importarCSV()
+  // para alumnos nuevos). La fila de ejemplo debe borrarse antes de subir el
+  // archivo real.
+  generarPlantillaCSV(): string {
+    const headers = [
+      'rut', 'nombres', 'apellido1', 'apellido2', 'plan', 'anio_ingreso',
+      'sexo', 'fecha_nacimiento', 'nacionalidad', 'etnia', 'direccion',
+      'telefono', 'telefono_emergencia', 'correo_personal', 'correo_institucional',
+      'colegio', 'fecha_matricula', 'sistema_ingreso', 'puntaje_ingreso', 'nem',
+      'gratuidad', 'avance',
+    ];
+    const ejemplo = [
+      '12.345.678-5', 'EJEMPLO (borrar fila)', 'APELLIDO', '(opcional)', '2023', '2023',
+      '(opcional)', '(opcional)', '(opcional)', '(opcional)', '(opcional)',
+      '(opcional)', '(opcional)', '(opcional)', '(opcional)',
+      '(opcional)', '(opcional)', '(opcional)', '(opcional)', '(opcional)',
+      '(opcional)', '45',
+    ];
+    return [headers.join(','), ejemplo.join(',')].join('\r\n');
   }
 }

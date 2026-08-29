@@ -1,0 +1,42 @@
+<div class="fondo">
+  <h1 class="titulo">Correo del Sistema</h1>
+  <p class="text-muted">Correo remitente que usará el sistema para enviar invitaciones a empresas y avisos de hitos vencidos.</p>
+
+  <div *ngIf="mensaje" class="alert alert-success">{{ mensaje }}</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <div *ngIf="cargando" class="text-center py-4">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div class="row" *ngIf="!cargando">
+    <div class="col-md-12">
+      <div class="estado-actual" style="max-width:480px">
+        <p class="mb-3" *ngIf="config?.configurado">
+          <strong class="d-block mb-1">🟢 Correo configurado</strong>
+          {{ config?.correo }}
+        </p>
+        <p class="mb-3" *ngIf="!config?.configurado">
+          <strong class="d-block mb-1">⚪ Sin configurar</strong>
+          Sin esto, el sistema no puede enviar correos reales.
+        </p>
+
+        <div class="mb-2">
+          <label class="form-label">Correo (Gmail)</label>
+          <input type="email" class="form-control form-control-sm"
+                 [(ngModel)]="correoRemitente" placeholder="ejemplo@gmail.com">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Contraseña de aplicación</label>
+          <input type="password" class="form-control form-control-sm"
+                 [(ngModel)]="appPassword"
+                 placeholder="Generada en Google → Seguridad → Contraseñas de aplicaciones">
+          <small class="text-muted">Déjala en blanco si solo quieres cambiar el correo y mantener la contraseña actual.</small>
+        </div>
+        <button class="btn btn-sm btn-warning" [disabled]="guardando" (click)="guardar()">
+          {{ guardando ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

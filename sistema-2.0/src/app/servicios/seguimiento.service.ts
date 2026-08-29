@@ -298,6 +298,21 @@ export class SeguimientoService {
     );
   }
 
+  getPracticasAtrasadas() {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/seguimiento/practicas-atrasadas`,
+      this.auth.getHeaders()
+    );
+  }
+
+  enviarComitePracticaAtrasada(seguimientoId: number) {
+    return this.http.put<any>(
+      `${this.apiUrl}/seguimiento/${seguimientoId}/enviar-comite-practica-atrasada`,
+      {},
+      this.auth.getHeaders()
+    );
+  }
+
   eliminarSeguimiento(seguimientoId: number) {
     return this.http.delete<any>(
       `${this.apiUrl}/seguimiento/${seguimientoId}`,
@@ -352,6 +367,13 @@ export class SeguimientoService {
   listarSolicitudesIcci(seguimientoIds: number[]) {
     return this.http.get<any[]>(
       `${this.apiUrl}/generadores/solicitudes-icci?seguimiento_ids=${seguimientoIds.join(',')}`,
+      this.auth.getHeaders()
+    );
+  }
+
+  listarHistorialEvaluador() {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/generadores/historial-evaluador`,
       this.auth.getHeaders()
     );
   }

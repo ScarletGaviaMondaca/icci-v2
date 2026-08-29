@@ -1,0 +1,12 @@
+.fondo {
+  background-color: white;
+  border-radius: 15px;
+  padding: 20px;
+}
+
+.estado-actual {
+  border: 1px solid #c8d8ec;
+  border-radius: 10px;
+  background: #f9fbfe;
+  padding: 16px 20px;
+}

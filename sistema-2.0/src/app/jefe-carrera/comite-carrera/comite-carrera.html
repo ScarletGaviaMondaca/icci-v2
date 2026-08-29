@@ -30,7 +30,7 @@
               <td>{{ i + 1 }}</td>
               <td>
                 {{ a.nombres }}
-                <div *ngIf="a.informe_atrasado === 2" class="badge bg-warning text-dark mt-1">⚠️ Informe atrasado</div>
+                <div *ngIf="esAtrasado(a)" class="badge bg-warning text-dark mt-1">⚠️ Alumno atrasado</div>
               </td>
               <td>{{ a.apellido1 }} {{ a.apellido2 }}</td>
               <td>{{ a.rut }}</td>
@@ -49,7 +49,8 @@
                 <div *ngIf="a.comite_carrera_estado === 2" class="badge bg-success mb-1">✅ Aprobada</div>
                 <div *ngIf="a.comite_carrera_estado === 3" class="badge bg-danger mb-1">❌ Rechazada</div>
                 <div class="d-flex gap-1 mt-1" *ngIf="!auth.esSecretaria()">
-                  <button class="btn btn-sm btn-outline-success"
+                  <button *ngIf="!esAtrasado(a)"
+                          class="btn btn-sm btn-outline-success"
                           [disabled]="decidiendoId === a.seguimiento_id"
                           (click)="decidir(a, 'aprobado')">
                     Aprobar

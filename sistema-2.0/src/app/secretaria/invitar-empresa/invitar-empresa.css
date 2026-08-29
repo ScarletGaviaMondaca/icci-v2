@@ -1,0 +1,16 @@
+.fondo {
+  background-color: white;
+  border-radius: 15px;
+  padding: 20px;
+}
+
+.estado-actual {
+  border: 1px solid #c8d8ec;
+  border-radius: 10px;
+  background: #f9fbfe;
+  padding: 16px 20px;
+}
+
+.input-group { display: flex; flex-wrap: wrap; align-items: stretch; }
+.input-group input { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+.input-group button { border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; }

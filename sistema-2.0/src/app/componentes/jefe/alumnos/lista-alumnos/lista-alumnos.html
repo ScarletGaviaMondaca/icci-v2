@@ -17,7 +17,7 @@
                         <button class="descarga btn btn-sm" *ngIf="auth.esAdmin()" (click)="crearAlumno()">
                         ➕ Agregar alumno
                         </button>
-                        <button class="carga btn btn-sm" *ngIf="auth.esAdmin()" (click)="toggleCarga()">
+                        <button class="carga btn btn-sm" *ngIf="auth.esAdmin() || auth.esSecretaria()" (click)="toggleCarga()">
                         📂 Subir lista
                         </button>
                         <div class="d-flex align-items-center gap-2">
@@ -44,19 +44,16 @@
                             <input type="file" hidden accept=".csv" (change)="importarCSV($event)">
                         </label>
                         <span *ngIf="nombreArchivo" class="badge bg-success">{{ nombreArchivo }}</span>
-                        <button class="carga btn btn-sm" (click)="descargarPlantilla('csv')">📄 Plantilla CSV</button>
-                        <button class="btn btn-sm btn-outline-success" (click)="descargarPlantilla('excel')">📊 Plantilla Excel</button>
+                        <button class="carga btn btn-sm" (click)="descargarPlantilla()">📄 Descargar plantilla</button>
                         </div>
+                        <span *ngIf="estadoSubida" class="small d-block mt-2"
+                            [class.text-success]="estadoSubida.includes('Importados')"
+                            [class.text-danger]="estadoSubida.includes('❌')">
+                            {{ estadoSubida }}
+                        </span>
                     </div>
                 </div>
             </div>
-
-            <span *ngIf="estadoSubida"
-                class="small justify-content-end align-items-end"
-                [class.text-success]="estadoSubida.includes('Importados')"
-                [class.text-danger]="estadoSubida.includes('Error')">
-                {{ estadoSubida }}
-            </span>
 
             <div class="table-responsive">
                 <!-- ✅ CAMBIO 1: Agregar div.table-wrapper -->

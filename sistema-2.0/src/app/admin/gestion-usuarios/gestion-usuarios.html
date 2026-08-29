@@ -505,7 +505,7 @@
   <div class="modal-overlay" *ngIf="mostrarModalToken" (click)="mostrarModalToken = false">
     <div class="modal-notif" style="max-width:500px" (click)="$event.stopPropagation()">
       <div class="modal-notif-header">
-        <h5>🔗 Generar link de registro</h5>
+        <h5>🔗 Invitar empresa a registrarse</h5>
         <button class="btn-cerrar" (click)="mostrarModalToken = false">✕</button>
       </div>
       <div class="modal-notif-body p-3">
@@ -517,15 +517,15 @@
         <button class="usuarios btn btn-sm"
                 [disabled]="generandoToken || !correoToken"
                 (click)="generarTokenEmpleador()">
-          {{ generandoToken ? 'Generando...' : '🔗 Generar link' }}
+          {{ generandoToken ? 'Enviando...' : '📧 Enviar invitación por correo' }}
         </button>
         <div *ngIf="tokenGenerado" class="mt-3">
-          <label class="form-label fw-bold">Link de registro:</label>
+          <label class="form-label fw-bold">Link de registro (respaldo):</label>
           <div class="input-group">
             <input type="text" class="form-control form-control-sm" [value]="tokenGenerado" readonly>
             <button class="btn btn-sm btn-outline-secondary" (click)="copiarToken()">📋 Copiar</button>
           </div>
-          <small class="text-muted">Envía este link al empleador — tiene un solo uso.</small>
+          <small class="text-muted">El correo ya fue enviado automáticamente. Usa este link solo si el empleador no lo recibe — tiene un solo uso.</small>
         </div>
       </div>
       <div class="modal-notif-footer">

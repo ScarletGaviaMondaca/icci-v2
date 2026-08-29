@@ -46,6 +46,15 @@ export class AlumnosController {
     res.send('﻿' + csv);
   }
 
+  @Get('plantilla')
+  @Roles('admin', 'secretaria')
+  plantilla(@Res() res: Response) {
+    const csv = this.alumnosService.generarPlantillaCSV();
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="plantilla_alumnos.csv"');
+    res.send('﻿' + csv);
+  }
+
   @Get('rut/:rut')
   @Roles('admin', 'secretaria', 'jefe_carrera')
   findByRut(@Param('rut') rut: string) {

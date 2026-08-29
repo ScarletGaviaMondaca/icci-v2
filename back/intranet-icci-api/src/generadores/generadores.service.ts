@@ -28,13 +28,11 @@ export class GeneradoresService {
         sp.herramientas,
         sp.carta_solicitud,
         e.nombre AS empresa_nombre,
-        CONCAT(p.nombre, ' ', p.apellido1, ' ', COALESCE(p.apellido2,'')) AS profesor_nombre,
-        o.nombre AS jefe_nombre
+        CONCAT(p.nombre, ' ', p.apellido1, ' ', COALESCE(p.apellido2,'')) AS profesor_nombre
       FROM seguimiento_practica sp
       JOIN alumnos a ON a.id = sp.alumno_id
       LEFT JOIN empresas e ON e.id = sp.empresa_id
       LEFT JOIN profesores p ON p.id = sp.informe_rev_profesor_id
-      LEFT JOIN organigrama o ON o.rol = 'Jefe de Carrera' AND o.dpto = 'ICCI'
       WHERE sp.id = ${seguimiento_id}
       LIMIT 1
     `;
@@ -66,7 +64,7 @@ export class GeneradoresService {
         const jefeEfectivo = await this.getJefeCarreraEfectivo();
         const jefeCarrera = jefeEfectivo
           ? `${jefeEfectivo.nombre} ${jefeEfectivo.apellido1} ${jefeEfectivo.apellido2 ?? ''}`.trim().toUpperCase()
-          : (d.jefe_nombre?.toUpperCase() || 'HUMBERTO URRUTIA LÓPEZ');
+          : 'HUMBERTO URRUTIA LÓPEZ';
         const fechaInicio = this.formatearFecha(d.practica1_fecha_inicio);
         const fechaTerm = this.formatearFecha(d.practica1_fecha_termino);
 
@@ -267,9 +265,9 @@ export class GeneradoresService {
     return await Packer.toBuffer(doc);
     }
 
-  async getProfesorPorRol(rol: string): Promise<{ nombre: string; apellido1: string; apellido2: string | null } | null> {
+  async getProfesorPorRol(rol: string): Promise<{ nombre: string; apellido1: string; apellido2: string | null; correo: string | null } | null> {
     const rows = await this.prisma.$queryRaw<any[]>`
-      SELECT p.nombre, p.apellido1, p.apellido2
+      SELECT p.nombre, p.apellido1, p.apellido2, p.correo
       FROM usuarios u
       JOIN profesores p ON p.id = u.profesor_id
       WHERE u.rol = ${rol}
@@ -282,26 +280,26 @@ export class GeneradoresService {
   // Prioriza al subrogante activo (designado por secretaría cuando el jefe de
   // carrera no puede firmar) sobre el jefe de carrera real; mismo shape que
   // getProfesorPorRol para ser un reemplazo directo en los call sites existentes.
-  async getJefeCarreraEfectivo(): Promise<{ nombre: string; apellido1: string; apellido2: string | null } | null> {
+  async getJefeCarreraEfectivo(): Promise<{ nombre: string; apellido1: string; apellido2: string | null; correo: string | null } | null> {
     const sub = await this.prisma.subrogancias.findFirst({
       where: { activo: 1, rol_suplido: 'jefe_carrera' },
       include: { profesor: true },
     });
     if (sub?.profesor) {
-      return { nombre: sub.profesor.nombre, apellido1: sub.profesor.apellido1, apellido2: sub.profesor.apellido2 };
+      return { nombre: sub.profesor.nombre, apellido1: sub.profesor.apellido1, apellido2: sub.profesor.apellido2, correo: sub.profesor.correo };
     }
     return this.getProfesorPorRol('jefe_carrera');
   }
 
   // Análogo a getJefeCarreraEfectivo() pero para el director de departamento
   // (designado por secretaría DICI).
-  async getDirectorDepartamentoEfectivo(): Promise<{ nombre: string; apellido1: string; apellido2: string | null } | null> {
+  async getDirectorDepartamentoEfectivo(): Promise<{ nombre: string; apellido1: string; apellido2: string | null; correo: string | null } | null> {
     const sub = await this.prisma.subrogancias.findFirst({
       where: { activo: 1, rol_suplido: 'director_departamento' },
       include: { profesor: true },
     });
     if (sub?.profesor) {
-      return { nombre: sub.profesor.nombre, apellido1: sub.profesor.apellido1, apellido2: sub.profesor.apellido2 };
+      return { nombre: sub.profesor.nombre, apellido1: sub.profesor.apellido1, apellido2: sub.profesor.apellido2, correo: sub.profesor.correo };
     }
     return this.getProfesorPorRol('director_departamento');
   }
@@ -543,6 +541,35 @@ export class GeneradoresService {
       }));
   }
 
+  // Secretaría/jefe de carrera ICCI: última solicitud enviada, con el acta DICI
+  // correlacionada (si secretaría DICI ya respondió) para que puedan ver el
+  // estado sin tener que preguntar.
+  async listarHistorialEvaluador() {
+    const [solicitudes, actas] = await Promise.all([
+      this.prisma.solicitudes_profesor_evaluador.findMany({ orderBy: { created_at: 'desc' }, take: 1 }),
+      this.prisma.actas_academico_evaluador.findMany(),
+    ]);
+    return solicitudes.map(s => {
+      const idsSolicitud = s.seguimiento_ids.split(',').map(Number);
+      const acta = actas.find(a => a.seguimiento_ids.split(',').map(Number).some(id => idsSolicitud.includes(id)));
+      return {
+        id: s.id,
+        codigo: s.codigo,
+        numero_carta: s.numero_carta,
+        fecha: s.created_at,
+        ruta_archivo: s.ruta_archivo,
+        alumnos_resumen: s.alumnos_resumen,
+        acta: acta ? {
+          codigo: acta.codigo,
+          numero_dici: acta.numero_dici,
+          fecha: acta.created_at,
+          ruta_archivo: acta.ruta_archivo,
+          alumnos_resumen: acta.alumnos_resumen,
+        } : null,
+      };
+    });
+  }
+
   private async resolverReferenciaIcci(seguimientoIds: number[]): Promise<string> {
     const rows = await this.prisma.solicitudes_profesor_evaluador.findMany({
       orderBy: { created_at: 'desc' },
@@ -731,6 +758,17 @@ export class GeneradoresService {
     });
 
     return { buffer, codigo: codigoDisplay };
+  }
+
+  // Genera el certificado solo si todavía no existe uno para ese alumno/práctica
+  // (evita regenerar -y pisar la fecha de creación- cada vez que se vuelve a
+  // recalcular el estado final de una práctica ya aprobada).
+  async generarCertificadoSiFalta(alumno_rut: string, practica_num: number, creado_por: string) {
+    const existente = await this.prisma.certificados.findFirst({
+      where: { alumno_rut, practica_num },
+    });
+    if (existente) return { ok: true, yaExistia: true, id: existente.id };
+    return this.generarCertificado(alumno_rut, practica_num, creado_por);
   }
 
   async generarCertificado(alumno_rut: string, practica_num: number, creado_por: string): Promise<{ ok: boolean; archivo: string; id: number }> {
@@ -1476,7 +1514,7 @@ export class GeneradoresService {
     const jefeEfectivo = await this.getJefeCarreraEfectivo();
     const jefe      = jefeEfectivo
       ? `${jefeEfectivo.nombre} ${jefeEfectivo.apellido1} ${jefeEfectivo.apellido2 ?? ''}`.trim().toUpperCase()
-      : (d.jefe_nombre?.toUpperCase() || 'JEFE DE CARRERA ICCI');
+      : 'JEFE DE CARRERA ICCI';
     const practicaNum = d.practica_num == 1 ? 'I' : 'II';
     const fechaActual = this.formatearFechaLarga(new Date());
     const ciudadFecha = `Arica, ${fechaActual}.`;

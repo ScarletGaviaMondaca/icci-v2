@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeneradoresService } from '../generadores/generadores.service';
+import { MailService, DestinatarioHito } from '../mail/mail.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -24,11 +25,21 @@ const HITOS = [
   'envioreg_estado',
 ];
 
+const HITO_LABELS: Record<string, string> = {
+  practica1_estado: 'Aprobación de la Práctica (Hito 1)',
+  informe_elab_estado: 'Elaboración del Informe (Hito 2)',
+  informe_rev_estado: 'Revisión del Informe (Hito 3)',
+  eval_empresa_estado: 'Evaluación de la Empresa (Hito 4)',
+  comite_carrera_estado: 'Comité de Carrera (Hito 5)',
+  envioreg_estado: 'Envío de Registro (Hito 6)',
+};
+
 @Injectable()
 export class SeguimientoService {
   constructor(
     private prisma: PrismaService,
     private generadoresSvc: GeneradoresService,
+    private mailService: MailService,
   ) {}
 
   async findAll(practica_num: number = 1) {
@@ -169,6 +180,7 @@ export class SeguimientoService {
            )`,
           alumno_id, alumno_id
         );
+        await this.notificarHitoExcedido(Number(seg.seguimiento_id), 'informe_elab_estado');
       }
       return;
     }
@@ -191,6 +203,77 @@ export class SeguimientoService {
           `Tienes ${diasRestantes} día(s) para subir tu informe antes del ${fechaStr}. No olvides subirlo a tiempo.`
         );
       }
+    }
+  }
+
+  // Resuelve los correos de alumno, empresa (vía la postulación aceptada del
+  // alumno para esa práctica), jefe de carrera y director de departamento
+  // (ambos "efectivos": subrogante activo si existe, si no el titular) para
+  // avisarles que un hito de una práctica venció. Si no hay postulación
+  // aceptada asociada, simplemente no se agrega destinatario de empresa.
+  private async resolverDestinatariosHitoExcedido(seguimientoId: number): Promise<{
+    alumnoNombre: string;
+    practicaNum: number;
+    destinatarios: DestinatarioHito[];
+  } | null> {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT sp.alumno_id, sp.practica_num, a.nombres, a.apellido1, a.apellido2,
+             COALESCE(a.correo_institucional, a.correo_personal) AS alumno_correo
+      FROM seguimiento_practica sp
+      JOIN alumnos a ON a.id = sp.alumno_id
+      WHERE sp.id = ${seguimientoId}
+      LIMIT 1
+    `;
+    const seg = rows[0];
+    if (!seg) return null;
+
+    const destinatarios: DestinatarioHito[] = [];
+
+    if (seg.alumno_correo) {
+      destinatarios.push({ correo: seg.alumno_correo, rol: 'alumno' });
+    }
+
+    const empresaRows = await this.prisma.$queryRaw<any[]>`
+      SELECT em.correo
+      FROM postulaciones p
+      JOIN ofertas_practica o ON o.id = p.oferta_id
+      JOIN empleadores em ON em.id = o.empleador_id
+      WHERE p.alumno_id = ${seg.alumno_id} AND p.practica_num = ${seg.practica_num} AND p.estado = 'aceptada'
+      ORDER BY p.created_at DESC
+      LIMIT 1
+    `;
+    if (empresaRows[0]?.correo) {
+      destinatarios.push({ correo: empresaRows[0].correo, rol: 'empresa' });
+    }
+
+    const [jefe, director] = await Promise.all([
+      this.generadoresSvc.getJefeCarreraEfectivo(),
+      this.generadoresSvc.getDirectorDepartamentoEfectivo(),
+    ]);
+    if (jefe?.correo) destinatarios.push({ correo: jefe.correo, rol: 'jefe_carrera' });
+    if (director?.correo) destinatarios.push({ correo: director.correo, rol: 'director_departamento' });
+
+    return {
+      alumnoNombre: `${seg.nombres} ${seg.apellido1}${seg.apellido2 ? ' ' + seg.apellido2 : ''}`.trim(),
+      practicaNum: Number(seg.practica_num),
+      destinatarios,
+    };
+  }
+
+  // Punto único de aviso por correo cuando un hito queda EXCEDIDO — sin
+  // importar si lo detectó un cron automático o lo marcó alguien manualmente.
+  // Best-effort: nunca debe interrumpir el flujo que la llama.
+  private async notificarHitoExcedido(seguimientoId: number, hito: string) {
+    try {
+      const info = await this.resolverDestinatariosHitoExcedido(seguimientoId);
+      if (!info || info.destinatarios.length === 0) return;
+      await this.mailService.enviarHitoExcedido(info.destinatarios, {
+        alumnoNombre: info.alumnoNombre,
+        hitoLabel: HITO_LABELS[hito] ?? hito,
+        practicaNum: info.practicaNum,
+      });
+    } catch (e) {
+      console.error('[notificarHitoExcedido] Error:', e);
     }
   }
 
@@ -236,6 +319,85 @@ export class SeguimientoService {
         alumnoId, seguimientoId,
         `🚨 Informe atrasado (2+ meses): ${nombreAlumno}`.slice(0, 100),
       );
+    }
+  }
+
+  // Cron diario: escala a secretaría/jefe de carrera las prácticas cuyo hito 1
+  // (practica1_estado) lleva 2 meses vencido sin haber sido aprobado por el
+  // Jefe de Carrera. Cubre tanto al alumno que quedó atascado en PENDIENTE
+  // como al que ya fue marcado EXCEDIDO manualmente vía :id/exceder/:hito.
+  @Cron(CronExpression.EVERY_DAY_AT_6AM)
+  async revisarPracticasAtrasadas() {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT sp.id AS seguimiento_id, sp.alumno_id,
+             a.nombres, a.apellido1, a.apellido2
+      FROM seguimiento_practica sp
+      JOIN alumnos a ON a.id = sp.alumno_id
+      WHERE sp.practica1_estado IN (1, 3)
+        AND COALESCE(sp.practica1_atrasada, 0) = 0
+        AND sp.practica1_fecha_termino IS NOT NULL
+        AND sp.practica1_fecha_termino <= DATE_SUB(CURDATE(), INTERVAL 2 MONTH)
+    `;
+
+    for (const r of rows) {
+      const seguimientoId = Number(r.seguimiento_id);
+      const alumnoId = Number(r.alumno_id);
+      const nombreAlumno = `${r.nombres} ${r.apellido1}${r.apellido2 ? ' ' + r.apellido2 : ''}`.trim();
+
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE seguimiento_practica SET practica1_atrasada = 1 WHERE id = ?`,
+        seguimientoId,
+      );
+
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO notificaciones_alumno (alumno_id, tipo, titulo, mensaje)
+         VALUES (?, 'informe_atrasado', '🚨 Práctica sin aprobar', ?)`,
+        alumnoId,
+        'Han pasado más de 2 meses desde el término de tu práctica y el Jefe de Carrera aún no la aprueba. Contacta a la secretaría a la brevedad.',
+      );
+
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO notificaciones (alumno_id, seguimiento_id, hito, hito_label, fecha_vencimiento)
+         VALUES (?, ?, 'practica1_atrasada', ?, CURDATE())`,
+        alumnoId, seguimientoId,
+        `🚨 Práctica atrasada (2+ meses): ${nombreAlumno}`.slice(0, 100),
+      );
+    }
+  }
+
+  // Cron diario: marca automáticamente como EXCEDIDO cualquier hito cuyo plazo
+  // (fecha_termino) ya pasó y que sigue en PENDIENTE, y avisa por correo.
+  // No incluye informe_elab_estado (ya tiene su propio chequeo on-demand en
+  // checkInformeDeadline, con la lógica extra de revisar si ya hay informe
+  // subido) ni informe_rev_estado en su rama de rechazo manual por el profesor
+  // (evento distinto a un vencimiento de plazo, con su propio aviso).
+  @Cron(CronExpression.EVERY_DAY_AT_6AM)
+  async revisarHitosVencidos() {
+    const hitosAutoDetectables = [
+      'practica1_estado',
+      'informe_rev_estado',
+      'eval_empresa_estado',
+      'comite_carrera_estado',
+      'envioreg_estado',
+    ];
+
+    for (const hito of hitosAutoDetectables) {
+      const columnaFecha = `${hito.replace(/_estado$/, '')}_fecha_termino`;
+      const rows = await this.prisma.$queryRawUnsafe<any[]>(
+        `SELECT id FROM seguimiento_practica
+         WHERE \`${hito}\` = 1
+           AND \`${columnaFecha}\` IS NOT NULL
+           AND \`${columnaFecha}\` < CURDATE()`,
+      );
+
+      for (const r of rows) {
+        const seguimientoId = Number(r.id);
+        await this.prisma.$executeRawUnsafe(
+          `UPDATE seguimiento_practica SET \`${hito}\` = 3 WHERE id = ?`,
+          seguimientoId,
+        );
+        await this.notificarHitoExcedido(seguimientoId, hito);
+      }
     }
   }
 
@@ -371,6 +533,26 @@ export class SeguimientoService {
       WHERE alumno_id = ? AND practica_num = ?`,
       alumno_id, practica_num
     );
+    await this.generarCertificadoSiQuedoAprobada(alumno_id, practica_num);
+  }
+
+  // Si la práctica quedó completamente aprobada (los 6 hitos en 2), genera el
+  // certificado automáticamente -sin bloquear la aprobación del hito si falla-.
+  private async generarCertificadoSiQuedoAprobada(alumno_id: number, practica_num: number) {
+    try {
+      const seg = await this.prisma.seguimiento_practica.findFirst({
+        where: { alumno_id, practica_num },
+        select: { estado_final_practica: true },
+      });
+      if (seg?.estado_final_practica !== 2) return;
+
+      const alumno = await this.prisma.alumnos.findUnique({ where: { id: alumno_id }, select: { rut: true } });
+      if (!alumno?.rut) return;
+
+      await this.generadoresSvc.generarCertificadoSiFalta(alumno.rut, practica_num, 'sistema');
+    } catch (e) {
+      console.error('[generarCertificadoSiQuedoAprobada] Error al generar certificado:', e);
+    }
   }
 
   async updateCampo(payload: { alumno_id: number; plan: string; practica_num: number; campo: string; valor: any }) {
@@ -815,16 +997,15 @@ export class SeguimientoService {
       throw new BadRequestException('Hito inválido');
     }
 
-    const esUltimoHito = hito === HITOS[HITOS.length - 1];
-
     const result = await this.prisma.seguimiento_practica.update({
       where: { id },
       data: {
         [hito]: ESTADO.APROBADO,
-        ...(esUltimoHito ? { estado_final_practica: 1 } : {}),
         ...datos,
       },
     });
+
+    await this.recomputarEstadoFinalPractica(seg.alumno_id, seg.practica_num);
 
     if (hito === 'practica1_estado') {
       try {
@@ -854,10 +1035,12 @@ export class SeguimientoService {
       throw new BadRequestException('Hito inválido');
     }
 
-    return this.prisma.seguimiento_practica.update({
+    const result = await this.prisma.seguimiento_practica.update({
       where: { id },
       data: { [hito]: ESTADO.EXCEDIDO },
     });
+    await this.notificarHitoExcedido(id, hito);
+    return result;
   }
 
   private async notificarProfesorAsignado(seguimientoId: number, profesorId: number) {
@@ -1577,10 +1760,17 @@ export class SeguimientoService {
     return rows.filter(r => !yaSolicitados.has(r.seguimiento_id));
   }
 
-  // Director de departamento: oculta a los alumnos que ya tienen académico evaluador asignado
+  // Director de departamento: solo alumnos con solicitud ICCI ya enviada (si no,
+  // no habría carta que referenciar en el acta) y que aún no tienen académico
+  // evaluador asignado.
   async getPendientesAsignacionAcademico() {
-    const rows = await this.evaluacionInformesBase();
-    return rows.filter(r => !r.informe_rev_profesor_id);
+    const [rows, solicitudes] = await Promise.all([
+      this.evaluacionInformesBase(),
+      this.prisma.solicitudes_profesor_evaluador.findMany({ select: { seguimiento_ids: true } }),
+    ]);
+    const yaSolicitados = new Set<number>();
+    solicitudes.forEach(s => s.seguimiento_ids.split(',').forEach(id => yaSolicitados.add(Number(id))));
+    return rows.filter(r => !r.informe_rev_profesor_id && yaSolicitados.has(r.seguimiento_id));
   }
 
   // Director de departamento: guarda una propuesta de académico evaluador por
@@ -1689,8 +1879,9 @@ export class SeguimientoService {
   }
 
   // Jefe de carrera / secretaría (solo lectura): alumnos con Hito 4 (Evaluación
-  // Empresa) aprobado, o enviados manualmente por secretaría por informe atrasado
-  // (informe_atrasado = 2), con Hito 5 (Comité de Carrera) pendiente de decisión.
+  // Empresa) aprobado, enviados manualmente por informe atrasado (informe_atrasado
+  // = 2) o por práctica (hito 1) atrasada (practica1_atrasada = 2), con Hito 5
+  // (Comité de Carrera) pendiente de decisión.
   // Una vez aprobados o rechazados dejan de aparecer en esta lista.
   async getComitePendientes() {
     const rows = await this.prisma.$queryRaw<any[]>`
@@ -1700,11 +1891,13 @@ export class SeguimientoService {
         COALESCE(e.nombre, sp.practica1_empresa) AS empresa,
         sp.eval_empresa_archivo,
         COALESCE(sp.comite_carrera_estado, 0) AS comite_carrera_estado,
-        COALESCE(sp.informe_atrasado, 0) AS informe_atrasado
+        COALESCE(sp.informe_atrasado, 0) AS informe_atrasado,
+        COALESCE(sp.practica1_atrasada, 0) AS practica1_atrasada
       FROM seguimiento_practica sp
       JOIN alumnos a ON a.id = sp.alumno_id
       LEFT JOIN empresas e ON e.id = sp.empresa_id
-      WHERE (sp.eval_empresa_estado = 2 OR sp.informe_atrasado = 2) AND sp.comite_carrera_estado = 1
+      WHERE (sp.eval_empresa_estado = 2 OR sp.informe_atrasado = 2 OR sp.practica1_atrasada = 2)
+        AND sp.comite_carrera_estado = 1
       ORDER BY a.apellido1, a.apellido2, a.nombres
     `;
     return rows.map(r => ({
@@ -1712,6 +1905,7 @@ export class SeguimientoService {
       seguimiento_id: Number(r.seguimiento_id),
       comite_carrera_estado: Number(r.comite_carrera_estado),
       informe_atrasado: Number(r.informe_atrasado),
+      practica1_atrasada: Number(r.practica1_atrasada),
     }));
   }
 
@@ -1759,6 +1953,28 @@ export class SeguimientoService {
     }));
   }
 
+  // Jefe de carrera / secretaría: alumnos flageados por el cron (practica1_atrasada
+  // = 1) por no tener el hito 1 (aprobación de la práctica) resuelto 2 meses
+  // después de su fecha de término, pendientes de enviarse a comité de carrera.
+  async getPracticasAtrasadas() {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT
+        a.nombres, a.apellido1, a.apellido2, a.rut,
+        sp.id AS seguimiento_id, sp.practica_num,
+        sp.practica1_fecha_termino,
+        DATEDIFF(CURDATE(), sp.practica1_fecha_termino) AS dias_atraso
+      FROM seguimiento_practica sp
+      JOIN alumnos a ON a.id = sp.alumno_id
+      WHERE sp.practica1_atrasada = 1
+      ORDER BY sp.practica1_fecha_termino ASC
+    `;
+    return rows.map(r => ({
+      ...r,
+      seguimiento_id: Number(r.seguimiento_id),
+      dias_atraso: Number(r.dias_atraso),
+    }));
+  }
+
   // Secretaría: envía manualmente a un alumno con informe atrasado a la cola de
   // decisión del comité de carrera, saltándose el filtro normal de evaluación
   // de empresa (que nunca se alcanzó porque el alumno se quedó atascado antes).
@@ -1771,6 +1987,20 @@ export class SeguimientoService {
     return this.prisma.seguimiento_practica.update({
       where: { id: seguimientoId },
       data: { informe_atrasado: 2, comite_carrera_estado: ESTADO.PENDIENTE },
+    });
+  }
+
+  // Jefe de carrera / secretaría: envía manualmente a un alumno con el hito 1
+  // (práctica) atrasado a la cola de decisión del comité de carrera.
+  async enviarComitePracticaAtrasada(seguimientoId: number) {
+    const seg = await this.prisma.seguimiento_practica.findUnique({ where: { id: seguimientoId } });
+    if (!seg) throw new NotFoundException('Seguimiento no encontrado');
+    if (seg.practica1_atrasada !== 1) {
+      throw new BadRequestException('Este alumno no está marcado como práctica atrasada pendiente de envío');
+    }
+    return this.prisma.seguimiento_practica.update({
+      where: { id: seguimientoId },
+      data: { practica1_atrasada: 2, comite_carrera_estado: ESTADO.PENDIENTE },
     });
   }
 
@@ -1791,6 +2021,19 @@ export class SeguimientoService {
              eval_empresa_estado = 2, eval_empresa_fecha_aprobacion = COALESCE(eval_empresa_fecha_aprobacion, ?)
          WHERE id = ?`,
         hoy, hoy, hoy, seguimientoId,
+      );
+    }
+
+    if (decision === 'aprobado' && seg.practica1_atrasada === 2) {
+      // El alumno llegó a comité por la vía de "práctica atrasada" (hito 1 sin
+      // aprobar). Si el comité lo aprueba, hay que cerrar el hito 1 ahora para
+      // que el alumno pueda seguir normalmente con la elaboración del informe.
+      const hoy = new Date().toISOString().split('T')[0];
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE seguimiento_practica
+         SET practica1_estado = 2, practica1_fecha_aprobacion = COALESCE(practica1_fecha_aprobacion, ?)
+         WHERE id = ?`,
+        hoy, seguimientoId,
       );
     }
 

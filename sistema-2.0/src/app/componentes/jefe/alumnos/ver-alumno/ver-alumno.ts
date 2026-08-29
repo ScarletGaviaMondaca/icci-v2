@@ -50,7 +50,7 @@ export class VerAlumno {
     if (this.auth.esAlumno()) {
       this.router.navigate(['/alumno/editar-perfil']);
     } else {
-      this.router.navigate(['/jefe/listado-alumnos/editar-alumno', this.alumno.id]);
+      this.router.navigate(['/lista-alumnos/editar-alumno', this.alumno.id]);
     }
   }
  

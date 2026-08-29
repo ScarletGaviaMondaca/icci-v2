@@ -131,15 +131,27 @@ export class SeguimientoController {
   }
 
   @Get('informes-atrasados')
-  @Roles('admin', 'secretaria')
+  @Roles('admin', 'secretaria', 'jefe_carrera')
   getInformesAtrasados() {
     return this.seguimientoService.getInformesAtrasados();
   }
 
   @Put(':id/enviar-comite-atrasado')
-  @Roles('admin', 'secretaria')
+  @Roles('admin', 'secretaria', 'jefe_carrera')
   enviarComiteAtrasado(@Param('id') id: string) {
     return this.seguimientoService.enviarComiteAtrasado(+id);
+  }
+
+  @Get('practicas-atrasadas')
+  @Roles('admin', 'secretaria', 'jefe_carrera')
+  getPracticasAtrasadas() {
+    return this.seguimientoService.getPracticasAtrasadas();
+  }
+
+  @Put(':id/enviar-comite-practica-atrasada')
+  @Roles('admin', 'secretaria', 'jefe_carrera')
+  enviarComitePracticaAtrasada(@Param('id') id: string) {
+    return this.seguimientoService.enviarComitePracticaAtrasada(+id);
   }
 
   @Delete(':id')

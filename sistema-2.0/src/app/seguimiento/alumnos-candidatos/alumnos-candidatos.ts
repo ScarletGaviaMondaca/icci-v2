@@ -1,5 +1,7 @@
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { SeguimientoService } from '../../servicios/seguimiento.service';
+import { AlumnoService } from '../../servicios/alumno.service';
+import { AuthService } from '../../servicios/auth.service';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -25,19 +27,97 @@ export class AlumnosCandidatos implements OnInit{
   elementosPorPagina = 20;
   soloEspeciales = false;
 
+  // Carga de alumnos por CSV
+  mostrarCarga = false;
+  nombreArchivo = '';
+  estadoSubida = '';
+  subiendo = false;
+
   constructor(
     private seguimientoService: SeguimientoService,
+    private alumnoService: AlumnoService,
+    public auth: AuthService,
     private cdr: ChangeDetectorRef,
     private router: Router
   ) {}
 
  ngOnInit() {
+    this.cargar();
+  }
+
+  cargar() {
     this.seguimientoService.getCandidatos().subscribe({
       next: data => {
         this.alumnos = Array.isArray(data) ? data : [];
         this.cdr.detectChanges();
       },
       error: err => console.error('❌ Error:', err)
+    });
+  }
+
+  toggleCarga() {
+    this.mostrarCarga = !this.mostrarCarga;
+  }
+
+  descargarPlantilla() {
+    this.alumnoService.descargarPlantilla().subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'plantilla_alumnos.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => alert('No se pudo descargar la plantilla'),
+    });
+  }
+
+  importarCSV(event: any) {
+    const archivo = event.target.files[0];
+    if (!archivo) return;
+
+    if (!archivo.name.endsWith('.csv')) {
+      alert('Solo se permiten archivos CSV');
+      event.target.value = '';
+      return;
+    }
+    this.nombreArchivo = archivo.name;
+    this.estadoSubida = 'Subiendo archivo...';
+    this.subiendo = true;
+
+    const formData = new FormData();
+    formData.append('archivo_csv', archivo);
+
+    this.alumnoService.importarCSV(formData).subscribe({
+      next: (res: any) => {
+        this.subiendo = false;
+
+        if (res.estado === 'error') {
+          this.estadoSubida = '❌ ' + res.mensaje;
+          if (res.faltantes) {
+            this.estadoSubida += ' | Faltan: ' + res.faltantes.join(', ');
+          }
+          return;
+        }
+
+        if (res.estado === 'ok') {
+          this.estadoSubida =
+            `✅ ${res.mensaje} | Importados: ${res.insertados} | Duplicados: ${res.duplicados} | Actualizados: ${res.actualizados}`;
+          if (res.errores && res.errores.length > 0) {
+            console.warn('Errores en filas:', res.errores);
+          }
+          setTimeout(() => this.estadoSubida = '', 5000);
+          this.cargar();
+          this.cdr.detectChanges();
+          this.mostrarCarga = false;
+        }
+      },
+      error: (err) => {
+        this.subiendo = false;
+        console.error('ERROR COMPLETO:', err);
+        this.estadoSubida = '❌ ' + (err?.error?.mensaje ?? 'Error al conectar con el servidor');
+      }
     });
   }
 
@@ -51,7 +131,7 @@ export class AlumnosCandidatos implements OnInit{
   }
  /* acciones de los botones laterales  */
   verAlumno(alumno: any) {
-    this.router.navigate(['/jefe/ver-alumno', alumno.id]);
+    this.router.navigate(['/lista-alumnos/ver-alumno', alumno.id]);
   }
   filtrarDatos() {
     return this.alumnos.filter(d =>

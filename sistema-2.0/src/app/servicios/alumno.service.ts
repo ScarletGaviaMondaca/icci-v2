@@ -46,8 +46,11 @@ export class AlumnoService {
     return this.exportar({});
   }
 
-  getPlantillaUrl(tipo: string): string {
-    return `${this.apiUrl}/alumnos/plantilla?tipo=${tipo}`;
+  descargarPlantilla() {
+    return this.http.get(
+      `${this.apiUrl}/alumnos/plantilla`,
+      { headers: { Authorization: `Bearer ${this.auth.getToken()}` }, responseType: 'blob' as const },
+    );
   }
 
   getAlumnosPorPlan(idPlan: number) {

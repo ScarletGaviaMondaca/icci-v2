@@ -1,6 +1,8 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
 import { EmpresaService } from '../../servicios/empresa.service';
 
 @Component({
@@ -100,18 +102,131 @@ export class ListaEmpresas implements OnInit {
 
   trackBy(index: number, item: any) { return item.seguimiento_id; }
 
+  private nombreAlumno(d: any): string {
+    return `${d.nombres ?? ''} ${d.apellido1 ?? ''} ${d.apellido2 ?? ''}`.trim();
+  }
+
   exportarExcel() {
     const datos = this.filtrados();
-    this.exportar(datos, 'excel');
+    if (datos.length === 0) { alert('No hay datos para exportar'); return; }
+
+    const filas = datos.map(d => ({
+      Empresa: d.empresa || '',
+      Alumno: this.nombreAlumno(d),
+      Jefe: d.jefe || '',
+      Supervisor: d.supervisor || '',
+      Correo: d.correo || '',
+      Teléfono: d.telefono || '',
+    }));
+
+    const hoja = XLSX.utils.json_to_sheet(filas);
+    hoja['!cols'] = [{ wch: 30 }, { wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 28 }, { wch: 16 }];
+
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, 'Empresas');
+    XLSX.writeFile(libro, 'empresas.xlsx');
   }
 
   exportarPDF() {
     const datos = this.filtrados();
-    this.exportar(datos, 'pdf');
-  }
+    if (datos.length === 0) { alert('No hay datos para exportar'); return; }
 
-  exportar(datos: any[], tipo: string) {
-    console.log('Exportar pendiente de implementar en NestJS');
-    alert('Exportación pendiente de implementar');
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginX = 30;
+    const azulUta: [number, number, number] = [5, 65, 130];
+    const rowHeight = 20;
+    const headerRowY = 82;
+    const bottomMargin = 40;
+
+    const columnas = [
+      { label: 'Empresa', width: 140 },
+      { label: 'Alumno', width: 150 },
+      { label: 'Jefe', width: 110 },
+      { label: 'Supervisor', width: 110 },
+      { label: 'Correo', width: 150 },
+      { label: 'Teléfono', width: 90 },
+    ];
+    const tablaAncho = columnas.reduce((s, c) => s + c.width, 0);
+    const tablaX = (pageWidth - tablaAncho) / 2;
+
+    const fechaGeneracion = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const filasPorPagina = Math.floor((pageHeight - headerRowY - rowHeight - bottomMargin) / rowHeight);
+    const totalPaginas = Math.max(1, Math.ceil(datos.length / filasPorPagina));
+    let paginaActual = 1;
+
+    const dibujarEncabezadoPagina = () => {
+      // Barra superior con el color institucional
+      doc.setFillColor(...azulUta);
+      doc.rect(0, 0, pageWidth, 50, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Listado de Empresas — Acreditación ICCI', marginX, 32);
+
+      doc.setTextColor(90, 90, 90);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Generado el ${fechaGeneracion} · ${datos.length} registro(s)`, marginX, 68);
+
+      // Encabezado de la tabla
+      doc.setFillColor(230, 236, 245);
+      doc.rect(tablaX, headerRowY, tablaAncho, rowHeight, 'F');
+      doc.setDrawColor(...azulUta);
+      doc.rect(tablaX, headerRowY, tablaAncho, rowHeight);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(...azulUta);
+      let x = tablaX;
+      columnas.forEach(c => { doc.text(c.label, x + 6, headerRowY + 14); x += c.width; });
+      doc.setFont('helvetica', 'normal');
+    };
+
+    const dibujarPiePagina = () => {
+      doc.setDrawColor(220, 220, 220);
+      doc.line(marginX, pageHeight - 32, pageWidth - marginX, pageHeight - 32);
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.text('Sistema de Prácticas ICCI · Universidad de Tarapacá', marginX, pageHeight - 18);
+      doc.text(`Página ${paginaActual} de ${totalPaginas}`, pageWidth - marginX - 70, pageHeight - 18);
+    };
+
+    dibujarEncabezadoPagina();
+    let y = headerRowY + rowHeight;
+
+    datos.forEach((d, i) => {
+      if (y + rowHeight > pageHeight - bottomMargin) {
+        dibujarPiePagina();
+        doc.addPage();
+        paginaActual++;
+        dibujarEncabezadoPagina();
+        y = headerRowY + rowHeight;
+      }
+
+      // Filas alternadas (zebra) para que sea más fácil de leer impreso
+      if (i % 2 === 1) {
+        doc.setFillColor(245, 248, 252);
+        doc.rect(tablaX, y, tablaAncho, rowHeight, 'F');
+      }
+
+      const valores = [d.empresa, this.nombreAlumno(d), d.jefe, d.supervisor, d.correo, d.telefono];
+      let x = tablaX;
+      doc.setFontSize(8.5);
+      doc.setTextColor(40, 40, 40);
+      columnas.forEach((c, ci) => {
+        const texto = doc.splitTextToSize(String(valores[ci] || '—'), c.width - 10)[0] ?? '';
+        doc.text(texto, x + 6, y + 14);
+        x += c.width;
+      });
+
+      doc.setDrawColor(215, 222, 233);
+      doc.rect(tablaX, y, tablaAncho, rowHeight);
+
+      y += rowHeight;
+    });
+
+    dibujarPiePagina();
+    doc.save('empresas.pdf');
   }
 }

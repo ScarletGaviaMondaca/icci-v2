@@ -82,4 +82,19 @@ export class UsuariosService {
   crearUsuariosAlumnos() {
     return this.http.post<any>(`${this.apiUrl}/usuarios/crear-alumnos`, {}, this.auth.getHeaders());
   }
+
+  getConfigCorreo() {
+    return this.http.get<{ correo: string | null; configurado: boolean }>(
+      `${this.apiUrl}/usuarios/config-correo`,
+      this.auth.getHeaders()
+    );
+  }
+
+  actualizarConfigCorreo(correo: string, appPassword?: string) {
+    return this.http.put<any>(
+      `${this.apiUrl}/usuarios/config-correo`,
+      { correo, appPassword },
+      this.auth.getHeaders()
+    );
+  }
 }

@@ -12,6 +12,7 @@ import { SeguimientoService } from '../../servicios/seguimiento.service';
 })
 export class EvaluacionInformes implements OnInit {
   alumnos: any[] = [];
+  historial: any[] = [];
   cargando = false;
   enviando = false;
   error = '';
@@ -28,6 +29,7 @@ export class EvaluacionInformes implements OnInit {
 
   ngOnInit() {
     this.cargar();
+    this.cargarHistorial();
   }
 
   cargar() {
@@ -44,6 +46,16 @@ export class EvaluacionInformes implements OnInit {
         this.cargando = false;
         this.cdr.detectChanges();
       },
+    });
+  }
+
+  cargarHistorial() {
+    this.seg.listarHistorialEvaluador().subscribe({
+      next: (data) => {
+        this.historial = data || [];
+        this.cdr.detectChanges();
+      },
+      error: () => {},
     });
   }
 
@@ -104,6 +116,7 @@ export class EvaluacionInformes implements OnInit {
               + (codigo ? ` · Código de verificación: ${codigo}` : '');
             this.enviando = false;
             this.cargar();
+            this.cargarHistorial();
             setTimeout(() => this.mensaje = '', 6000);
           },
           error: () => {

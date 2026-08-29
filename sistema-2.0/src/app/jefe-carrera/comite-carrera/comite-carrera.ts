@@ -19,6 +19,10 @@ export class ComiteCarrera implements OnInit {
   decidiendoId: number | null = null;
   eliminandoId: number | null = null;
 
+  esAtrasado(alumno: any): boolean {
+    return alumno.informe_atrasado === 2 || alumno.practica1_atrasada === 2;
+  }
+
   constructor(
     private seg: SeguimientoService,
     public auth: AuthService,

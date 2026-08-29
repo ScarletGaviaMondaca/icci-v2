@@ -10,11 +10,33 @@
       Solo alumnos especiales
     </label>
   </div>
-  <!-- Botón agregar especial — solo admin y secretaria -->
-  <button class="agregar btn btn-sm btn-outline-warning"
-          routerLink="/seguimiento/agregar-especial">
-    ➕ Ingreso Especial
-  </button>
+  <div class="d-flex gap-2">
+    <!-- Botón agregar especial — solo admin y secretaria -->
+    <button class="agregar btn btn-sm btn-outline-warning"
+            routerLink="/seguimiento/agregar-especial">
+      ➕ Ingreso Especial
+    </button>
+    <button class="carga agregar btn-sm btn-outline-primary" *ngIf="auth.esSecretaria() || auth.esAdmin()" (click)="toggleCarga()">
+      📂 Subir lista
+    </button>
+  </div>
+</div>
+
+<!-- Subpanel subir archivo -->
+<div *ngIf="mostrarCarga" class="mt-2 mb-3 p-3 border rounded bg-light">
+  <div class="d-flex align-items-center gap-3 flex-wrap">
+    <label class="carga btn btn-sm mb-0">
+      Seleccionar CSV
+      <input type="file" hidden accept=".csv" (change)="importarCSV($event)">
+    </label>
+    <span *ngIf="nombreArchivo" class="badge bg-success">{{ nombreArchivo }}</span>
+    <button class="carga btn btn-sm" (click)="descargarPlantilla()">📄 Descargar plantilla</button>
+  </div>
+  <span *ngIf="estadoSubida" class="small d-block mt-2"
+        [class.text-success]="estadoSubida.includes('Importados')"
+        [class.text-danger]="estadoSubida.includes('❌')">
+    {{ estadoSubida }}
+  </span>
 </div>
   <!-- Tabla de alumnos con filtros  -->
   <div class="table-wrapper">

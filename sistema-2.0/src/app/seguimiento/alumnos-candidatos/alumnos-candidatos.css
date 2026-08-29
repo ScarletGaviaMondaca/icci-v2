@@ -18,6 +18,16 @@
   color: white;
   border: 1px solid #054182;
 }
+.carga{
+    background-color: white;
+    color:  #204d7d;
+    border: 1px solid;
+    padding: 6px 12px;
+}
+.carga:hover{
+    background-color: #054182;
+    color: white;
+}
 
 /* Wrapper que da las esquinas redondeadas de verdad */
 .table-wrapper {

@@ -395,6 +395,7 @@ export class GestionUsuarios implements OnInit {
       next: (res) => {
         this.tokenGenerado = `http://localhost:4200/registro-empleador?token=${res.token}`;
         this.generandoToken = false;
+        this.mostrarMensaje(`✅ Correo enviado a ${this.correoToken}`);
         this.cdr.detectChanges();
       },
       error: () => {

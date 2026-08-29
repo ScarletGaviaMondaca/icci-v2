@@ -75,7 +75,7 @@ export class EditarAlumno implements OnInit, OnDestroy {
           if (this.auth.esAlumno()) {
             this.router.navigate(['/alumno/perfil']);
           } else {
-            this.router.navigate(['/jefe/listado-alumnos/ver-alumno', this.alumno.id]);
+            this.router.navigate(['/lista-alumnos/ver-alumno', this.alumno.id]);
           }
         },
         error: (err) => {
@@ -88,7 +88,7 @@ export class EditarAlumno implements OnInit, OnDestroy {
     if (this.auth.esAlumno()) {
         this.router.navigate(['/alumno/perfil']);
       } else {
-        this.router.navigate(['/jefe/listado-alumnos']);
+        this.router.navigate(['/lista-alumnos']);
       }
   }
 

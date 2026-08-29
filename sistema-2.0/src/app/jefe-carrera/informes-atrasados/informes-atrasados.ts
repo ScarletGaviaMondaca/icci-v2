@@ -16,6 +16,10 @@ export class InformesAtrasados implements OnInit {
   mensaje = '';
   enviandoId: number | null = null;
 
+  practicasAtrasadas: any[] = [];
+  cargandoPracticas = false;
+  enviandoIdPractica: number | null = null;
+
   constructor(
     private seg: SeguimientoService,
     private cdr: ChangeDetectorRef,
@@ -23,6 +27,7 @@ export class InformesAtrasados implements OnInit {
 
   ngOnInit() {
     this.cargar();
+    this.cargarPracticasAtrasadas();
   }
 
   cargar() {
@@ -57,6 +62,42 @@ export class InformesAtrasados implements OnInit {
       error: () => {
         this.error = '❌ Error al enviar el alumno a comité';
         this.enviandoId = null;
+      },
+    });
+  }
+
+  cargarPracticasAtrasadas() {
+    this.cargandoPracticas = true;
+    this.seg.getPracticasAtrasadas().subscribe({
+      next: (data) => {
+        this.practicasAtrasadas = data || [];
+        this.cargandoPracticas = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.error = 'Error al cargar las prácticas atrasadas';
+        this.cargandoPracticas = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  enviarPracticaAComite(alumno: any) {
+    if (!confirm(`¿Enviar a ${alumno.nombres} ${alumno.apellido1} al comité de carrera por práctica atrasada?`)) return;
+
+    this.enviandoIdPractica = alumno.seguimiento_id;
+    this.error = '';
+    this.seg.enviarComitePracticaAtrasada(alumno.seguimiento_id).subscribe({
+      next: () => {
+        this.practicasAtrasadas = this.practicasAtrasadas.filter(a => a.seguimiento_id !== alumno.seguimiento_id);
+        this.mensaje = `✅ ${alumno.nombres} ${alumno.apellido1} fue enviado al comité de carrera`;
+        this.enviandoIdPractica = null;
+        setTimeout(() => this.mensaje = '', 4000);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.error = '❌ Error al enviar el alumno a comité';
+        this.enviandoIdPractica = null;
       },
     });
   }

@@ -131,11 +131,15 @@
           <a *ngIf="auth.esAlumno()" routerLink="/alumno/perfil">Mi Cuenta</a>
           <!--- Todos excepto alumno -->
           <a *ngIf="!auth.esAlumno()" routerLink="/mi-perfil">Mi Perfil</a>
+          <!-- Admin -->
+          <a *ngIf="auth.esAdmin()" routerLink="/config-correo">Correo del Sistema</a>
+          <!-- Secretaria -->
+          <a *ngIf="auth.esSecretaria()" routerLink="/secretaria/invitar-empresa">Invitar Empresa</a>
           <!-- Secretaria / Secretaria DICI -->
            <a *ngIf="auth.esSecretaria() || auth.esSecretariaDici()" routerLink="/secretaria/subrogante">Subrogante</a>
+          <a *ngIf="auth.esAdmin() || auth.esSecretaria()" routerLink="/certificados">Certificados</a>
           <!-- Admin -->
         <!--  <a *ngIf="auth.esAdmin()" routerLink="/subir-certificado">Subir certificado</a> -->
-          <a *ngIf="auth.esAdmin()" routerLink="/profesores">Profesores</a>
           <a *ngIf="auth.esAdmin()" routerLink="/usuarios">Gestión Usuarios</a>
           <hr>
           <a (click)="logout()" class="logout-link" style="cursor:pointer">Cerrar Sesión</a>
@@ -149,18 +153,14 @@
   <div class="container-fluid">
     <!-- Vista para todos -->
     <a class="navbar-brand" routerLink="/noticias">Inicio</a>
-   <!--  <a class="navbar-brand" routerLink="/organizacion">Organización</a> -->
     <!-- Vista para Secretaria y Admin -->
-   <!--<a class="navbar-brand" *ngIf="auth.esSecretaria() || auth.esAdmin() || auth.esJefeCarrera()" routerLink="/jefe">Jefe Carrera</a>-->
-    <a class="navbar-brand" *ngIf="auth.esAdmin()" routerLink="/certificados">Certificados</a>
+    <a class="navbar-brand" *ngIf="auth.esAdmin()" routerLink="/lista-alumnos">Lista Alumnos</a>
     <a class="navbar-brand" *ngIf="auth.esSecretaria()" routerLink="/evaluar">Evaluar Postulaciones</a>
     <a class="navbar-brand" *ngIf="auth.esSecretaria()" routerLink="/seguimiento">Seguimiento</a>
-    <!--<a class="navbar-brand" *ngIf="auth.esSecretaria() || auth.esAdmin()" routerLink="/exalumnos">Exalumnos</a>  -->
     <a class="navbar-brand" *ngIf="auth.esSecretaria() " routerLink="/acreditacion">Acreditación</a>
    
     <!-- Vista para Alumnos-->
-  <!-- 
-    <a class="navbar-brand" *ngIf="auth.esAlumno()" routerLink="jefe/carrera">Carrera</a> 
+  <!--
     <a class="navbar-brand" *ngIf="auth.esAlumno() || auth.esAdmin()" routerLink="/alumno">Alumno</a>  -->
     <a class="navbar-brand" *ngIf="auth.esAlumno()" routerLink="/miseguimiento">Mi Seguimiento</a>
     <a class="navbar-brand" *ngIf="auth.esAlumno()" routerLink="/miscertificados">Mis Certificados</a>
